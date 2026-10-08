@@ -83,6 +83,14 @@ Le projet est en développement ; aucune certification ni validation pour un usa
 
 ## Licence et participation
 
-Le dépôt contient la [licence publique de l'Union européenne 1.2 (EUPL-1.2)](LICENSE). Le projet poursuit une démarche **open source et open hardware** ; les conditions de licence propres aux futurs fichiers matériels seront précisées lors de leur publication.
+Le projet poursuit une démarche **open source et open hardware**. Chaque type de contenu a sa licence, fixée par l'[ADR 0001](docs/adr/0001-licences-materiel-et-documentation.md) :
+
+| Contenu | Licence |
+| --- | --- |
+| Logiciel, scripts, build et CI | [EUPL-1.2](LICENSE) |
+| Sources matérielles (`hardware/`) | [CERN-OHL-S v2](LICENSES/CERN-OHL-S-2.0.txt) |
+| Documentation (`docs/`, `software_development_file/`, fichiers Markdown) | [CC BY-SA 4.0](LICENSES/CC-BY-SA-4.0.txt) |
+
+La licence de chaque fichier est déclarée dans [`REUSE.toml`](REUSE.toml) ou dans son en-tête SPDX, selon la [spécification REUSE](https://reuse.software/).
 
 Pour proposer une amélioration, signaler un problème ou discuter d'un choix de conception, utilisez les [issues GitHub](https://github.com/camille-martin-paris/clepsydre/issues). Les contributions peuvent porter sur le logiciel C++23, le matériel, la documentation ou les essais.
