@@ -16,7 +16,7 @@ Clepsydre vise à développer une pompe à perfusion dont le logiciel, les plans
 
 ## État du projet
 
-Le dépôt est à son stade initial : il contient ce README et la licence. Le logiciel de commande, les fichiers matériels et les procédures de vérification restent à développer.
+Le dépôt est à son stade initial : il contient la documentation de cadrage et le [dossier de développement logiciel](software_development_file/). Le logiciel de commande, les fichiers matériels et les procédures de vérification restent à développer.
 
 La simulation constitue une première étape pour explorer les comportements de la pompe et préparer les essais. L'intégration de [mddlog](https://github.com/ambroise-leclerc/mddlog), bibliothèque de journalisation en C++23, est une piste pour les diagnostics et les événements d'audit ; elle n'est pas encore réalisée.
 
@@ -80,6 +80,8 @@ Le langage cible est **C++23**. La chaîne de compilation, les plateformes prise
 ## Vérification et validation
 
 Les exigences, les décisions de conception et les résultats d'essais seront versionnés afin de rendre les choix et leur vérification consultables. Les capacités démontrées et les limites seront documentées pour chaque étape.
+
+Le [dossier de développement logiciel](software_development_file/) organise ce travail selon l'IEC 62304 : plan de développement, classification de sécurité proposée, gestion de configuration, résolution des problèmes, maintenance et composants tiers. Son registre de traçabilité, lisible par machine, est vérifié en CI par `tools/check_registry.py`.
 
 Le projet est en développement ; aucune certification ni validation pour un usage clinique n'est revendiquée.
 

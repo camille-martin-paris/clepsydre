@@ -1,0 +1,12 @@
+# Mesures de maîtrise des risques. Chacune maîtrise au moins un risque
+# et est mise en œuvre par au moins une exigence. Champs :
+#   id            CTRL-nnn
+#   description   mesure retenue
+#   risks         liste d'identifiants RISK-nnn
+#   requirements  liste d'identifiants d'exigences qui la mettent en œuvre
+#
+# [[control]]
+# id = "CTRL-001"
+# description = "…"
+# risks = ["RISK-001"]
+# requirements = ["SW-REQ-001"]

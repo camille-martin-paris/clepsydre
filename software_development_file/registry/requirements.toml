@@ -1,0 +1,14 @@
+# Exigences système (SYS-REQ-nnn), logicielles (SW-REQ-nnn) et matérielles (HW-REQ-nnn).
+# Rédaction : issue #10. Champs :
+#   id      identifiant unique
+#   title   intitulé court
+#   text    énoncé vérifiable, formulé avec « doit »
+#   source  besoin utilisateur, risque, norme ou usage prévu d'origine
+#   status  draft | approved | obsolete ; une exigence approved doit être vérifiée
+#
+# [[requirement]]
+# id = "SW-REQ-001"
+# title = "…"
+# text = "Le logiciel doit …"
+# source = "docs/intended-use.md, H-02"
+# status = "draft"

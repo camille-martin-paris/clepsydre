@@ -1,0 +1,11 @@
+# Risques issus de l'analyse des dangers ISO 14971 (issue #9). Champs :
+#   id      RISK-nnn
+#   hazard  danger ou situation dangereuse
+#   harm    dommage possible
+#   status  draft | controlled | accepted ; un risque controlled a au moins une mesure de maîtrise
+#
+# [[risk]]
+# id = "RISK-001"
+# hazard = "…"
+# harm = "…"
+# status = "draft"

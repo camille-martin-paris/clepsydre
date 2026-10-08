@@ -1,0 +1,13 @@
+# Vérifications des exigences. Champs :
+#   id            VER-nnn
+#   method        test | analysis | inspection | demonstration
+#   requirements  liste d'identifiants d'exigences vérifiées
+#   status        planned | passed | failed
+#   reference     facultatif : test, protocole ou rapport (chemin dans le dépôt)
+#
+# [[verification]]
+# id = "VER-001"
+# method = "test"
+# requirements = ["SW-REQ-001"]
+# status = "planned"
+# reference = "tests/…"
