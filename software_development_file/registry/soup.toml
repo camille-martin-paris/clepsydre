@@ -1,0 +1,18 @@
+# Composants logiciels tiers (SOUP, IEC 62304 §5.3.3, §5.3.4, §7.1.2, §8.1.2).
+# Description détaillée : software_development_file/soup.md. Champs :
+#   id               SOUP-nnn
+#   name             nom du composant
+#   version          version exacte épinglée (pas d'intervalle, ni « latest », ni branche)
+#   usage            rôle dans le logiciel
+#   requirements     exigences de fonctionnement et de performance demandées au composant
+#   known_anomalies  anomalies connues pertinentes et date de leur dernière revue
+#
+# Aucun composant n'est retenu à ce jour.
+#
+# [[soup]]
+# id = "SOUP-001"
+# name = "…"
+# version = "1.2.3"
+# usage = "…"
+# requirements = ["SW-REQ-001"]
+# known_anomalies = "Revue du 2026-10-09 : …"
