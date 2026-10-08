@@ -15,7 +15,7 @@ SPDX-FileCopyrightText = "2026 Contributeurs du projet Clepsydre"
 SPDX-License-Identifier = "CC-BY-SA-4.0"
 
 [[annotations]]
-path = ["REUSE.toml", ".github/**"]
+path = ["REUSE.toml", ".github/**", ".clang-format", ".editorconfig", ".gitignore"]
 precedence = "closest"
 SPDX-FileCopyrightText = "2026 Contributeurs du projet Clepsydre"
 SPDX-License-Identifier = "EUPL-1.2"
