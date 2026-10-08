@@ -32,11 +32,11 @@ Les dirigeant·e·s de la communauté ont le droit et la responsabilité de supp
 
 ## Portée d'application
 
-Ce code de conduite s'applique à la fois au sein des espaces du projet ainsi que dans les espaces publics lorsqu'un individu représente officiellement le projet ou sa communauté. Font parties des exemples de représentation d'un projet ou d'une communauté l'utilisation d'une adresse électronique officielle, la publication sur les réseaux sociaux à l'aide d'un compte officiel ou le fait d'agir en tant que représentant·e désigné·e lors d'un événement en ligne ou hors-ligne.
+Ce code de conduite s'applique à la fois au sein des espaces du projet ainsi que dans les espaces publics lorsqu'un individu représente officiellement le projet ou sa communauté. Font partie des exemples de représentation d'un projet ou d'une communauté l'utilisation d'une adresse électronique officielle, la publication sur les réseaux sociaux à l'aide d'un compte officiel ou le fait d'agir en tant que représentant·e désigné·e lors d'un événement en ligne ou hors-ligne.
 
 ## Application
 
-Les cas de comportements abusifs, harcelants ou tout autre comportement inacceptables peuvent être signalés aux dirigeant·e·s de la communauté responsables de l'application du code de conduite à [ADRESSE DE SIGNALEMENT À FOURNIR PAR LA MAINTENEUSE].
+Les cas de comportements abusifs, harcelants ou tout autre comportement inacceptable peuvent être signalés aux dirigeant·e·s de la communauté responsables de l'application du code de conduite à [ADRESSE DE SIGNALEMENT À FOURNIR PAR LA MAINTENEUSE].
 Toutes les plaintes seront examinées et feront l'objet d'une enquête rapide et équitable.
 
 Tou·te·s les dirigeant·e·s de la communauté sont tenu·e·s de respecter la vie privée et la sécurité des personnes ayant signalé un incident.
@@ -55,7 +55,7 @@ Les dirigeant·e·s de communauté suivront ces directives d'application sur l'i
 
 **Impact communautaire** : un non-respect par un seul incident ou une série d'actions.
 
-**Conséquence** : un avertissement avec des conséquences dû à la poursuite du comportement. Aucune interaction avec les personnes concernées, y compris l'interaction non sollicitée avec celles et ceux qui sont chargé·e·s de l'application de ce code de conduite, pendant une période déterminée. Cela comprend le fait d'éviter les interactions dans les espaces communautaires ainsi que sur les canaux externes comme les médias sociaux. Le non-respect de ces conditions peut entraîner un bannissement temporaire ou permanent.
+**Conséquence** : un avertissement avec des conséquences dues à la poursuite du comportement. Aucune interaction avec les personnes concernées, y compris l'interaction non sollicitée avec celles et ceux qui sont chargé·e·s de l'application de ce code de conduite, pendant une période déterminée. Cela comprend le fait d'éviter les interactions dans les espaces communautaires ainsi que sur les canaux externes comme les médias sociaux. Le non-respect de ces conditions peut entraîner un bannissement temporaire ou permanent.
 
 ### 3. Bannissement temporaire
 
