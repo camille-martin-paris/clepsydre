@@ -42,7 +42,7 @@ L'article 5, paragraphe 5, du MDR permet à un établissement de santé de fabri
 - Les pompes à perfusion relèvent du 21 CFR 880.5725 (*Infusion pump*), classe II [S5]. Le code produit d'une pompe à perfusion générale est FRN [S6] ; *le code applicable dépendra de la conception retenue et est à confirmer.*
 - Voie probable : notification préalable 510(k) démontrant l'équivalence substantielle avec un dispositif déjà commercialisé [S6]. La FDA a publié des recommandations propres aux pompes à perfusion pour ces dossiers [S7].
 - Le système qualité relève du 21 CFR 820, qui intègre par référence l'ISO 13485:2016 depuis l'entrée en application du règlement QMSR le 2 février 2026 [S8].
-- Les exigences de cybersécurité de la section 524B du Federal Food, Drug, and Cosmetic Act s'appliquent aux « cyber devices » [S9]. *Leur application à Clepsydre, qui ne prévoit pas de connexion réseau pour perfuser (hypothèse H-08 de l'[usage prévu](intended-use.md)), est à confirmer.*
+- Les exigences de cybersécurité de la section 524B du Federal Food, Drug, and Cosmetic Act s'appliquent aux « cyber devices » [S9]. *Leur application à Clepsydre, qui ne prévoit pas de connexion réseau pour perfuser (hypothèse H-08 de l'usage prévu, [#2](https://github.com/camille-martin-paris/clepsydre/issues/2)), est à confirmer.*
 
 ## Normes de référence
 
