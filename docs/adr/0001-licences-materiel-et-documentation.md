@@ -70,7 +70,7 @@ La conformité pourra être vérifiée en CI avec `reuse lint` ([#20](https://gi
 - Les composants tiers intégrés au matériel (empreintes, modèles 3D de fabricants) doivent avoir une licence compatible ou être identifiés comme « composants disponibles » au sens de la CERN-OHL-S v2.
 - La réutilisation de la documentation impose l'attribution et le partage à l'identique.
 - L'EUPL-1.2 cite dans son annexe la CC BY-SA 3.0, pas la 4.0. Cette différence est sans effet tant que la documentation et le logiciel restent des œuvres distinctes ; tout projet de fusion d'un document dans le logiciel devra la réexaminer.
-- Aucune de ces licences ne vaut autorisation d'usage clinique ; voir l'[usage prévu](../intended-use.md) une fois publié.
+- Aucune de ces licences ne vaut autorisation d'usage clinique ; voir l'usage prévu ([#2](https://github.com/camille-martin-paris/clepsydre/issues/2)).
 
 ## Références
 
