@@ -32,6 +32,8 @@ La simulation constitue une première étape pour explorer les comportements de 
 
 Ces éléments décrivent les objectifs du projet, pas des fonctionnalités déjà livrées.
 
+La [trajectoire réglementaire](docs/regulatory-roadmap.md) identifie la classification probable du dispositif (classe IIb dans l'Union européenne, classe II aux États-Unis, à confirmer) et les normes qui orientent sa conception, sans revendiquer de conformité.
+
 ## Organisation proposée
 
 L'organisation s'inspire de [mddlog](https://github.com/ambroise-leclerc/mddlog) : présentation des capacités, décisions d'architecture explicites, documentation de développement et vérifications reproductibles. L'arborescence suivante servira de guide au fur et à mesure de l'ajout des premiers livrables.
