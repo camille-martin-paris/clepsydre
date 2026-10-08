@@ -15,7 +15,7 @@ Référence : IEC 62304, §8.
 
 ## Contrôle des modifications
 
-- Toute modification passe par une issue et une pull request vers `develop`, selon [CONTRIBUTING.md](../CONTRIBUTING.md).
+- Toute modification passe par une issue et une pull request vers `develop`, selon CONTRIBUTING.md ([#4](https://github.com/camille-martin-paris/clepsydre/issues/4)).
 - La pull request décrit l'effet sur les exigences, les risques et les SOUP ; elle est relue avant fusion.
 - `develop` et `main` sont protégées : pas de poussée directe ni forcée.
 - L'historique Git (commits signés `Signed-off-by`, pull requests, approbations) constitue l'historique des modifications.

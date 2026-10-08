@@ -9,7 +9,7 @@
 
 Ce plan s'applique à tout logiciel embarqué dans Clepsydre ou contribuant à sa sécurité : logiciel de commande, superviseur de sécurité, simulateur lorsqu'il sert de moyen de vérification, et outils qui produisent des preuves (vérificateur du registre, scripts d'essai).
 
-Usage visé : [docs/intended-use.md](../docs/intended-use.md). Classe de sécurité proposée : C ([justification](safety-classification.md)).
+Usage visé : `docs/intended-use.md` ([#2](https://github.com/camille-martin-paris/clepsydre/issues/2)). Classe de sécurité proposée : C ([justification](safety-classification.md)).
 
 ## Cycle de vie
 
@@ -38,7 +38,7 @@ Pour chaque incrément, les activités suivent l'ordre de l'IEC 62304, sans impo
 
 ## Normes, méthodes et outils
 
-- Langage : C++23. Conventions : [CONTRIBUTING.md](../CONTRIBUTING.md).
+- Langage : C++23. Conventions : CONTRIBUTING.md ([#4](https://github.com/camille-martin-paris/clepsydre/issues/4)).
 - Build, analyse statique, sanitizers et CI : [#19](https://github.com/camille-martin-paris/clepsydre/issues/19), [#20](https://github.com/camille-martin-paris/clepsydre/issues/20). Les outils et leurs versions sont épinglés.
 - Gestion des risques : ISO 14971.
 - Revue : chaque modification passe par une pull request relue (voir [rôles](#rôles-et-responsabilités)).

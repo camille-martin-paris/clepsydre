@@ -4,7 +4,7 @@ Référence : IEC 62304, §9.
 
 ## Signalement
 
-Tout problème (anomalie du logiciel, du matériel ou de la documentation, résultat d'essai non conforme, anomalie d'un SOUP) est consigné dans une issue créée avec le modèle « Anomalie ». Les vulnérabilités suivent le signalement privé décrit dans [CONTRIBUTING.md](../CONTRIBUTING.md).
+Tout problème (anomalie du logiciel, du matériel ou de la documentation, résultat d'essai non conforme, anomalie d'un SOUP) est consigné dans une issue créée avec le modèle « Anomalie ». Les vulnérabilités suivent le signalement privé décrit dans CONTRIBUTING.md ([#4](https://github.com/camille-martin-paris/clepsydre/issues/4)).
 
 ## Traitement
 
