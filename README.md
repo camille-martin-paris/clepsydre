@@ -8,6 +8,10 @@ Clepsydre vise à développer une pompe à perfusion dont le logiciel, les plans
 - **Open source** : code et documentation accessibles pour permettre l'étude, la revue et la contribution.
 - **Open hardware** : objectif de publier les schémas électroniques, les plans mécaniques, la nomenclature et les instructions d'assemblage.
 
+> [!CAUTION]
+> **Clepsydre ne doit pas être utilisé sur un être humain ni sur un animal.**
+> Aucune évaluation de conformité n'a abouti pour ce projet. Le logiciel, les plans matériels et la documentation sont fournis à des fins d'étude, de développement et d'essais sur banc uniquement, sans aucune garantie. Voir l'[usage prévu](docs/intended-use.md).
+
 [État du projet](#état-du-projet) · [Organisation](#organisation-proposée) · [Prise en main](#prise-en-main) · [Feuille de route](#feuille-de-route) · [Licence et participation](#licence-et-participation)
 
 ## État du projet
