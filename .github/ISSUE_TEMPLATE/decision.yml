@@ -1,0 +1,29 @@
+name: Décision
+description: Demander une décision d'architecture, à consigner dans une ADR.
+title: "ADR : "
+labels: ["décision"]
+body:
+  - type: textarea
+    id: contexte
+    attributes:
+      label: Contexte
+      description: Le problème à trancher et ses contraintes.
+    validations:
+      required: true
+  - type: textarea
+    id: options
+    attributes:
+      label: Options à évaluer
+    validations:
+      required: true
+  - type: textarea
+    id: criteres
+    attributes:
+      label: Critères de choix
+      description: Sécurité, coût, disponibilité, testabilité, licence…
+    validations:
+      required: true
+  - type: textarea
+    id: impacts
+    attributes:
+      label: Exigences et risques concernés

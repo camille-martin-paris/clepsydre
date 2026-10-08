@@ -1,0 +1,55 @@
+name: Anomalie
+description: Signaler un comportement incorrect du logiciel, du matériel ou de la documentation.
+title: "[Anomalie] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Clepsydre ne doit pas être utilisé sur un patient. Si l'anomalie concerne une vulnérabilité, utilisez le signalement privé.
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: Ce qui se passe, et ce qui était attendu.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Étapes de reproduction
+      placeholder: |
+        1. …
+        2. …
+    validations:
+      required: true
+  - type: input
+    id: revision
+    attributes:
+      label: Révision concernée
+      description: Commit, étiquette de version ou révision matérielle.
+    validations:
+      required: true
+  - type: dropdown
+    id: domaine
+    attributes:
+      label: Domaine
+      options:
+        - Logiciel
+        - Simulateur
+        - Électronique
+        - Mécanique
+        - Documentation
+        - Autre
+    validations:
+      required: true
+  - type: textarea
+    id: securite
+    attributes:
+      label: Effet possible sur la sécurité
+      description: Danger ou situation dangereuse que l'anomalie pourrait provoquer, s'il en existe.
+  - type: textarea
+    id: environnement
+    attributes:
+      label: Environnement
+      description: Système, compilateur, banc, journaux utiles.

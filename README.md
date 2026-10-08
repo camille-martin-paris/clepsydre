@@ -54,7 +54,7 @@ clepsydre/
 └── LICENSE
 ```
 
-Seuls `README.md` et `LICENSE` existent actuellement. Les répertoires seront créés avec leur contenu.
+Les répertoires sont créés au fur et à mesure, avec leur contenu.
 
 ## Prise en main
 
@@ -94,3 +94,5 @@ Le projet poursuit une démarche **open source et open hardware**. Chaque type d
 La licence de chaque fichier est déclarée dans [`REUSE.toml`](REUSE.toml) ou dans son en-tête SPDX, selon la [spécification REUSE](https://reuse.software/).
 
 Pour proposer une amélioration, signaler un problème ou discuter d'un choix de conception, utilisez les [issues GitHub](https://github.com/camille-martin-paris/clepsydre/issues). Les contributions peuvent porter sur le logiciel C++23, le matériel, la documentation ou les essais.
+
+Les règles de branche, de commit et de revue sont décrites dans [CONTRIBUTING.md](CONTRIBUTING.md). Les contributions sont soumises au [code de conduite](CODE_OF_CONDUCT.md) et au [certificat d'origine du développeur](https://developercertificate.org/) (`git commit -s`).
