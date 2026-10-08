@@ -1,0 +1,41 @@
+name: Exigence
+description: Proposer ou modifier une exigence système, logicielle ou matérielle.
+title: "[Exigence] "
+labels: ["exigences"]
+body:
+  - type: textarea
+    id: enonce
+    attributes:
+      label: Énoncé
+      description: Une seule exigence, vérifiable, formulée avec « doit ».
+    validations:
+      required: true
+  - type: textarea
+    id: justification
+    attributes:
+      label: Justification
+      description: Besoin utilisateur, risque, norme ou usage prévu dont elle découle.
+    validations:
+      required: true
+  - type: dropdown
+    id: niveau
+    attributes:
+      label: Niveau
+      options:
+        - Système
+        - Logiciel
+        - Matériel
+    validations:
+      required: true
+  - type: input
+    id: liens
+    attributes:
+      label: Exigences ou risques liés
+      description: Identifiants du registre de traçabilité, par exemple REQ-012, RISK-004.
+  - type: textarea
+    id: verification
+    attributes:
+      label: Méthode de vérification
+      description: Test, analyse, inspection ou démonstration, et critère d'acceptation.
+    validations:
+      required: true

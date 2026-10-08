@@ -1,0 +1,39 @@
+name: Essai
+description: Planifier un essai sur banc, une simulation ou une campagne de vérification.
+title: "[Essai] "
+labels: ["vérification"]
+body:
+  - type: textarea
+    id: objectif
+    attributes:
+      label: Objectif
+      description: Ce que l'essai doit démontrer.
+    validations:
+      required: true
+  - type: input
+    id: exigences
+    attributes:
+      label: Exigences vérifiées
+      description: Identifiants du registre de traçabilité.
+    validations:
+      required: true
+  - type: textarea
+    id: moyens
+    attributes:
+      label: Moyens d'essai
+      description: Banc, instruments et leur étalonnage, révision logicielle et matérielle.
+    validations:
+      required: true
+  - type: textarea
+    id: protocole
+    attributes:
+      label: Protocole
+      description: Étapes, nombre d'échantillons, conditions.
+    validations:
+      required: true
+  - type: textarea
+    id: acceptation
+    attributes:
+      label: Critères d'acceptation
+    validations:
+      required: true
