@@ -1,0 +1,21 @@
+# Licences des fichiers de Clepsydre, selon la spécification REUSE 3.3.
+# Décision : docs/adr/0001-licences-materiel-et-documentation.md
+version = 1
+
+[[annotations]]
+path = ["hardware/**"]
+precedence = "closest"
+SPDX-FileCopyrightText = "2026 Contributeurs du projet Clepsydre"
+SPDX-License-Identifier = "CERN-OHL-S-2.0"
+
+[[annotations]]
+path = ["docs/**", "software_development_file/**", "*.md"]
+precedence = "closest"
+SPDX-FileCopyrightText = "2026 Contributeurs du projet Clepsydre"
+SPDX-License-Identifier = "CC-BY-SA-4.0"
+
+[[annotations]]
+path = ["REUSE.toml", ".github/**"]
+precedence = "closest"
+SPDX-FileCopyrightText = "2026 Contributeurs du projet Clepsydre"
+SPDX-License-Identifier = "EUPL-1.2"
