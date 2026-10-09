@@ -67,7 +67,13 @@ gh repo clone camille-martin-paris/clepsydre
 cd clepsydre
 ```
 
-Le langage cible est **C++23**. La chaîne de compilation, les plateformes prises en charge et les commandes de test seront documentées lors de l'ajout du premier code. Aucune procédure de compilation n'est disponible à ce stade.
+Le langage cible est **C++23**, organisé en modules. Avec CMake 4.0 ou plus récent, Ninja et GCC 16.1 ou Clang 20 au minimum :
+
+```bash
+cmake --workflow --preset gcc   # configuration, compilation, édition de liens et tests
+```
+
+Compilateurs pris en charge, préréglages et outils de qualité : [docs/development/build.md](docs/development/build.md).
 
 ## Feuille de route
 
