@@ -14,17 +14,22 @@ if(NOT CMAKE_GENERATOR MATCHES "Ninja")
     message(FATAL_ERROR "Les modules C++ demandent le générateur Ninja (actuel : ${CMAKE_GENERATOR}).")
 endif()
 
-set(_clepsydre_minimum_gcc 14)
-set(_clepsydre_minimum_clang 18)
+# Planchers alignés sur mddlog, bibliothèque de journalisation envisagée (ADR #16) :
+# un projet qui l'intègre ne peut pas admettre des compilateurs qu'elle refuse.
+# - GCC 16.1 : GCC 15 ne sait pas relire le module std de libstdc++ à travers un second niveau
+#   de BMI ; GCC 16.2 a corrompu les BMI de mddlog (« failed to read compiled module cluster »).
+#   GCC 14 provoque en outre une erreur interne sur nos modules avec -fsanitize=address,undefined.
+# - Clang 20 : clang-tidy 18 ne sait pas charger les modules du projet.
 if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-    if(CMAKE_CXX_COMPILER_VERSION VERSION_LESS _clepsydre_minimum_gcc)
-        message(FATAL_ERROR "GCC ${_clepsydre_minimum_gcc} ou plus récent est requis "
-                            "(trouvé : ${CMAKE_CXX_COMPILER_VERSION}).")
+    if(CMAKE_CXX_COMPILER_VERSION VERSION_LESS 16.1)
+        message(FATAL_ERROR "GCC 16.1 ou plus récent est requis (trouvé : ${CMAKE_CXX_COMPILER_VERSION}).")
+    elseif(CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 16.2 AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS 16.3)
+        message(FATAL_ERROR "GCC 16.2 n'est pas admis : il corrompt les BMI des modules "
+                            "(constaté sur mddlog). Utiliser GCC 16.1 (trouvé : ${CMAKE_CXX_COMPILER_VERSION}).")
     endif()
 elseif(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
-    if(CMAKE_CXX_COMPILER_VERSION VERSION_LESS _clepsydre_minimum_clang)
-        message(FATAL_ERROR "Clang ${_clepsydre_minimum_clang} ou plus récent est requis "
-                            "(trouvé : ${CMAKE_CXX_COMPILER_VERSION}).")
+    if(CMAKE_CXX_COMPILER_VERSION VERSION_LESS 20)
+        message(FATAL_ERROR "Clang 20 ou plus récent est requis (trouvé : ${CMAKE_CXX_COMPILER_VERSION}).")
     endif()
 else()
     message(FATAL_ERROR "Compilateur non pris en charge : ${CMAKE_CXX_COMPILER_ID}. "

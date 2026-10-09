@@ -6,12 +6,14 @@ Ce document décrit la chaîne de build du logiciel : langage, compilateurs pris
 
 | Outil | Version minimale | Motif |
 | --- | --- | --- |
-| CMake | 3.28 | Modules C++ nommés pris en charge sans option expérimentale |
+| CMake | 4.0 | Plancher de [mddlog](https://github.com/ambroise-leclerc/mddlog), bibliothèque de journalisation envisagée ([#16](https://github.com/camille-martin-paris/clepsydre/issues/16)) |
 | Ninja | 1.11 | Seul générateur CMake qui gère les dépendances entre modules C++ |
-| GCC | 14 | Premier GCC dont la prise en charge des modules est utilisable par CMake |
-| Clang | 18 | Modules C++ et `clang-scan-deps` compatible avec CMake ; fournir `clang-scan-deps` de la même version |
+| GCC | 16.1 ; **16.2 refusé** | Plancher de mddlog : GCC 15 ne relit pas le module `std` de libstdc++ à travers un second niveau de BMI ; GCC 16.2 a corrompu les BMI de mddlog. GCC 14 provoque en outre une erreur interne sur nos modules avec `-fsanitize=address,undefined` (CI du 2026-10-09). |
+| Clang | 20 | Plancher de mddlog ; clang-tidy 18 ne charge pas les modules du projet (« module not found », CI du 2026-10-09). Fournir `clang-scan-deps` de la même version. |
 | clang-tidy | Même version majeure que Clang | Analyse statique ; doit lire les modules compilés par ce Clang |
 | clang-format | 18 | Formatage selon [`.clang-format`](../../.clang-format) |
+
+Ces planchers sont alignés sur ceux de mddlog afin qu'une intégration éventuelle n'oblige pas à les relever ; ils seront réexaminés par l'ADR [#16](https://github.com/camille-martin-paris/clepsydre/issues/16).
 
 Le langage est C++23 strict (`CMAKE_CXX_STANDARD 23`, sans extensions). Le code du projet est organisé en modules nommés (`export module clepsydre.…`). Les en-têtes de la bibliothèque standard sont inclus dans le fragment global des modules ; `import std;` n'est pas utilisé tant que sa prise en charge par CMake reste expérimentale.
 
@@ -21,10 +23,10 @@ Toute autre famille de compilateurs (MSVC, compilateurs embarqués) est refusée
 
 | Date | Système | Compilateurs | Résultat |
 | --- | --- | --- | --- |
-| 2026-10-09 | Ubuntu 26.04 | GCC 15.2 et 16.1, Clang 20, 21 et 22, clang-tidy 20 et 21, CMake 4.2, Ninja 1.13 | Configuration, compilation, édition de liens et tests réussis |
-| 2026-10-09 | Ubuntu 24.04, CI GitHub ([exécution 37905570284](https://github.com/camille-martin-paris/clepsydre/actions/runs/37905570284)) | GCC 14.2 et Clang 18.1.3 (versions minimales), CMake 3.31 | Configuration, compilation, édition de liens et tests réussis |
+| 2026-10-09 | Ubuntu 26.04 | GCC 16.1, Clang 20, 21 et 22, clang-tidy 20 et 21, CMake 4.2, Ninja 1.13 | Configuration, compilation, édition de liens et tests réussis |
+| 2026-10-09 | Ubuntu 26.04 | GCC 15.2 | Refusé à la configuration, comme attendu |
 
-La CI vérifie les versions minimales à chaque pull request (`.github/workflows/build.yml`).
+La CI vérifie les compilateurs planchers à chaque pull request (`.github/workflows/build.yml`), dans des images épinglées par empreinte : `gcc:16.1.0` (CMake 4.2.3 téléchargé et vérifié par SHA-256) et `ubuntu:26.04` (Clang 20, CMake 4.2.3).
 
 ## Commandes
 

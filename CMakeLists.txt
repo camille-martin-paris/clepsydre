@@ -1,8 +1,8 @@
 # SPDX-FileCopyrightText: 2026 Contributeurs du projet Clepsydre
 # SPDX-License-Identifier: EUPL-1.2
 
-# 3.28 : première version qui prend en charge les modules C++ nommés sans option expérimentale.
-cmake_minimum_required(VERSION 3.28)
+# 4.0 : plancher de mddlog, bibliothèque de journalisation envisagée (ADR #16).
+cmake_minimum_required(VERSION 4.0)
 
 project(Clepsydre
     VERSION 0.1.0
