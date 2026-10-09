@@ -11,7 +11,7 @@ Ce document décrit la chaîne de build du logiciel : langage, compilateurs pris
 | GCC | 16.1 ; **16.2 refusé** | Plancher de mddlog : GCC 15 ne relit pas le module `std` de libstdc++ à travers un second niveau de BMI ; GCC 16.2 a corrompu les BMI de mddlog. GCC 14 provoque en outre une erreur interne sur nos modules avec `-fsanitize=address,undefined` (CI du 2026-10-09). |
 | Clang | 20 | Plancher de mddlog ; clang-tidy 18 ne charge pas les modules du projet (« module not found », CI du 2026-10-09). Fournir `clang-scan-deps` de la même version. |
 | clang-tidy | Même version majeure que Clang | Analyse statique ; doit lire les modules compilés par ce Clang. La configuration contrôle la version du binaire retenu et refuse une version majeure différente. |
-| clang-format | 18 | Formatage selon [`.clang-format`](../../.clang-format) |
+| clang-format | 21.1.8 exactement | Formatage selon [`.clang-format`](../../.clang-format) ; deux versions différentes peuvent formater différemment |
 
 Ces planchers sont alignés sur ceux de mddlog afin qu'une intégration éventuelle n'oblige pas à les relever ; ils seront réexaminés par l'ADR [#16](https://github.com/camille-martin-paris/clepsydre/issues/16).
 
@@ -26,7 +26,7 @@ Toute autre famille de compilateurs (MSVC, compilateurs embarqués) est refusée
 | 2026-10-09 | Ubuntu 26.04 | GCC 16.1, Clang 20, 21 et 22, clang-tidy 20 et 21, CMake 4.2, Ninja 1.13 | Configuration, compilation, édition de liens et tests réussis |
 | 2026-10-09 | Ubuntu 26.04 | GCC 15.2 | Refusé à la configuration, comme attendu |
 
-La CI vérifie les compilateurs planchers à chaque pull request (`.github/workflows/build.yml`), dans des images épinglées par empreinte : `gcc:16.1.0` (CMake 4.2.3 téléchargé et vérifié par SHA-256) et `ubuntu:26.04` (Clang 20, CMake 4.2.3).
+La CI vérifie les compilateurs planchers à chaque pull request, dans des images épinglées par empreinte : `gcc:16.1.0` (CMake 4.2.3 téléchargé et vérifié par SHA-256) et `ubuntu:26.04` (Clang 20, CMake 4.2.3). Voir [Intégration continue](#intégration-continue).
 
 ## Commandes
 
@@ -56,11 +56,14 @@ Les préréglages appellent `g++` et `clang++`. Pour un compilateur suffixé par
 | `clang` | Clang | Debug | |
 | `clang-tidy` | Clang | Debug | clang-tidy exécuté sur chaque unité de traduction |
 | `gcc-release` | GCC | RelWithDebInfo | |
+| `gcc-asan`, `clang-asan` | GCC, Clang | Debug | AddressSanitizer et UndefinedBehaviorSanitizer |
+| `gcc-tsan`, `clang-tsan` | GCC, Clang | Debug | ThreadSanitizer |
 
 ## Qualité
 
 - **Avertissements** : l'ensemble défini dans [`cmake/ClepsydreToolchain.cmake`](../../cmake/ClepsydreToolchain.cmake) est traité comme des erreurs (`CLEPSYDRE_WARNINGS_AS_ERRORS`, activé par défaut).
-- **Formatage** : `cmake --build --preset gcc --target clepsydre_format_check` échoue si un fichier n'est pas formaté ; `clepsydre_format` le reformate.
+- **Formatage** : `cmake --build --preset gcc --target clepsydre_format_check` échoue si un fichier n'est pas formaté ; `clepsydre_format` le reformate. La CI utilise clang-format 21.1.8 ; pour obtenir la même version localement : `uvx --from clang-format==21.1.8 clang-format -i <fichiers>`.
+- **Sanitizers** : `CLEPSYDRE_SANITIZERS` accepte `address`, `undefined` et `thread`, séparés par des virgules ; `thread` et `address` sont incompatibles. Toute erreur détectée interrompt le programme (`-fno-sanitize-recover=all`), donc fait échouer le test.
 - **Analyse statique** : `cmake --workflow` n'est pas disponible pour `clang-tidy` ; utiliser `cmake --preset clang-tidy && cmake --build --preset clang-tidy`. Toute remarque est une erreur. Les vérifications exclues sont justifiées dans [`.clang-tidy`](../../.clang-tidy).
 
 ### Limites connues de clang-tidy avec les modules
@@ -71,3 +74,31 @@ Les préréglages appellent `g++` et `clang++`. Pour un compilateur suffixé par
 ## Tests
 
 Les tests sont des exécutables enregistrés dans CTest par `clepsydre_add_test` (voir [`tests/CMakeLists.txt`](../../tests/CMakeLists.txt)). Un test réussit s'il effectue au moins une vérification et qu'aucune n'échoue. Le support minimal [`tests/support/expect.hpp`](../../tests/support/expect.hpp) évite toute dépendance externe ; le choix d'un cadriciel de test sera consigné avec l'épinglage des dépendances ([#22](https://github.com/camille-martin-paris/clepsydre/issues/22)).
+
+## Intégration continue
+
+Le workflow [`.github/workflows/ci.yml`](../../.github/workflows/ci.yml) s'exécute sur chaque pull request et sur chaque poussée vers `develop` et `main`.
+
+| Tâche | Contenu | Phases publiées séparément |
+| --- | --- | --- |
+| `build (<compilateur>, <variante>)` | GCC 16.1 et Clang 20 (planchers), chacun en `debug`, `asan-ubsan` et `tsan` : six combinaisons, dans les images épinglées | Configuration, compilation, édition de liens, tests ; un tableau de résultats par tâche dans le résumé de l'exécution |
+| `format` | clang-format 21.1.8 sur tous les fichiers C++ suivis par Git | — |
+| `clang-tidy` | Clang 20 et clang-tidy 20 (image `ubuntu:26.04`), toute remarque bloquante | Configuration, analyse |
+| `licences` | `reuse lint` (reuse 6.2.0) | — |
+| `registry` ([`registry.yml`](../../.github/workflows/registry.yml)) | Tests du vérificateur et cohérence du registre de traçabilité | Tests, vérification |
+
+Les images sont épinglées par empreinte, mais les paquets qu'`apt` y ajoute (Ninja, Clang 20, clang-tidy 20, CMake de l'image `ubuntu:26.04`) proviennent de dépôts évolutifs : deux exécutions peuvent installer des versions différentes. Chaque tâche `build` et `clang-tidy` consigne donc dans le résumé de l'exécution la version de CMake et la liste complète des paquets installés avec leur version. La reproductibilité de ces installations est suivie dans [#89](https://github.com/camille-martin-paris/clepsydre/issues/89).
+
+La matrice de traçabilité générée s'ajoutera à la tâche `registry` ([#11](https://github.com/camille-martin-paris/clepsydre/issues/11)).
+
+Réglages d'exécution des sanitizers en CI : `halt_on_error=1` pour les trois, détection des fuites mémoire avec AddressSanitizer. Par précaution, les conteneurs sont lancés sans filtre seccomp : ThreadSanitizer peut désactiver l'ASLR par `personality()`, appel que le profil seccomp par défaut de Docker restreint. La nécessité de ce réglage n'a pas été démontrée.
+
+### Contre-épreuves des sanitizers
+
+Pour vérifier que les variantes à sanitizers détectent bien les défauts, un programme d'essai temporaire (non versionné) a été exécuté le 2026-10-09 avec GCC 16.1 et Clang 20.1 :
+
+| Défaut injecté | Variante | Diagnostic | Code de sortie |
+| --- | --- | --- | --- |
+| Lecture hors d'un `std::vector` | `asan-ubsan` | `AddressSanitizer: heap-buffer-overflow` | 1 |
+| Dépassement d'un entier signé | `asan-ubsan` | `runtime error: signed integer overflow` | 1 |
+| Incrément concurrent sans synchronisation | `tsan` | `ThreadSanitizer: data race` | 66 |

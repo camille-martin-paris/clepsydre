@@ -1,0 +1,161 @@
+# Intégration continue du logiciel : build et tests avec sanitizers, formatage,
+# analyse statique et licences. La traçabilité est vérifiée par registry.yml.
+# Chaque phase est un pas distinct ; le résumé de chaque tâche publie son résultat.
+# Les images sont épinglées par empreinte : changer de version est une modification délibérée.
+name: CI
+
+on:
+  push:
+    branches: [develop, main]
+  pull_request:
+
+permissions:
+  contents: read
+
+env:
+  CMAKE_VERSION: "4.2.3"
+  CMAKE_SHA256: 5bb505d5e0cca0480a330f7f27ccf52c2b8b5214c5bba97df08899f5ef650c23
+  CLANG_FORMAT_VERSION: "21.1.8"
+  REUSE_VERSION: "6.2.0"
+
+jobs:
+  build:
+    name: build (${{ matrix.compiler.name }}, ${{ matrix.variant.name }})
+    runs-on: ubuntu-24.04
+    container:
+      image: ${{ matrix.compiler.image }}
+      # ThreadSanitizer peut désactiver l'ASLR par personality(), appel que le profil seccomp
+      # par défaut de Docker restreint ; précaution, non démontrée nécessaire.
+      options: --security-opt seccomp=unconfined
+    strategy:
+      fail-fast: false
+      matrix:
+        compiler:
+          - name: gcc-16.1
+            image: gcc:16.1.0@sha256:d8dec2859f964120119abd1380563247bf02c5d64f5bcdea496dbace1f48c6f0
+            cxx: g++
+          - name: clang-20
+            image: ubuntu:26.04@sha256:f144425ff09be612d6d9ad965196e9cdc23dae1f42110a8a11a3e9a8198759f7
+            cxx: clang++-20
+        variant:
+          - { name: debug, sanitizers: "" }
+          - { name: asan-ubsan, sanitizers: "address,undefined" }
+          - { name: tsan, sanitizers: "thread" }
+    env:
+      ASAN_OPTIONS: detect_leaks=1:halt_on_error=1
+      UBSAN_OPTIONS: print_stacktrace=1:halt_on_error=1
+      TSAN_OPTIONS: halt_on_error=1:second_deadlock_stack=1
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - name: Outils
+        run: |
+          apt-get update
+          if [ "${{ matrix.compiler.cxx }}" = "g++" ]; then
+            apt-get install -y --no-install-recommends ninja-build
+            archive="cmake-${CMAKE_VERSION}-linux-x86_64.tar.gz"
+            curl -fsSLo "$RUNNER_TEMP/$archive" "https://github.com/Kitware/CMake/releases/download/v${CMAKE_VERSION}/$archive"
+            echo "${CMAKE_SHA256}  $RUNNER_TEMP/$archive" | sha256sum --check
+            tar -xzf "$RUNNER_TEMP/$archive" -C /opt
+            ln -sf "/opt/cmake-${CMAKE_VERSION}-linux-x86_64/bin/cmake" /usr/local/bin/cmake
+            ln -sf "/opt/cmake-${CMAKE_VERSION}-linux-x86_64/bin/ctest" /usr/local/bin/ctest
+          else
+            apt-get install -y --no-install-recommends cmake ninja-build clang-20 clang-tools-20 libclang-rt-20-dev
+          fi
+          cmake --version | head -1
+          ${{ matrix.compiler.cxx }} --version | head -1
+      - name: Versions installées
+        # apt installe depuis des dépôts évolutifs : l'empreinte de l'image ne fige pas les paquets
+        # ajoutés. Leurs versions sont consignées dans le résumé ; reproductibilité suivie dans #89.
+        run: |
+          {
+            echo "<details><summary>Paquets installés (${{ github.job }}, ${{ matrix.compiler.name }}, ${{ matrix.variant.name }})</summary>"
+            echo
+            echo '```'
+            cmake --version | head -1
+            dpkg-query -W -f='${Package}=${Version}\n'
+            echo '```'
+            echo "</details>"
+          } >> "$GITHUB_STEP_SUMMARY"
+      - name: Configuration
+        id: configure
+        run: >
+          cmake -S . -B build/ci -G Ninja -DCMAKE_BUILD_TYPE=Debug
+          -DCMAKE_CXX_COMPILER=${{ matrix.compiler.cxx }}
+          -DCLEPSYDRE_SANITIZERS=${{ matrix.variant.sanitizers }}
+      - name: Compilation
+        id: compile
+        run: cmake --build build/ci --target clepsydre_compile
+      - name: Édition de liens
+        id: link
+        run: cmake --build build/ci
+      - name: Tests
+        id: test
+        run: ctest --test-dir build/ci --output-on-failure --no-tests=error
+      - name: Résumé
+        if: always()
+        run: |
+          {
+            echo "### build (${{ matrix.compiler.name }}, ${{ matrix.variant.name }})"
+            echo "| Phase | Résultat |"
+            echo "| --- | --- |"
+            echo "| Configuration | ${{ steps.configure.outcome }} |"
+            echo "| Compilation | ${{ steps.compile.outcome }} |"
+            echo "| Édition de liens | ${{ steps.link.outcome }} |"
+            echo "| Tests | ${{ steps.test.outcome }} |"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  format:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - name: Formatage
+        run: |
+          git ls-files '*.cpp' '*.cppm' '*.hpp' > sources.txt
+          pipx run --spec "clang-format==${CLANG_FORMAT_VERSION}" clang-format --version
+          xargs -a sources.txt pipx run --spec "clang-format==${CLANG_FORMAT_VERSION}" \
+            clang-format --dry-run --Werror
+
+  clang-tidy:
+    runs-on: ubuntu-24.04
+    container: ubuntu:26.04@sha256:f144425ff09be612d6d9ad965196e9cdc23dae1f42110a8a11a3e9a8198759f7
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - name: Outils
+        run: |
+          apt-get update
+          apt-get install -y --no-install-recommends cmake ninja-build clang-20 clang-tools-20 clang-tidy-20
+          clang-tidy-20 --version | head -2
+      - name: Versions installées
+        # apt installe depuis des dépôts évolutifs : l'empreinte de l'image ne fige pas les paquets
+        # ajoutés. Leurs versions sont consignées dans le résumé ; reproductibilité suivie dans #89.
+        run: |
+          {
+            echo "<details><summary>Paquets installés (${{ github.job }})</summary>"
+            echo
+            echo '```'
+            cmake --version | head -1
+            dpkg-query -W -f='${Package}=${Version}\n'
+            echo '```'
+            echo "</details>"
+          } >> "$GITHUB_STEP_SUMMARY"
+      - name: Configuration
+        run: >
+          cmake -S . -B build/tidy -G Ninja -DCMAKE_BUILD_TYPE=Debug
+          -DCMAKE_CXX_COMPILER=clang++-20 -DCLEPSYDRE_CLANG_TIDY=ON
+      - name: Analyse statique
+        run: cmake --build build/tidy
+
+  licences:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - name: Conformité REUSE
+        run: pipx run "reuse==${REUSE_VERSION}" lint
