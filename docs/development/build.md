@@ -82,10 +82,10 @@ Chaque dépendance du build et de la CI est épinglée par **révision complète
 | Dépendance | Épinglage | Où |
 | --- | --- | --- |
 | Action GitHub | Commit complet (40 caractères), version en commentaire | `.github/workflows/` |
-| Image de conteneur | Empreinte SHA-256 | `.github/workflows/` |
+| Image de conteneur (dont `fsfe/reuse:6.2.0` pour la tâche `licences`) | Empreinte SHA-256 | `.github/workflows/` |
 | Paquets apt (image `ubuntu:26.04`) | Instantané daté de l'archive Ubuntu (`APT_SNAPSHOT`), installé par [`tools/ci/apt-install.sh`](../../tools/ci/apt-install.sh) ; aucun appel direct à `apt` | `ci.yml` |
 | Archive téléchargée (CMake, Ninja) | Version exacte ; SHA-256 vérifié par `sha256sum --check` dans le même pas | `ci.yml` |
-| Outils Python (clang-format, reuse) | Verrou donnant la version exacte et les empreintes de toutes les dépendances, installé par `pip --require-hashes --only-binary=:all:` | [`tools/requirements/`](../../tools/requirements/) |
+| Outils Python (clang-format) | Verrou donnant la version exacte et les empreintes de toutes les dépendances, installé par `pip --require-hashes --only-binary=:all:` | [`tools/requirements/`](../../tools/requirements/) |
 | Python des tâches | Version complète X.Y.Z dans `actions/setup-python` | `.github/workflows/` |
 | Dépendance CMake (`FetchContent`, `ExternalProject`) | `GIT_TAG` de commit complet ou `URL_HASH SHA256` ; aucune à ce jour | `CMakeLists.txt`, `cmake/` |
 
@@ -98,7 +98,7 @@ L'instantané n'est servi qu'en HTTPS, et l'image de base n'a pas de certificats
   ```bash
   uv pip compile --generate-hashes --exclude-newer <date ISO, il y a 14 jours> \
     --python-version 3.12 --python-platform x86_64-manylinux_2_28 \
-    tools/requirements/reuse.in -o tools/requirements/reuse.txt
+    tools/requirements/clang-format.in -o tools/requirements/clang-format.txt
   ```
 
 - Paquets apt : avancer `APT_SNAPSHOT` dans `ci.yml`.
