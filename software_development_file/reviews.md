@@ -41,6 +41,7 @@ Ces traces établissent la responsabilité et l'autorisation des personnes nomm�
 
 | Date | Personne | Contributions | Attestation | Limite |
 | --- | --- | --- | --- | --- |
-| 2026-10-09 | Ambroise Leclerc | Contributions assistées des PR #83 à #88 | « Je confirme que chaque contribution assistée a été relue et acceptée par moi ou par Camille. » | L'attestation ne précise pas, pour chaque contribution, laquelle des deux personnes l'a lue. Elle n'engage Camille Martin que si celle-ci la confirme par sa propre entrée. |
+| 2026-10-09 | Ambroise Leclerc | Contributions assistées des PR #83 à #88 | « Je confirme que chaque contribution assistée a été relue et acceptée par moi ou par Camille. » | L'attestation ne précise pas, pour chaque contribution, laquelle des deux personnes l'a lue ; voir l'entrée suivante pour Camille Martin. |
+| 2026-10-09 | Camille Martin | Dossier initial et PR #83 à #88 | « Je confirme avoir personnellement relu et accepté les contributions concernées par le dossier initial et les PR #83 à #88. Cette confirmation atteste ma lecture personnelle, en complément des analyses assistées par Codex et des approbations exécutées à ma demande. » ([commentaire sur #90](https://github.com/camille-martin-paris/clepsydre/pull/90#issuecomment-6077223597)) | La décision d'acceptation du dossier reste assortie des réserves R1 à R3. |
 
 Ces assistants ne sont pas qualifiés ; leur usage relève de la réserve R3. Le projet vise à les remplacer par une assistance locale, avec des LLM à poids ouverts dont l'aptitude aux usages du projet est qualifiée ; voir le [plan de développement](development-plan.md#assistance-par-llm).
