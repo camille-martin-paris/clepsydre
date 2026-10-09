@@ -77,6 +77,9 @@ Types, dans l'ordre de priorité du plan : **Conception** (conception intrinsèq
 
 Ces exigences, au statut `draft`, traduisent les mesures proposées. La spécification des exigences ([#10](https://github.com/camille-martin-paris/clepsydre/issues/10)) les complétera, fixera leurs seuils et les reliera aux besoins UN-nn.
 
+> [!NOTE]
+> Le tableau reproduit les énoncés de la révision A de cette analyse. Les énoncés en vigueur, avec leurs seuils, sont ceux du registre et de la [spécification des exigences](requirements-specification.md).
+
 | Exigence | Intitulé | Énoncé (statut : draft) |
 | --- | --- | --- |
 | SYS-REQ-001 | Supervision indépendante du volume délivré | Un canal de sécurité indépendant du canal de commande doit mesurer le volume délivré et détecter un écart au volume programmé supérieur à un seuil à définir (#10). |

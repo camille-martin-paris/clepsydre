@@ -1,5 +1,5 @@
 # Exigences système (SYS-REQ-nnn), logicielles (SW-REQ-nnn) et matérielles (HW-REQ-nnn).
-# Rédaction : issue #10. Champs :
+# Spécification : docs/requirements/requirements-specification.md (#10). Champs :
 #   id      identifiant unique
 #   title   intitulé court
 #   text    énoncé vérifiable, formulé avec « doit »
@@ -16,209 +16,426 @@
 [[requirement]]
 id = "SYS-REQ-001"
 title = "Supervision indépendante du volume délivré"
-text = "Un canal de sécurité indépendant du canal de commande doit mesurer le volume délivré et détecter un écart au volume programmé supérieur à un seuil à définir (#10)."
-source = "Mesure de maîtrise CTRL-001 ; docs/requirements/preliminary-hazard-analysis.md"
+text = "Un canal de sécurité indépendant du canal de commande doit mesurer le volume délivré et placer la pompe en état sûr lorsque l'écart au volume attendu dépasse le plus grand de 10 % du volume attendu et 0,5 mL."
+source = "Mesure CTRL-001 (RISK-001, RISK-012)"
 status = "draft"
 
 [[requirement]]
 id = "SYS-REQ-002"
 title = "État sûr"
-text = "Sur détection d'une condition dangereuse, la pompe doit arrêter l'actionneur, maintenir le dispositif anti-écoulement libre actif et déclencher une alarme de priorité haute."
-source = "Mesure de maîtrise CTRL-001 ; docs/requirements/preliminary-hazard-analysis.md"
+text = "Sur détection d'une condition dangereuse, la pompe doit, en 1 s au plus, arrêter l'actionneur, maintenir le dispositif anti-écoulement libre actif et déclencher une alarme de priorité haute."
+source = "Mesure CTRL-001 (RISK-001, RISK-012)"
 status = "draft"
 
 [[requirement]]
 id = "SYS-REQ-003"
 title = "Précision de débit"
-text = "La pompe doit délivrer le débit programmé avec une précision à définir (hypothèse H-04 : ± 5 % en régime établi), mesurée selon la méthode de l'IEC 60601-2-24."
-source = "Mesure de maîtrise CTRL-002 ; docs/requirements/preliminary-hazard-analysis.md"
+text = "La pompe doit délivrer le débit programmé avec une erreur de ± 5 % au plus en régime établi, aux débits d'essai de l'IEC 60601-2-24, mesurée selon la méthode de cette norme (courbes en trompette publiées)."
+source = "Mesure CTRL-002 (RISK-001, RISK-002) ; usage prévu H-04 ; IEC 60601-2-24"
 status = "draft"
 
 [[requirement]]
 id = "SYS-REQ-004"
 title = "Actionneur inactif"
-text = "La pompe doit détecter, dans un délai à définir (#10), que l'actionneur ne délivre pas alors qu'une perfusion est en cours, et déclencher une alarme."
-source = "Mesure de maîtrise CTRL-003 ; docs/requirements/preliminary-hazard-analysis.md"
+text = "La pompe doit détecter qu'un actionneur ne délivre pas alors qu'une perfusion est en cours, au plus tard 60 s après le temps nécessaire pour délivrer 0,05 mL au débit programmé, et déclencher une alarme de priorité haute."
+source = "Mesure CTRL-003 (RISK-002)"
 status = "draft"
 
 [[requirement]]
 id = "SYS-REQ-005"
 title = "Anti-écoulement libre"
 text = "Aucun écoulement libre ne doit être possible lorsque le consommable est installé, retiré, ou que la porte est ouverte."
-source = "Mesure de maîtrise CTRL-004 ; docs/requirements/preliminary-hazard-analysis.md"
+source = "Mesure CTRL-004 (RISK-003) ; UN-04 ; IEC 60601-2-24"
 status = "draft"
 
 [[requirement]]
 id = "SYS-REQ-006"
 title = "Porte et consommable"
-text = "La pompe doit refuser de démarrer, ou arrêter la perfusion et alarmer, si la porte est ouverte ou si le consommable est absent ou mal positionné."
-source = "Mesure de maîtrise CTRL-005 ; docs/requirements/preliminary-hazard-analysis.md"
+text = "La pompe doit refuser de démarrer, ou arrêter la perfusion et déclencher une alarme de priorité haute, si la porte est ouverte ou si le consommable est absent ou mal positionné."
+source = "Mesure CTRL-005 (RISK-002, RISK-003) ; UN-04"
 status = "draft"
 
 [[requirement]]
 id = "SYS-REQ-007"
 title = "Air dans la ligne"
-text = "La pompe doit détecter une bulle d'air de volume supérieur à un seuil à définir, ainsi qu'un volume d'air cumulé supérieur à un seuil à définir, et placer la pompe en état sûr."
-source = "Mesure de maîtrise CTRL-006 ; docs/requirements/preliminary-hazard-analysis.md"
+text = "La pompe doit détecter une bulle d'air unitaire d'au moins 50 µL et un volume d'air cumulé d'au moins 1 mL sur 15 min, puis placer la pompe en état sûr. Ces seuils ne peuvent être configurés qu'à la baisse."
+source = "Mesure CTRL-006 (RISK-004) ; UN-06 ; IEC 60601-2-24"
 status = "draft"
 
 [[requirement]]
 id = "SYS-REQ-008"
 title = "Délai d'alarme d'occlusion"
-text = "La pompe doit déclencher l'alarme d'occlusion aval dans un délai maximal à définir pour chaque débit de référence, mesuré selon l'IEC 60601-2-24."
-source = "Mesure de maîtrise CTRL-007 ; docs/requirements/preliminary-hazard-analysis.md"
+text = "Au seuil de pression par défaut, la pompe doit déclencher l'alarme d'occlusion aval en 30 min au plus à 1 mL/h et en 2 min au plus à 25 mL/h, délais mesurés selon l'IEC 60601-2-24 et publiés avec le seuil de pression."
+source = "Mesure CTRL-007 (RISK-005) ; UN-06 ; IEC 60601-2-24"
 status = "draft"
 
 [[requirement]]
 id = "SYS-REQ-009"
 title = "Bolus post-occlusion"
-text = "Le volume du bolus libéré à la levée d'une occlusion doit rester inférieur à un seuil à définir."
-source = "Mesure de maîtrise CTRL-008 ; docs/requirements/preliminary-hazard-analysis.md"
+text = "Le volume libéré à la levée d'une occlusion aval, mesuré selon l'IEC 60601-2-24 au seuil de pression le plus élevé, doit rester inférieur à 0,2 mL."
+source = "Mesure CTRL-008 (RISK-006) ; UN-09 ; IEC 60601-2-24"
 status = "draft"
 
 [[requirement]]
 id = "SYS-REQ-010"
 title = "Rebond de touche"
 text = "Un appui sur une touche ne doit produire qu'une seule saisie, quels que soient les rebonds du contact."
-source = "Mesure de maîtrise CTRL-009 ; docs/requirements/preliminary-hazard-analysis.md"
+source = "Mesure CTRL-009 (RISK-007) ; UN-03"
 status = "draft"
 
 [[requirement]]
 id = "SYS-REQ-011"
 title = "Récapitulatif et confirmation"
 text = "Avant le démarrage, la pompe doit afficher un récapitulatif (médicament, concentration, débit, volume, durée) et exiger une confirmation explicite distincte de la saisie."
-source = "Mesure de maîtrise CTRL-009 ; docs/requirements/preliminary-hazard-analysis.md"
+source = "Mesure CTRL-009 (RISK-007) ; UN-01"
 status = "draft"
 
 [[requirement]]
 id = "SYS-REQ-012"
 title = "Limites de dose"
 text = "La pompe doit refuser toute programmation hors des limites dures du médicament et exiger une confirmation spécifique au-delà des limites souples."
-source = "Mesure de maîtrise CTRL-010 ; docs/requirements/preliminary-hazard-analysis.md"
+source = "Mesure CTRL-010 (RISK-007, RISK-008, RISK-009) ; UN-03"
 status = "draft"
 
 [[requirement]]
 id = "SYS-REQ-013"
 title = "Affichage des unités"
 text = "Chaque valeur affichée doit être accompagnée de son unité ; le médicament, la concentration et le débit doivent rester affichés pendant la perfusion."
-source = "Mesure de maîtrise CTRL-011 ; docs/requirements/preliminary-hazard-analysis.md"
+source = "Mesure CTRL-011 (RISK-008) ; UN-02"
 status = "draft"
 
 [[requirement]]
 id = "SYS-REQ-014"
 title = "Bolus et purge bornés"
 text = "Le bolus et la purge doivent être des commandes distinctes. Le volume et le débit d'un bolus doivent être bornés par les limites configurées pour le médicament ; ceux d'une purge, par des limites propres à la purge, qui ne peuvent servir à administrer un bolus. La purge doit être refusée une fois la perfusion démarrée."
-source = "Mesure de maîtrise CTRL-012 ; docs/requirements/preliminary-hazard-analysis.md"
+source = "Mesure CTRL-012 (RISK-009) ; UN-03, UN-05"
 status = "draft"
 
 [[requirement]]
 id = "SYS-REQ-015"
 title = "Bascule d'alimentation"
-text = "La perte de l'alimentation secteur ne doit pas interrompre ni modifier la perfusion en cours tant que la batterie n'est pas épuisée."
-source = "Mesure de maîtrise CTRL-013 ; docs/requirements/preliminary-hazard-analysis.md"
+text = "La perte de l'alimentation secteur ne doit pas interrompre ni modifier la perfusion en cours tant que la batterie n'est pas épuisée ; la bascule doit être signalée."
+source = "Mesure CTRL-013 (RISK-010) ; UN-11"
 status = "draft"
 
 [[requirement]]
 id = "SYS-REQ-016"
 title = "Alarmes d'alimentation"
-text = "La pompe doit déclencher une alarme d'autonomie faible au moins à une durée à définir avant l'épuisement, puis une alarme d'autonomie épuisée avant l'arrêt."
-source = "Mesure de maîtrise CTRL-013 ; docs/requirements/preliminary-hazard-analysis.md"
+text = "La pompe doit déclencher une alarme d'autonomie faible au moins 30 min avant l'épuisement, puis une alarme de priorité haute d'autonomie épuisée au moins 5 min avant l'arrêt de la perfusion."
+source = "Mesure CTRL-013 (RISK-010) ; UN-11 ; IEC 60601-2-24"
 status = "draft"
 
 [[requirement]]
 id = "SYS-REQ-017"
 title = "Surveillance du processeur"
 text = "Un chien de garde indépendant et des autotests du processeur et des mémoires doivent placer la pompe en état sûr en cas de défaillance détectée."
-source = "Mesure de maîtrise CTRL-014 ; docs/requirements/preliminary-hazard-analysis.md"
+source = "Mesure CTRL-014 (RISK-001, RISK-012)"
 status = "draft"
 
 [[requirement]]
 id = "SYS-REQ-018"
 title = "Persistance du journal"
 text = "Un événement de sécurité ne doit être considéré comme enregistré qu'après son écriture confirmée sur un support durable."
-source = "Mesure de maîtrise CTRL-015 ; docs/requirements/preliminary-hazard-analysis.md"
+source = "Mesure CTRL-015 (RISK-011) ; UN-16"
 status = "draft"
 
 [[requirement]]
 id = "SYS-REQ-019"
 title = "Intégrité du journal"
 text = "Toute altération, suppression ou retour arrière du journal d'événements doit être détectable lors de sa vérification, sur l'appareil ou hors de l'appareil."
-source = "Mesure de maîtrise CTRL-015 ; docs/requirements/preliminary-hazard-analysis.md"
+source = "Mesure CTRL-015 (RISK-011) ; UN-16"
 status = "draft"
 
 [[requirement]]
 id = "SYS-REQ-020"
 title = "Alarme de repli"
-text = "Une alarme technique doit retentir même si le processeur principal est défaillant."
-source = "Mesure de maîtrise CTRL-016 ; docs/requirements/preliminary-hazard-analysis.md"
+text = "Une alarme technique sonore doit retentir même si le processeur principal est défaillant."
+source = "Mesure CTRL-016 (RISK-012, RISK-014)"
 status = "draft"
 
 [[requirement]]
 id = "SYS-REQ-021"
 title = "Priorités et signaux d'alarme"
-text = "Les alarmes doivent être classées par priorité et signalées par des signaux visuels et sonores distincts, selon l'IEC 60601-1-8."
-source = "Mesure de maîtrise CTRL-017 ; docs/requirements/preliminary-hazard-analysis.md"
+text = "Chaque condition d'alarme doit avoir la priorité fixée par le catalogue des alarmes de ce document et être signalée par les signaux visuels et sonores de cette priorité selon l'IEC 60601-1-8 ; une alarme de priorité supérieure ne doit jamais être masquée par une alarme de priorité inférieure."
+source = "Mesure CTRL-017 (RISK-013, RISK-014) ; UN-06, UN-07 ; IEC 60601-1-8"
 status = "draft"
 
 [[requirement]]
 id = "SYS-REQ-022"
 title = "Fausses alarmes"
-text = "Le taux de fausses alarmes interrompant la perfusion doit être mesuré et rester inférieur à une valeur à définir."
-source = "Mesure de maîtrise CTRL-017 ; docs/requirements/preliminary-hazard-analysis.md"
+text = "Le taux d'alarmes interrompant à tort la perfusion doit rester inférieur à 1 pour 100 h de perfusion, mesuré sur banc et pendant l'évaluation formative."
+source = "Mesure CTRL-017 (RISK-013, RISK-014)"
 status = "draft"
 
 [[requirement]]
 id = "SYS-REQ-023"
 title = "Verrouillage et rôles"
-text = "La pompe doit permettre de verrouiller l'interface pendant une perfusion et réserver les fonctions de configuration aux utilisateurs authentifiés selon leur rôle."
-source = "Mesure de maîtrise CTRL-018 ; docs/requirements/preliminary-hazard-analysis.md"
+text = "La pompe doit permettre de verrouiller l'interface pendant une perfusion et réserver les fonctions de configuration et de maintenance aux utilisateurs authentifiés selon leur rôle."
+source = "Mesure CTRL-018 (RISK-015, RISK-019) ; UN-12, UN-14"
 status = "draft"
 
 [[requirement]]
 id = "SYS-REQ-024"
 title = "Identification à distance"
-text = "Pendant une perfusion, l'état, le médicament et le débit doivent être lisibles à une distance à définir."
-source = "Mesure de maîtrise CTRL-019 ; docs/requirements/preliminary-hazard-analysis.md"
+text = "Pendant une perfusion, l'état de la pompe, le médicament et le débit doivent être lisibles à 3 m sous l'éclairage d'une chambre d'hospitalisation."
+source = "Mesure CTRL-019 (RISK-016) ; UN-02"
 status = "draft"
 
 [[requirement]]
 id = "SYS-REQ-025"
 title = "Intégrité de la bibliothèque"
 text = "La pompe doit vérifier l'intégrité et l'origine de la bibliothèque de médicaments avant de l'utiliser et afficher sa version."
-source = "Mesure de maîtrise CTRL-022 ; docs/requirements/preliminary-hazard-analysis.md"
+source = "Mesure CTRL-022 (RISK-019, RISK-020) ; UN-14"
 status = "draft"
 
 [[requirement]]
 id = "SYS-REQ-026"
 title = "Intégrité du logiciel"
 text = "La pompe ne doit exécuter qu'un logiciel dont l'intégrité et l'origine ont été vérifiées, et une mise à jour interrompue ne doit pas laisser la pompe dans un état utilisable non vérifié."
-source = "Mesure de maîtrise CTRL-022 ; docs/requirements/preliminary-hazard-analysis.md"
+source = "Mesure CTRL-022 (RISK-019, RISK-020)"
 status = "draft"
 
 [[requirement]]
 id = "SYS-REQ-027"
 title = "Avertissement de prototype"
 text = "L'appareil doit porter l'avertissement « PROTOTYPE — NE PAS UTILISER SUR UN PATIENT » et l'afficher au démarrage jusqu'à acquittement explicite."
-source = "Mesure de maîtrise CTRL-023 ; docs/requirements/preliminary-hazard-analysis.md"
+source = "Mesure CTRL-023 (RISK-021) ; usage prévu, avertissement"
 status = "draft"
 
 [[requirement]]
 id = "SYS-REQ-028"
 title = "Purge sur ligne non raccordée"
 text = "Une purge ne doit être lancée que si la condition « ligne non raccordée au patient » a été établie immédiatement avant son lancement, y compris avant le premier démarrage d'une perfusion ; à défaut, la purge doit être refusée. Si la violation de cette condition est détectée ou signalée pendant la purge, celle-ci doit s'arrêter immédiatement, et l'utilisateur doit pouvoir l'arrêter à tout moment. Le moyen d'établir et de surveiller cette condition sera choisi avec l'architecture (#13, #14)."
-source = "Mesure de maîtrise CTRL-012 ; docs/requirements/preliminary-hazard-analysis.md"
+source = "Mesure CTRL-012 (RISK-009) ; UN-05 ; scénario S2"
+status = "draft"
+
+[[requirement]]
+id = "SYS-REQ-029"
+title = "Modes de perfusion"
+text = "La pompe doit offrir trois modes : débit continu, volume à perfuser sur une durée programmée, et bolus à la demande du soignant pendant une perfusion en débit continu ; un seul canal de perfusion est géré par appareil."
+source = "UN-01 ; usage prévu H-01, H-06"
+status = "draft"
+
+[[requirement]]
+id = "SYS-REQ-030"
+title = "Plage et résolution du débit"
+text = "Le débit programmable doit couvrir 0,1 à 999 mL/h si le principe volumétrique est retenu, ou 0,1 à 200 mL/h pour un pousse-seringue (ADR #13), avec une résolution de 0,1 mL/h ; toute valeur hors de cette plage doit être refusée."
+source = "UN-01 ; usage prévu H-02, H-03"
+status = "draft"
+
+[[requirement]]
+id = "SYS-REQ-031"
+title = "Volume à perfuser"
+text = "Le volume à perfuser doit être programmable de 0,1 à 9 999 mL avec une résolution de 0,1 mL ; le volume perfusé et le volume restant doivent être affichés pendant la perfusion."
+source = "UN-01, UN-02 ; usage prévu H-05"
+status = "draft"
+
+[[requirement]]
+id = "SYS-REQ-032"
+title = "Fin de perfusion"
+text = "La pompe doit déclencher une préalarme de fin de perfusion un délai configurable avant la fin (1 à 30 min, 5 min par défaut). À l'atteinte du volume à perfuser, elle doit déclencher l'alarme de fin de perfusion et, selon la bibliothèque, s'arrêter ou poursuivre à un débit de maintien de veine ouverte qui ne peut dépasser ni le débit programmé ni 5 mL/h."
+source = "UN-10 ; scénario S6 ; IEC 60601-2-24"
+status = "draft"
+
+[[requirement]]
+id = "SYS-REQ-033"
+title = "Autonomie"
+text = "Avec une batterie neuve chargée, la pompe doit perfuser au moins 4 h à 25 mL/h sur batterie, et afficher l'autonomie restante estimée."
+source = "UN-11 ; usage prévu H-07"
+status = "draft"
+
+[[requirement]]
+id = "SYS-REQ-034"
+title = "Contenu du journal"
+text = "La pompe doit journaliser chaque programmation et modification, démarrage, arrêt, bolus, purge, alarme (déclenchement, pause, acquittement, fin), changement d'alimentation, défaillance détectée et modification de configuration, avec sa date, son auteur ou son rôle lorsqu'il est connu, et conserver au moins les 10 000 derniers événements, y compris sans alimentation."
+source = "UN-14, UN-16 ; RISK-011 ; ADR #16"
+status = "draft"
+
+[[requirement]]
+id = "SYS-REQ-035"
+title = "Datation"
+text = "Chaque événement doit porter une date avec une résolution de 1 s et un numéro d'ordre strictement croissant ; l'horloge doit dériver de moins de 1 min par mois, et toute mise à l'heure doit être journalisée."
+source = "UN-16 ; RISK-011 ; ADR #17"
+status = "draft"
+
+[[requirement]]
+id = "SYS-REQ-036"
+title = "Pause du signal sonore"
+text = "Le soignant doit pouvoir suspendre le signal sonore d'une alarme pour 2 min au plus ; la condition reste surveillée et affichée, et le signal reprend à l'échéance si elle persiste ou dès qu'une condition de priorité supérieure apparaît."
+source = "UN-08 ; RISK-014 ; IEC 60601-1-8"
+status = "draft"
+
+[[requirement]]
+id = "SYS-REQ-037"
+title = "Consultation de l'historique"
+text = "La pompe doit permettre de consulter sur l'appareil, sans authentification, les programmations, alarmes et actions des 24 dernières heures, datées."
+source = "UN-13, UN-16"
+status = "draft"
+
+[[requirement]]
+id = "SYS-REQ-038"
+title = "Reprise après réinitialisation"
+text = "Après une réinitialisation ou une coupure totale d'alimentation survenue pendant une perfusion, la pompe ne doit pas reprendre la perfusion d'elle-même : elle doit déclencher une alarme de priorité haute et proposer la dernière programmation, qui ne reprend qu'après confirmation par le soignant."
+source = "RISK-010, RISK-012 ; UN-11"
+status = "draft"
+
+[[requirement]]
+id = "SYS-REQ-039"
+title = "Langue de l'interface"
+text = "Tous les textes de l'interface et des messages d'alarme doivent être disponibles en français."
+source = "Usage prévu H-09"
+status = "draft"
+
+[[requirement]]
+id = "SYS-REQ-040"
+title = "Fonctionnement sans réseau"
+text = "La pompe doit pouvoir perfuser sans aucune connexion réseau, et aucune interface de communication ne doit permettre de modifier une perfusion en cours."
+source = "Usage prévu H-08 ; RISK-015"
+status = "draft"
+
+[[requirement]]
+id = "SYS-REQ-041"
+title = "Contrôle et mise hors service"
+text = "Un technicien authentifié doit pouvoir exécuter un contrôle de fonctionnement (capteurs, signaux d'alarme, précision) et mettre la pompe hors service ; une pompe hors service doit refuser toute perfusion jusqu'à sa remise en service, journalisée."
+source = "UN-15 ; scénario S7"
+status = "draft"
+
+[[requirement]]
+id = "SW-REQ-001"
+title = "Machine à états"
+text = "Le logiciel de commande doit être une machine à états explicite (arrêt, programmation, prête, perfusion, pause, alarme, état sûr, maintenance, hors service) ; toute transition non prévue doit être refusée et journalisée."
+source = "SYS-REQ-002, SYS-REQ-029, SYS-REQ-038 ; #24"
+status = "draft"
+
+[[requirement]]
+id = "SW-REQ-002"
+title = "Validation des valeurs programmées"
+text = "Le logiciel doit vérifier chaque valeur programmée par rapport aux plages de SYS-REQ-030 et SYS-REQ-031 et aux limites de la bibliothèque avant de l'accepter, et refuser explicitement toute valeur hors limites."
+source = "SYS-REQ-012, SYS-REQ-030, SYS-REQ-031"
+status = "draft"
+
+[[requirement]]
+id = "SW-REQ-003"
+title = "Format numérique sans ambiguïté"
+text = "Le logiciel doit afficher et saisir les nombres sans zéro final après la virgule et avec un zéro avant la virgule pour les valeurs inférieures à 1 ; une saisie comportant plus d'un séparateur décimal ou plus de décimales que la résolution doit être refusée."
+source = "SYS-REQ-010, SYS-REQ-013 ; mesure CTRL-009"
+status = "draft"
+
+[[requirement]]
+id = "SW-REQ-004"
+title = "Filtrage des rebonds"
+text = "Le logiciel ne doit valider un changement d'état d'une touche qu'après 20 ms de stabilité, et une touche maintenue ne doit pas répéter une saisie numérique."
+source = "SYS-REQ-010"
+status = "draft"
+
+[[requirement]]
+id = "SW-REQ-005"
+title = "Calcul du volume sans dérive"
+text = "Le logiciel doit calculer le volume délivré et le volume restant en arithmétique entière ou à virgule fixe, sans erreur d'arrondi cumulée supérieure à 0,01 mL sur 9 999 mL."
+source = "SYS-REQ-003, SYS-REQ-031"
+status = "draft"
+
+[[requirement]]
+id = "SW-REQ-006"
+title = "Consigne d'actionneur bornée"
+text = "Avant chaque envoi à l'actionneur, le logiciel doit vérifier que la consigne ne dépasse ni le débit programmé, ni le débit de bolus ou de purge autorisé, ni le débit maximal de la pompe ; une consigne hors bornes doit placer la pompe en état sûr."
+source = "SYS-REQ-001, SYS-REQ-014, SYS-REQ-030"
+status = "draft"
+
+[[requirement]]
+id = "SW-REQ-007"
+title = "Catalogue des alarmes"
+text = "Le logiciel doit dériver toutes les alarmes d'un catalogue unique donnant, pour chaque condition, sa priorité, son délai de confirmation et l'action associée ; une condition doit être signalée 1 s au plus après son délai de confirmation."
+source = "SYS-REQ-021, SYS-REQ-022, SYS-REQ-036 ; #31"
+status = "draft"
+
+[[requirement]]
+id = "SW-REQ-008"
+title = "Enregistrement confirmé"
+text = "Le service de journalisation ne doit signaler un événement comme enregistré qu'après confirmation de son écriture durable ; tout refus ou perte d'événement doit être signalé à l'appelant et traité selon une politique définie."
+source = "SYS-REQ-018, SYS-REQ-034 ; #45, #46"
+status = "draft"
+
+[[requirement]]
+id = "SW-REQ-009"
+title = "Détection d'altération du journal"
+text = "Chaque entrée du journal doit porter un numéro de séquence strictement croissant et un code de détection d'altération couvrant son contenu et l'entrée précédente."
+source = "SYS-REQ-019, SYS-REQ-035 ; #47"
+status = "draft"
+
+[[requirement]]
+id = "SW-REQ-010"
+title = "Autotests au démarrage"
+text = "Au démarrage, le logiciel doit vérifier l'intégrité de la mémoire programme et des données persistantes, la mémoire vive, l'horloge, les capteurs et les signaux d'alarme ; tout échec doit mettre la pompe hors service avec un message de défaillance."
+source = "SYS-REQ-017, SYS-REQ-026"
+status = "draft"
+
+[[requirement]]
+id = "SW-REQ-011"
+title = "Autotests périodiques"
+text = "Pendant le fonctionnement, le logiciel doit revérifier l'intégrité de la mémoire programme au moins une fois par heure et la plausibilité des capteurs à chaque cycle de surveillance ; tout échec doit placer la pompe en état sûr."
+source = "SYS-REQ-017"
+status = "draft"
+
+[[requirement]]
+id = "SW-REQ-012"
+title = "Service du chien de garde"
+text = "Le chien de garde ne doit être rafraîchi qu'après vérification que chaque tâche de commande et de surveillance a terminé son cycle dans le délai prévu, jamais depuis une interruption périodique."
+source = "SYS-REQ-017"
+status = "draft"
+
+[[requirement]]
+id = "SW-REQ-013"
+title = "Cohérence commande et supervision"
+text = "Le logiciel de commande doit transmettre au canal de sécurité la programmation en vigueur par une interface définie ; tout désaccord détecté entre les deux canaux doit placer la pompe en état sûr."
+source = "SYS-REQ-001, SYS-REQ-002 ; ADR #14"
+status = "draft"
+
+[[requirement]]
+id = "SW-REQ-014"
+title = "Chargement de la bibliothèque"
+text = "Le logiciel ne doit charger une bibliothèque de médicaments qu'après vérification de sa signature et de son intégrité ; en cas d'échec, il doit conserver la bibliothèque valide précédente et journaliser le refus."
+source = "SYS-REQ-025"
+status = "draft"
+
+[[requirement]]
+id = "SW-REQ-015"
+title = "Installation d'une mise à jour"
+text = "Le logiciel ne doit installer une mise à jour qu'après vérification de sa signature, et l'installation doit être atomique : une interruption doit laisser la version précédente vérifiée exécutable."
+source = "SYS-REQ-026 ; #68"
+status = "draft"
+
+[[requirement]]
+id = "SW-REQ-016"
+title = "Authentification et verrouillage"
+text = "Les fonctions de configuration et de maintenance doivent exiger un code propre à chaque rôle ; la session doit se fermer après 2 min d'inactivité et chaque ouverture ou échec d'authentification doit être journalisé."
+source = "SYS-REQ-023 ; #39"
+status = "draft"
+
+[[requirement]]
+id = "SW-REQ-017"
+title = "Données persistantes protégées"
+text = "Les paramètres, la bibliothèque et l'état de perfusion enregistrés doivent être protégés par un code de détection d'erreur ; des données corrompues ne doivent jamais être utilisées."
+source = "SYS-REQ-017, SYS-REQ-025, SYS-REQ-038"
+status = "draft"
+
+[[requirement]]
+id = "SW-REQ-018"
+title = "Temps monotone"
+text = "Les délais de sécurité (confirmation d'alarme, pause, détections) doivent être mesurés sur une base de temps monotone, insensible aux mises à l'heure de l'horloge."
+source = "SYS-REQ-035 ; #49"
 status = "draft"
 
 [[requirement]]
 id = "HW-REQ-001"
 title = "Sécurité électrique"
 text = "L'isolement et les courants de fuite doivent respecter les exigences de l'IEC 60601-1 applicables, vérifiées par des pré-essais (#76)."
-source = "Mesure de maîtrise CTRL-020 ; docs/requirements/preliminary-hazard-analysis.md"
+source = "Mesure CTRL-020 (RISK-017) ; IEC 60601-1"
 status = "draft"
 
 [[requirement]]
 id = "HW-REQ-002"
 title = "Protection contre les liquides"
-text = "Le boîtier doit atteindre un indice de protection contre les liquides à définir et résister aux produits de nettoyage listés."
-source = "Mesure de maîtrise CTRL-021 ; docs/requirements/preliminary-hazard-analysis.md"
+text = "Le boîtier doit atteindre l'indice de protection IPX4 et résister, sans dégradation de ses fonctions ni de ses marquages, aux produits de nettoyage et de désinfection listés dans les instructions."
+source = "Mesure CTRL-021 (RISK-018) ; UN-17 ; IEC 60529"
 status = "draft"
