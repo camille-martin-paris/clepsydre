@@ -7,8 +7,9 @@ Le registre (software_development_file/registry/) relie exigences, risques,
 mesures de maîtrise, vérifications et composants tiers (SOUP). Le script
 signale les identifiants mal formés ou en double, les références vers des
 éléments inexistants (y compris les identifiants cités dans la source d'une
-exigence et le fichier de preuve d'une vérification), les éléments orphelins
-et les chaînes de traçabilité incomplètes.
+exigence et le fichier de preuve d'une vérification), les éléments orphelins,
+les chaînes de traçabilité incomplètes et les exigences système ou matérielles
+sans vérification sur banc.
 
 Usage : check_registry.py [répertoire_du_registre]
 Code de retour : 0 si le registre est cohérent, 1 sinon.
@@ -48,6 +49,10 @@ METHODS = {"test", "analysis", "inspection", "demonstration"}
 
 # Niveaux de vérification : software_development_file/verification-strategy.md.
 LEVELS = {"unit", "integration", "system", "bench", "precompliance"}
+
+# Niveaux sur la cible matérielle : une exigence système ou matérielle doit y être vérifiée,
+# le simulateur ne reproduisant que ce que son modèle contient.
+BENCH_LEVELS = {"bench", "precompliance"}
 
 # Identifiants du registre cités dans le texte libre d'une source d'exigence.
 CITED_ID = re.compile(r"\b(?:(?:SYS|SW|HW)-REQ|RISK|CTRL|VER|SOUP)-\d{3}\b")
@@ -173,8 +178,15 @@ def check(entries: dict[str, list[dict]], root: Path | None = None) -> list[str]
                           "et statut autre que « accepted »")
 
     verified = {req for v in entries["verification"] for req in strings(v, "requirements")}
+    on_bench = {req for v in entries["verification"] if v.get("level") in BENCH_LEVELS
+                for req in strings(v, "requirements")}
     for requirement in entries["requirement"]:
-        if requirement.get("id") in verified:
+        identifier = requirement.get("id")
+        if identifier in verified:
+            if (isinstance(identifier, str) and identifier.startswith(("SYS-", "HW-"))
+                    and identifier not in on_bench and requirement.get("status") != "obsolete"):
+                errors.append(f"requirement {identifier}: exigence système ou matérielle sans vérification "
+                              "sur banc ni en pré-essais")
             continue
         if requirement.get("status") == "approved":
             errors.append(f"requirement {requirement.get('id')}: exigence approuvée sans vérification")
@@ -192,10 +204,10 @@ def check(entries: dict[str, list[dict]], root: Path | None = None) -> list[str]
         reference = verification.get("reference")
         if verification.get("status") in {"passed", "failed"} and "reference" not in verification:
             errors.append(f"{where}: statut « {verification.get('status')} » sans référence de preuve")
-        if root is not None and isinstance(reference, str) and reference.strip():
-            path = reference.split("#", 1)[0]
-            if not (root / path).exists():
-                errors.append(f"{where}: référence « {reference} » introuvable dans le dépôt")
+        if isinstance(reference, str) and reference.strip():
+            problem = reference_problem(reference, root)
+            if problem:
+                errors.append(f"{where}: référence « {reference} » {problem}")
 
     for soup in entries["soup"]:
         version = soup.get("version")
@@ -205,6 +217,32 @@ def check(entries: dict[str, list[dict]], root: Path | None = None) -> list[str]
             errors.append(f"soup {soup.get('id')}: version « {version} » non épinglée")
 
     return errors
+
+
+def reference_problem(reference: str, root: Path | None) -> str | None:
+    """Motif de refus d'une référence de preuve, ou None si elle est recevable.
+
+    La preuve est un fichier du dépôt, désigné par un chemin relatif, suivi
+    éventuellement d'une ancre (« tests/a.cpp#cas »). Un chemin absolu, une
+    ancre seule, un répertoire ou un chemin qui sort du dépôt, y compris par un
+    lien symbolique, sont refusés. Sans racine, seule la forme est contrôlée.
+    """
+    path = reference.split("#", 1)[0].strip()
+    if not path:
+        return "ne désigne aucun fichier"
+    if Path(path).is_absolute():
+        return "doit être un chemin relatif au dépôt"
+    if root is None:
+        return None
+    root = root.resolve()
+    target = (root / path).resolve()
+    if not target.is_relative_to(root):
+        return "sort du dépôt"
+    if not target.exists():
+        return "introuvable dans le dépôt"
+    if not target.is_file():
+        return "n'est pas un fichier"
+    return None
 
 
 def main(argv: list[str]) -> int:

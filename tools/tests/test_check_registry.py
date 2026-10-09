@@ -77,6 +77,21 @@ class CheckRegistryTest(unittest.TestCase):
         entries = registry(requirement=[{**REQUIREMENT, "status": "obsolete"}], verification=[])
         self.assertEqual(check_registry.check(entries), [])
 
+    def test_system_requirement_needs_bench_verification(self):
+        system = {**REQUIREMENT, "id": "SYS-REQ-001"}
+        simulated = {**VERIFICATION, "id": "VER-002", "level": "system", "requirements": ["SYS-REQ-001"]}
+        entries = registry(requirement=[REQUIREMENT, system], verification=[VERIFICATION, simulated])
+        self.assertError(entries, "SYS-REQ-001: exigence système ou matérielle sans vérification sur banc")
+        for level in ("bench", "precompliance"):
+            with self.subTest(level=level):
+                confirmed = {**simulated, "id": "VER-003", "level": level}
+                entries["verification"] = [VERIFICATION, simulated, confirmed]
+                self.assertEqual(check_registry.check(entries), [])
+        hardware = {**REQUIREMENT, "id": "HW-REQ-001"}
+        on_host = {**VERIFICATION, "id": "VER-002", "requirements": ["HW-REQ-001"]}
+        self.assertError(registry(requirement=[REQUIREMENT, hardware], verification=[VERIFICATION, on_host]),
+                         "HW-REQ-001: exigence système ou matérielle sans vérification sur banc")
+
     def test_verification_level(self):
         missing = {k: v for k, v in VERIFICATION.items() if k != "level"}
         self.assertError(registry(verification=[missing]), "« level » absent")
@@ -115,6 +130,33 @@ class CheckRegistryTest(unittest.TestCase):
             self.assertTrue(any("« tests/b.cpp » introuvable" in e for e in check_registry.check(missing, root)))
             # Sans racine de dépôt, l'existence n'est pas contrôlée.
             self.assertEqual(check_registry.check(missing), [])
+
+    def test_reference_must_be_a_file_inside_repository(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory, "depot")
+            (root / "proofs").mkdir(parents=True)
+            outside = Path(directory, "outside.txt")
+            outside.write_text("", encoding="utf-8")
+            (root / "proofs" / "lien.txt").symlink_to(outside)
+            passed = {**VERIFICATION, "status": "passed"}
+            cases = {
+                "proofs": "n'est pas un fichier",
+                "proofs/#ancre": "n'est pas un fichier",
+                "../outside.txt": "sort du dépôt",
+                "proofs/../../outside.txt": "sort du dépôt",
+                "proofs/lien.txt": "sort du dépôt",
+                str(outside): "doit être un chemin relatif au dépôt",
+                "#ancre": "ne désigne aucun fichier",
+            }
+            for reference, reason in cases.items():
+                with self.subTest(reference=reference):
+                    errors = check_registry.check(registry(verification=[{**passed, "reference": reference}]), root)
+                    self.assertTrue(any(f"« {reference} » {reason}" in e for e in errors), errors)
+
+    def test_reference_form_is_checked_without_root(self):
+        passed = {**VERIFICATION, "status": "passed"}
+        self.assertError(registry(verification=[{**passed, "reference": "#ancre"}]), "ne désigne aucun fichier")
+        self.assertError(registry(verification=[{**passed, "reference": "/etc/hosts"}]), "chemin relatif")
 
     def test_unknown_verification_method(self):
         self.assertError(registry(verification=[{**VERIFICATION, "method": "intuition"}]), "méthode")
@@ -163,7 +205,7 @@ class MainTest(unittest.TestCase):
         files = {
             "requirements.toml": '[[requirement]]\nid = "SYS-REQ-001"\ntitle = "t"\ntext = "x"\n'
                                  'source = "s"\nstatus = "draft"\n',
-            "verifications.toml": '[[verification]]\nid = "VER-001"\nmethod = "test"\nlevel = "system"\n'
+            "verifications.toml": '[[verification]]\nid = "VER-001"\nmethod = "test"\nlevel = "bench"\n'
                                   'requirements = ["SYS-REQ-001"]\nstatus = "planned"\n',
         }
         self.assertEqual(self.run_main(files), 0)

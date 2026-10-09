@@ -76,6 +76,29 @@ class MainTest(unittest.TestCase):
             self.assertFalse(output.exists())
             self.assertIn("« RISK-404 » inexistante", stderr.getvalue())
 
+    def test_reference_outside_repository_produces_no_matrix(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory, "depot")
+            registry = root / "software_development_file" / "registry"
+            registry.mkdir(parents=True)
+            (root / "proofs").mkdir()
+            Path(directory, "outside.txt").write_text("", encoding="utf-8")
+            requirement = ('[[requirement]]\nid = "SW-REQ-001"\ntitle = "t"\ntext = "x"\nsource = "s"\n'
+                           'status = "draft"\n')
+            (registry / "requirements.toml").write_text(requirement, encoding="utf-8")
+            for reference in ("proofs", "../outside.txt", str(Path(directory, "outside.txt")), "#ancre"):
+                with self.subTest(reference=reference):
+                    (registry / "verifications.toml").write_text(
+                        '[[verification]]\nid = "VER-001"\nmethod = "test"\nlevel = "unit"\n'
+                        f'requirements = ["SW-REQ-001"]\nstatus = "passed"\nreference = "{reference}"\n',
+                        encoding="utf-8")
+                    output = Path(directory, "matrix.md")
+                    with redirect_stderr(io.StringIO()):
+                        code = traceability_matrix.main(["traceability_matrix.py", "--registry", str(registry),
+                                                         "-o", str(output)])
+                    self.assertEqual(code, 1)
+                    self.assertFalse(output.exists())
+
     def test_missing_registry_directory(self):
         with tempfile.TemporaryDirectory() as directory:
             output = Path(directory, "matrix.md")

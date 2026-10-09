@@ -35,9 +35,9 @@ risque (RISK) ──maîtrisé par──▶ mesure (CTRL) ──mise en œuvre p
 | --- | --- |
 | Identifiants | Motif invalide, doublon |
 | Champs | Champ obligatoire absent, mal typé ou vide ; champ inconnu ; statut, méthode ou niveau inconnu |
-| Références cassées | Mesure, vérification ou SOUP qui renvoie à un élément inexistant ; source d'exigence qui cite un identifiant du registre inexistant ; référence de preuve absente du dépôt |
+| Références cassées | Mesure, vérification ou SOUP qui renvoie à un élément inexistant ; source d'exigence qui cite un identifiant du registre inexistant ; référence de preuve qui n'est pas un fichier du dépôt (absente, répertoire, chemin absolu, sortie du dépôt y compris par lien symbolique, ancre seule) |
 | Éléments orphelins | Risque sans mesure de maîtrise, sauf s'il est `accepted` ; exigence sans vérification, sauf si elle est `obsolete` |
-| Chaînes incomplètes | Risque `controlled` sans mesure ; exigence `approved` sans vérification ; vérification `passed` ou `failed` sans référence de preuve |
+| Chaînes incomplètes | Risque `controlled` sans mesure ; exigence `approved` sans vérification ; vérification `passed` ou `failed` sans référence de preuve ; exigence système ou matérielle sans vérification sur banc ni en pré-essais |
 | SOUP | Version non épinglée |
 
 [`tools/traceability_matrix.py`](../tools/traceability_matrix.py) génère la matrice de traçabilité en Markdown, uniquement si le registre est cohérent. Elle relie risques, mesures, exigences et vérifications, et donne l'état de vérification de chaque exigence. **La présence d'un lien n'est pas un résultat d'essai** : une vérification `planned` est seulement prévue, et une exigence n'est « vérifiée » que si toutes ses vérifications sont `passed`, chacune avec une référence de preuve. La CI publie la matrice dans le résumé de l'exécution et comme artefact ; la matrice d'une version publiée est reprise dans son rapport de vérification ([#77](https://github.com/camille-martin-paris/clepsydre/issues/77)).
