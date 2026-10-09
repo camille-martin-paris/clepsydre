@@ -30,4 +30,6 @@ Avant inscription au registre, une pull request documente pour le composant :
 5. les anomalies publiées pertinentes, leur effet possible sur la sécurité et la date de leur revue ;
 6. les mesures de maîtrise des risques liées à une défaillance du composant.
 
+Limite du contrôle automatique : `tools/check_registry.py` vérifie seulement la syntaxe de la version (ni intervalle, ni joker, ni alias de branche ou de canal comme `latest`, `main`, `release` ou `stable`). Il ne garantit pas qu'une étiquette désigne toujours le même contenu, car elle peut être déplacée en amont. La revue SOUP vérifie l'immuabilité, par exemple par une empreinte ou un commit précis.
+
 Les versions sont épinglées dans la configuration de build et incluses dans la SBOM ([#22](https://github.com/camille-martin-paris/clepsydre/issues/22)). Une mise à jour d'un SOUP suit la même évaluation.

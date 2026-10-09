@@ -75,8 +75,35 @@ class CheckRegistryTest(unittest.TestCase):
     def test_unknown_verification_method(self):
         self.assertError(registry(verification=[{**VERIFICATION, "method": "intuition"}]), "méthode")
 
+    def test_mistyped_text_fields_are_rejected(self):
+        # Contre-exemple de revue : id valide mais champs texte remplacés par des listes vides.
+        entry = {"id": "SW-REQ-001", "title": [], "text": [], "source": [], "status": "draft"}
+        errors = check_registry.check(registry(requirement=[entry], verification=[], control=[], soup=[]))
+        for field in ("title", "text", "source"):
+            self.assertIn(f"requirements.toml: SW-REQ-001: champ « {field} » doit être une chaîne, pas list", errors)
+
+    def test_blank_text_field(self):
+        self.assertError(registry(risk=[{**RISK, "harm": "  "}]), "champ « harm » ne doit pas être vide")
+
+    def test_reference_list_must_hold_strings(self):
+        self.assertError(registry(control=[{**CONTROL, "risks": [1]}]), "« risks » doit être une liste de chaînes")
+        self.assertError(registry(control=[{**CONTROL, "risks": "RISK-001"}]), "« risks » doit être une liste de chaînes")
+
+    def test_non_string_identifier(self):
+        self.assertError(registry(risk=[{**RISK, "id": 1}]), "identifiant invalide")
+
+    def test_unknown_field(self):
+        self.assertError(registry(risk=[{**RISK, "severity": "x"}]), "champ « severity » inconnu")
+
+    def test_optional_reference(self):
+        self.assertEqual(check_registry.check(registry(verification=[{**VERIFICATION, "reference": "tests/a"}])), [])
+        self.assertError(registry(verification=[{**VERIFICATION, "reference": 3}]), "« reference » doit être une chaîne")
+
+    def test_soup_version_must_be_string(self):
+        self.assertError(registry(soup=[{**SOUP, "version": 1.2}]), "« version » doit être une chaîne")
+
     def test_unpinned_soup_version(self):
-        for version in ("^1.2", ">=1.0", "latest", "main", "1.*"):
+        for version in ("^1.2", ">=1.0", "latest", "main", "1.*", "release", "stable"):
             with self.subTest(version=version):
                 self.assertError(registry(soup=[{**SOUP, "version": version}]), "non épinglée")
 
@@ -94,6 +121,26 @@ class MainTest(unittest.TestCase):
                                  'source = "s"\nstatus = "draft"\n',
         }
         self.assertEqual(self.run_main(files), 0)
+
+    def test_unknown_root_table_is_rejected(self):
+        # Contre-exemple de revue : « [[requirements]] » au lieu de « [[requirement]] ».
+        files = {"requirements.toml": '[[requirements]]\nid = "SW-REQ-001"\n'}
+        self.assertEqual(self.run_main(files), 1)
+
+    def test_load_reports_unknown_root_table(self):
+        with tempfile.TemporaryDirectory() as directory:
+            Path(directory, "requirements.toml").write_text('[[requirements]]\nid = "SW-REQ-001"\n', encoding="utf-8")
+            entries, errors = check_registry.load(Path(directory))
+        self.assertEqual(entries["requirement"], [])
+        self.assertEqual(errors, ["requirements.toml: clé racine « requirements » inconnue, "
+                                  "seule « [[requirement]] » est admise"])
+
+    def test_root_key_must_be_array_of_tables(self):
+        self.assertEqual(self.run_main({"risks.toml": 'risk = "RISK-001"\n'}), 1)
+        self.assertEqual(self.run_main({"risks.toml": "risk = [1, 2]\n"}), 1)
+
+    def test_comment_only_file_is_accepted(self):
+        self.assertEqual(self.run_main({"risks.toml": "# aucun risque\n"}), 0)
 
     def test_invalid_toml(self):
         self.assertEqual(self.run_main({"risks.toml": "[[risk]\n"}), 1)
