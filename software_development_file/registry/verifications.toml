@@ -467,3 +467,9 @@ id = "VER-076"
 method = "test"
 requirements = ["HW-REQ-002"]
 status = "planned"
+
+[[verification]]
+id = "VER-077"
+method = "test"
+requirements = ["SYS-REQ-042"]
+status = "planned"

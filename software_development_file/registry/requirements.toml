@@ -301,6 +301,13 @@ source = "UN-15 ; scénario S7"
 status = "draft"
 
 [[requirement]]
+id = "SYS-REQ-042"
+title = "Rappel de pompe inactive"
+text = "Une pompe programmée mais non démarrée, ou en pause, depuis 2 min doit déclencher une alarme de rappel de priorité moyenne, jusqu'au démarrage, à la reprise ou à l'annulation de la programmation."
+source = "RISK-002, RISK-014 ; UN-06"
+status = "draft"
+
+[[requirement]]
 id = "SW-REQ-001"
 title = "Machine à états"
 text = "Le logiciel de commande doit être une machine à états explicite (arrêt, programmation, prête, perfusion, pause, alarme, état sûr, maintenance, hors service) ; toute transition non prévue doit être refusée et journalisée."
