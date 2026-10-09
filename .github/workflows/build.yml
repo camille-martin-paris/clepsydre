@@ -1,5 +1,6 @@
-# Compile et teste le logiciel avec les versions minimales des compilateurs pris en charge.
+# Compile et teste le logiciel avec les compilateurs planchers pris en charge.
 # Chaque étape (configuration, compilation, édition de liens, tests) est un pas distinct.
+# Les images sont épinglées par empreinte : changer de version est une modification délibérée.
 name: Build
 
 on:
@@ -11,25 +12,54 @@ permissions:
   contents: read
 
 jobs:
-  build:
-    name: ${{ matrix.compiler.name }}
+  gcc:
+    name: gcc-16.1
     runs-on: ubuntu-24.04
-    strategy:
-      fail-fast: false
-      matrix:
-        compiler:
-          - { name: gcc-14, cxx: g++-14, packages: g++-14 }
-          - { name: clang-18, cxx: clang++-18, packages: clang-18 clang-tools-18 }
+    container: gcc:16.1.0@sha256:d8dec2859f964120119abd1380563247bf02c5d64f5bcdea496dbace1f48c6f0
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - name: Outils
+        env:
+          CMAKE_VERSION: "4.2.3"
+          CMAKE_SHA256: 5bb505d5e0cca0480a330f7f27ccf52c2b8b5214c5bba97df08899f5ef650c23
+        run: |
+          apt-get update
+          apt-get install -y --no-install-recommends ninja-build
+          archive="cmake-${CMAKE_VERSION}-linux-x86_64.tar.gz"
+          curl -fsSLo "$RUNNER_TEMP/$archive" "https://github.com/Kitware/CMake/releases/download/v${CMAKE_VERSION}/$archive"
+          echo "${CMAKE_SHA256}  $RUNNER_TEMP/$archive" | sha256sum --check
+          tar -xzf "$RUNNER_TEMP/$archive" -C /opt
+          ln -sf "/opt/cmake-${CMAKE_VERSION}-linux-x86_64/bin/cmake" /usr/local/bin/cmake
+          ln -sf "/opt/cmake-${CMAKE_VERSION}-linux-x86_64/bin/ctest" /usr/local/bin/ctest
+          cmake --version | head -1
+          g++ --version | head -1
+      - name: Configuration
+        run: cmake -S . -B build/ci -G Ninja -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_COMPILER=g++
+      - name: Compilation
+        run: cmake --build build/ci --target clepsydre_compile
+      - name: Édition de liens
+        run: cmake --build build/ci
+      - name: Tests
+        run: ctest --test-dir build/ci --output-on-failure --no-tests=error
+
+  clang:
+    name: clang-20
+    runs-on: ubuntu-24.04
+    container: ubuntu:26.04@sha256:f144425ff09be612d6d9ad965196e9cdc23dae1f42110a8a11a3e9a8198759f7
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
       - name: Outils
         run: |
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends ninja-build ${{ matrix.compiler.packages }}
+          apt-get update
+          apt-get install -y --no-install-recommends cmake ninja-build clang-20 clang-tools-20
           cmake --version | head -1
-          ${{ matrix.compiler.cxx }} --version | head -1
+          clang++-20 --version | head -1
       - name: Configuration
-        run: cmake -S . -B build/ci -G Ninja -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_COMPILER=${{ matrix.compiler.cxx }}
+        run: cmake -S . -B build/ci -G Ninja -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_COMPILER=clang++-20
       - name: Compilation
         run: cmake --build build/ci --target clepsydre_compile
       - name: Édition de liens

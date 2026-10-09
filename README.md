@@ -67,7 +67,7 @@ gh repo clone camille-martin-paris/clepsydre
 cd clepsydre
 ```
 
-Le langage cible est **C++23**, organisé en modules. Avec CMake 3.28 ou plus récent, Ninja et GCC 14 ou Clang 18 au minimum :
+Le langage cible est **C++23**, organisé en modules. Avec CMake 4.0 ou plus récent, Ninja et GCC 16.1 ou Clang 20 au minimum :
 
 ```bash
 cmake --workflow --preset gcc   # configuration, compilation, édition de liens et tests
