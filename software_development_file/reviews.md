@@ -35,6 +35,12 @@ Seules les opérations attestées par l'historique Git et GitHub sont consignée
 | Fusion | #83, sous le compte `ambroise-leclerc` | Ambroise Leclerc | Non consigné |
 | Fusions | #84 à #88, sous le compte `camille-martin-paris` | Camille Martin, à sa demande explicite | Codex |
 
-Ces traces établissent la responsabilité et l'autorisation des personnes nommées. Elles ne prouvent pas, à elles seules, une lecture personnelle de chaque contribution par son auteur ou par la mainteneuse : aucune attestation de lecture personnelle n'est consignée à ce jour pour ces contributions. Une personne qui a effectué cette lecture peut l'attester en ajoutant ici une entrée datée, avec les contributions concernées.
+Ces traces établissent la responsabilité et l'autorisation des personnes nommées. Elles ne prouvent pas, à elles seules, une lecture personnelle de chaque contribution par son auteur ou par la mainteneuse : les attestations de lecture personnelle sont consignées ci-dessous. Une personne qui a effectué cette lecture peut l'attester en ajoutant ici une entrée datée, avec les contributions concernées.
+
+#### Attestations de lecture personnelle
+
+| Date | Personne | Contributions | Attestation | Limite |
+| --- | --- | --- | --- | --- |
+| 2026-10-09 | Ambroise Leclerc | Contributions assistées des PR #83 à #88 | « Je confirme que chaque contribution assistée a été relue et acceptée par moi ou par Camille. » | L'attestation ne précise pas, pour chaque contribution, laquelle des deux personnes l'a lue. Elle n'engage Camille Martin que si celle-ci la confirme par sa propre entrée. |
 
 Ces assistants ne sont pas qualifiés ; leur usage relève de la réserve R3. Le projet vise à les remplacer par une assistance locale, avec des LLM à poids ouverts dont l'aptitude aux usages du projet est qualifiée ; voir le [plan de développement](development-plan.md#assistance-par-llm).
