@@ -2,7 +2,7 @@
 
 | Champ | Valeur |
 | --- | --- |
-| Statut | Retenue par l'auteur (Ambroise Leclerc) le 2026-10-09 ; acceptation par l'approbatrice (Camille Martin) requise, l'approbateur d'un document n'en étant pas l'auteur ([plan de développement](../../software_development_file/development-plan.md#rôles-et-responsabilités)) |
+| Statut | **Acceptée** le 2026-10-09 par Camille Martin, approbatrice ([approbation](https://github.com/camille-martin-paris/clepsydre/pull/101#pullrequestreview-5471704223), révision `14676be`) ; retenue par l'auteur, Ambroise Leclerc. Acceptation consignée dans [reviews.md](../../software_development_file/reviews.md) |
 | Date | 2026-10-09 |
 | Issue | [#14](https://github.com/camille-martin-paris/clepsydre/issues/14) |
 | Épique | [#12](https://github.com/camille-martin-paris/clepsydre/issues/12) |
@@ -49,7 +49,7 @@ Cette ADR suppose le pousse-seringue retenu par l'[ADR 0002](0002-principe-de-po
 
 ## Décision
 
-**Option B : deux microcontrôleurs, commande et sécurité.** Retenue par l'auteur le 2026-10-09 ; elle prend effet à son acceptation par l'approbatrice, consignée dans [reviews.md](../../software_development_file/reviews.md).
+**Option B : deux microcontrôleurs, commande et sécurité.** Retenue par l'auteur et acceptée par l'approbatrice le 2026-10-09 ([reviews.md](../../software_development_file/reviews.md)). L'acceptation porte sur le principe d'architecture ; l'indépendance et l'efficacité du canal de sécurité restent à démontrer.
 
 ```mermaid
 flowchart LR
