@@ -60,7 +60,7 @@ Types, dans l'ordre de priorité du plan : **Conception** (conception intrinsèq
 | CTRL-009 | Conception | Saisie protégée : filtrage des rebonds de touche, format numérique sans ambiguïté, récapitulatif à confirmer explicitement | RISK-007 | SYS-REQ-010, SYS-REQ-011 |
 | CTRL-010 | Protection | Bibliothèque de médicaments avec limites dures bloquantes et limites souples à confirmer | RISK-007, RISK-008, RISK-009 | SYS-REQ-012 |
 | CTRL-011 | Conception | Affichage de l'unité avec chaque valeur, et du médicament et de la concentration pendant toute la perfusion | RISK-008 | SYS-REQ-013 |
-| CTRL-012 | Conception | Bolus et purge bornés en volume et en débit ; purge refusée une fois la perfusion démarrée | RISK-009 | SYS-REQ-014 |
+| CTRL-012 | Conception | Bolus et purge distincts, bornés chacun par leurs propres limites de volume et de débit ; purge refusée une fois la perfusion démarrée ; purge subordonnée à la condition « ligne non raccordée au patient », refusée si cette condition n'est pas établie et arrêtée si sa violation est détectée ou signalée | RISK-009 | SYS-REQ-014, SYS-REQ-028 |
 | CTRL-013 | Protection | Batterie avec bascule secteur/batterie sans interruption, alarmes d'autonomie faible et épuisée, alarme de perte d'alimentation | RISK-010 | SYS-REQ-015, SYS-REQ-016 |
 | CTRL-014 | Protection | Chien de garde indépendant et autotests du processeur et des mémoires, avec état sûr en cas d'échec | RISK-001, RISK-012 | SYS-REQ-017 |
 | CTRL-015 | Conception | Journal d'événements à écriture confirmée sur support durable, avec détection d'altération et de retour arrière | RISK-011 | SYS-REQ-018, SYS-REQ-019 |
@@ -92,7 +92,7 @@ Ces exigences, au statut `draft`, traduisent les mesures proposées. La spécifi
 | SYS-REQ-011 | Récapitulatif et confirmation | Avant le démarrage, la pompe doit afficher un récapitulatif (médicament, concentration, débit, volume, durée) et exiger une confirmation explicite distincte de la saisie. |
 | SYS-REQ-012 | Limites de dose | La pompe doit refuser toute programmation hors des limites dures du médicament et exiger une confirmation spécifique au-delà des limites souples. |
 | SYS-REQ-013 | Affichage des unités | Chaque valeur affichée doit être accompagnée de son unité ; le médicament, la concentration et le débit doivent rester affichés pendant la perfusion. |
-| SYS-REQ-014 | Bolus et purge bornés | Le volume et le débit d'un bolus ou d'une purge doivent être bornés par des limites configurées ; la purge doit être refusée une fois la perfusion démarrée. |
+| SYS-REQ-014 | Bolus et purge bornés | Le bolus et la purge doivent être des commandes distinctes. Le volume et le débit d'un bolus doivent être bornés par les limites configurées pour le médicament ; ceux d'une purge, par des limites propres à la purge, qui ne peuvent servir à administrer un bolus. La purge doit être refusée une fois la perfusion démarrée. |
 | SYS-REQ-015 | Bascule d'alimentation | La perte de l'alimentation secteur ne doit pas interrompre ni modifier la perfusion en cours tant que la batterie n'est pas épuisée. |
 | SYS-REQ-016 | Alarmes d'alimentation | La pompe doit déclencher une alarme d'autonomie faible au moins à une durée à définir avant l'épuisement, puis une alarme d'autonomie épuisée avant l'arrêt. |
 | SYS-REQ-017 | Surveillance du processeur | Un chien de garde indépendant et des autotests du processeur et des mémoires doivent placer la pompe en état sûr en cas de défaillance détectée. |
@@ -106,6 +106,7 @@ Ces exigences, au statut `draft`, traduisent les mesures proposées. La spécifi
 | SYS-REQ-025 | Intégrité de la bibliothèque | La pompe doit vérifier l'intégrité et l'origine de la bibliothèque de médicaments avant de l'utiliser et afficher sa version. |
 | SYS-REQ-026 | Intégrité du logiciel | La pompe ne doit exécuter qu'un logiciel dont l'intégrité et l'origine ont été vérifiées, et une mise à jour interrompue ne doit pas laisser la pompe dans un état utilisable non vérifié. |
 | SYS-REQ-027 | Avertissement de prototype | L'appareil doit porter l'avertissement « PROTOTYPE — NE PAS UTILISER SUR UN PATIENT » et l'afficher au démarrage jusqu'à acquittement explicite. |
+| SYS-REQ-028 | Purge sur ligne non raccordée | Une purge ne doit être lancée que si la condition « ligne non raccordée au patient » a été établie immédiatement avant son lancement, y compris avant le premier démarrage d'une perfusion ; à défaut, la purge doit être refusée. Si la violation de cette condition est détectée ou signalée pendant la purge, celle-ci doit s'arrêter immédiatement, et l'utilisateur doit pouvoir l'arrêter à tout moment. Le moyen d'établir et de surveiller cette condition sera choisi avec l'architecture (#13, #14). |
 | HW-REQ-001 | Sécurité électrique | L'isolement et les courants de fuite doivent respecter les exigences de l'IEC 60601-1 applicables, vérifiées par des pré-essais (#76). |
 | HW-REQ-002 | Protection contre les liquides | Le boîtier doit atteindre un indice de protection contre les liquides à définir et résister aux produits de nettoyage listés. |
 
