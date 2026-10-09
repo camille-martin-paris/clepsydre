@@ -2,7 +2,7 @@
 
 | Champ | Valeur |
 | --- | --- |
-| Statut | Proposée, soumise à la décision de la mainteneuse |
+| Statut | Retenue par l'auteur (Ambroise Leclerc) le 2026-10-09 ; acceptation par l'approbatrice (Camille Martin) requise, l'approbateur d'un document n'en étant pas l'auteur ([plan de développement](../../software_development_file/development-plan.md#rôles-et-responsabilités)) |
 | Date | 2026-10-09 |
 | Issue | [#13](https://github.com/camille-martin-paris/clepsydre/issues/13) |
 | Épique | [#12](https://github.com/camille-martin-paris/clepsydre/issues/12) |
@@ -80,9 +80,9 @@ Des galets écrasent une tubulure contre une piste circulaire. Cette option est 
 | 5. Air | Pas de détecteur dans la conception courante ; option sur le prolongateur | Détecteur courant | Traité par le consommable |
 | 6. Usage prévu | Débits couverts ; volumes limités à une seringue | Couvert | Couvert |
 
-## Décision proposée
+## Décision
 
-**Option A, pousse-seringue**, pour le prototype de Clepsydre. **Cette décision revient à la mainteneuse** : l'ADR reste au statut « proposée » jusqu'à son acceptation explicite.
+**Option A, pousse-seringue**, pour le prototype de Clepsydre. Retenue par l'auteur le 2026-10-09 ; elle prend effet à son acceptation par l'approbatrice, consignée dans [reviews.md](../../software_development_file/reviews.md).
 
 Raisons :
 
