@@ -71,6 +71,29 @@ Règles :
 
 Ces cumuls sont incompatibles avec une revue indépendante. Un livrable accepté sous cumul devra être relu à nouveau par une personne indépendante avant toute évaluation de conformité.
 
+## Assistance par LLM
+
+Des assistants fondés sur des grands modèles de langage (LLM) peuvent aider à rédiger du code, de la documentation ou des relectures. Ils ne tiennent aucun rôle du projet : la personne qui soumet ou approuve une contribution assistée en est responsable comme si elle l'avait produite seule.
+
+Règles applicables dès maintenant :
+
+- Toute pull request indique l'assistance utilisée (outil, modèle, usage) dans son modèle de description ; [reviews.md](reviews.md) la reprend pour chaque acceptation.
+- Le contenu produit par un assistant est relu par une personne avant fusion ; les sources qu'il cite sont vérifiées, en particulier pour les normes et la réglementation.
+- Aucune donnée personnelle ni information confidentielle n'est transmise à un service d'assistance distant.
+
+### Trajectoire vers une assistance locale et qualifiée
+
+Les premiers livrables ont été produits avec des assistants distants et propriétaires (voir [reviews.md](reviews.md#moyens-de-rédaction-et-de-revue)). Pour un logiciel de classe C, cette situation présente trois limites : le modèle et sa configuration ne sont pas identifiables, les résultats ne sont pas reproductibles, et le fournisseur peut modifier le service sans préavis.
+
+Le projet converge donc vers une assistance :
+
+1. **locale** : exécutée sur des machines maîtrisées par le projet, sans transmission des sources ni des documents à un tiers ;
+2. **à poids ouverts** : modèle identifié par l'empreinte de ses poids, moteur d'inférence et paramètres versionnés ;
+3. **cadrée** : références documentaires et réglementaires fournies par un serveur MCP identifié (projet d'utiliser Compliatory / Compliatory MCP), avec usages autorisés, règles de citation et conditions d'abstention ;
+4. **qualifiée pour ses usages dans le projet** : aptitude démontrée sur des cas représentatifs du domaine médical (références absentes ou contradictoires, citations erronées, affirmations non étayées, instructions malveillantes dans les documents, répétabilité), avec restrictions d'emploi et déclencheurs de requalification.
+
+Ce travail est suivi dans [#89](https://github.com/camille-martin-paris/clepsydre/issues/89). Tant qu'une configuration n'est pas qualifiée et acceptée, l'assistance, locale ou distante, reste un moyen non qualifié dont toute production est relue par une personne.
+
 ## Documentation et livrables
 
 Tous les livrables sont des fichiers texte versionnés dans ce dépôt. Une version d'un livrable est identifiée par le commit Git qui la contient ; un livrable accepté est identifié dans [reviews.md](reviews.md) par sa révision.
