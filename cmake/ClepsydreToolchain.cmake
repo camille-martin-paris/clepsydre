@@ -57,6 +57,28 @@ if(CLEPSYDRE_CLANG_TIDY)
     string(REGEX MATCH "^[0-9]+" _clepsydre_clang_major "${CMAKE_CXX_COMPILER_VERSION}")
     find_program(CLEPSYDRE_CLANG_TIDY_EXE
         NAMES clang-tidy-${_clepsydre_clang_major} clang-tidy REQUIRED)
+    # find_program retient aussi un « clang-tidy » d'une autre version, ou un chemin
+    # fourni ou mis en cache : contrôler la version du binaire effectivement retenu.
+    execute_process(
+        COMMAND "${CLEPSYDRE_CLANG_TIDY_EXE}" --version
+        RESULT_VARIABLE _clepsydre_tidy_result
+        OUTPUT_VARIABLE _clepsydre_tidy_output
+        ERROR_VARIABLE _clepsydre_tidy_output)
+    if(NOT _clepsydre_tidy_result EQUAL 0)
+        message(FATAL_ERROR "${CLEPSYDRE_CLANG_TIDY_EXE} --version a échoué (code ${_clepsydre_tidy_result}) :\n"
+                            "${_clepsydre_tidy_output}")
+    endif()
+    set(_clepsydre_tidy_major "")
+    if(_clepsydre_tidy_output MATCHES "version ([0-9]+)\\.")
+        set(_clepsydre_tidy_major "${CMAKE_MATCH_1}")
+    endif()
+    if(NOT _clepsydre_tidy_major STREQUAL _clepsydre_clang_major)
+        message(FATAL_ERROR "${CLEPSYDRE_CLANG_TIDY_EXE} est en version majeure « ${_clepsydre_tidy_major} », "
+                            "Clang en version ${_clepsydre_clang_major} : clang-tidy doit avoir la même "
+                            "version majeure que le compilateur. Indiquer le bon binaire avec "
+                            "-DCLEPSYDRE_CLANG_TIDY_EXE=<chemin>.")
+    endif()
+    message(STATUS "clang-tidy : ${CLEPSYDRE_CLANG_TIDY_EXE} (version majeure ${_clepsydre_tidy_major})")
     set(CMAKE_CXX_CLANG_TIDY "${CLEPSYDRE_CLANG_TIDY_EXE}" "--warnings-as-errors=*")
 endif()
 
