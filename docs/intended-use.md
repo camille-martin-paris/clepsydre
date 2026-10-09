@@ -60,7 +60,7 @@ Le principe retenu est le **pousse-seringue** ([ADR 0002](adr/0002-principe-de-p
   - voies péridurale et intrathécale ;
   - analgésie contrôlée par le patient (PCA).
 - Perfusions de grand volume (hydratation, poches de solutés) : le volume d'une perfusion est limité à celui de la seringue installée (ADR 0002).
-- Les consommables compatibles (seringues, prolongateurs) seront limités à une liste explicitement vérifiée ; chaque modèle de seringue de la liste est identifié par la pompe.
+- Les consommables compatibles (seringues, prolongateurs) seront limités à une liste explicitement vérifiée ; chaque modèle de seringue de la liste est identifié par la pompe, et seuls les prolongateurs munis d'une valve anti-siphon sont admis.
 
 ## Hypothèses d'usage orientant les exigences
 

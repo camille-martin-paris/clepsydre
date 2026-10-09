@@ -31,7 +31,7 @@ requirements = ["SYS-REQ-004"]
 
 [[control]]
 id = "CTRL-004"
-description = "Retenue mécanique du piston par le pousseur et fixation de la seringue dans le berceau, avec vis d'entraînement irréversible, contre l'écoulement libre et le siphonage"
+description = "Contre l'écoulement libre et le siphonage : seringue en place, retenue mécanique du piston par le pousseur, fixation de la seringue dans le berceau et vis d'entraînement irréversible ; piston libéré ou seringue retirée, valve anti-siphon sur le prolongateur, seul type admis dans la liste des consommables vérifiés ; demande de clampage du prolongateur avant la libération du piston, en complément"
 risks = ["RISK-003"]
 requirements = ["SYS-REQ-005"]
 
@@ -157,7 +157,7 @@ requirements = ["SYS-REQ-043"]
 
 [[control]]
 id = "CTRL-025"
-description = "Programmation confirmée figée dans le canal de sécurité, qui lit lui-même les touches de confirmation et n'admet que les changements de mode listés"
+description = "Programmation confirmée figée dans le canal de sécurité, qui lit lui-même les touches Démarrer, Confirmer et Arrêt : confirmation, reprise et bolus admis seulement sur un appui qu'il observe, et seuls changements de mode listés"
 risks = ["RISK-001", "RISK-012"]
 requirements = ["SYS-REQ-044", "SW-REQ-013"]
 

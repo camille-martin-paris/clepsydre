@@ -44,7 +44,7 @@ status = "draft"
 [[requirement]]
 id = "SYS-REQ-005"
 title = "Anti-écoulement libre"
-text = "Aucun écoulement libre ne doit être possible lorsque la seringue est installée ou retirée, ni par siphonage : le piston doit être retenu par le pousseur, la seringue fixée dans le berceau, et la vis d'entraînement ne doit pas pouvoir être entraînée par le piston."
+text = "Aucun écoulement libre ne doit être possible, ni par siphonage. Seringue en place, le piston doit être retenu par le pousseur, la seringue fixée dans le berceau, et la vis d'entraînement ne doit pas pouvoir être entraînée par le piston. Lorsque le piston est libéré ou la seringue retirée, ces protections n'agissant plus, l'écoulement libre doit être empêché par une valve anti-siphon du prolongateur : la liste des consommables vérifiés n'admet que des prolongateurs qui en sont munis. Avant de libérer le piston, la pompe doit en outre demander de clamper le prolongateur."
 source = "Mesure CTRL-004 (RISK-003) ; UN-04 ; IEC 60601-2-24 ; ADR 0002, ADR 0003"
 status = "draft"
 
@@ -317,7 +317,7 @@ status = "draft"
 [[requirement]]
 id = "SYS-REQ-044"
 title = "Programmation verrouillée par le canal de sécurité"
-text = "Le canal de sécurité doit surveiller la programmation qu'il a renvoyée pour affichage au récapitulatif et que le soignant a confirmée. Il doit lire lui-même les touches Démarrer, Confirmer et Arrêt, refuser toute nouvelle programmation tant qu'il autorise le moteur, et n'admettre pendant une perfusion que la pause, l'arrêt, la reprise, le bolus borné par la programmation confirmée et le passage prévu au maintien de veine ouverte."
+text = "Le canal de sécurité doit surveiller la programmation qu'il a renvoyée pour affichage au récapitulatif et que le soignant a confirmée. Il doit lire lui-même les touches Démarrer, Confirmer et Arrêt, et n'accepter une programmation que sur un appui sur Confirmer qu'il observe dans les 30 s suivant le renvoi de la copie. Il doit refuser toute nouvelle programmation tant qu'il autorise le moteur. Pendant une perfusion, il ne doit admettre que : la pause et l'arrêt, à tout moment ; la reprise, sur un appui sur Démarrer qu'il observe ; le bolus, sur un appui sur Confirmer qu'il observe, borné par la programmation confirmée ; le passage prévu au maintien de veine ouverte, déclenché par le volume qu'il mesure. Toute autre demande de la commande doit être refusée."
 source = "Mesure CTRL-025 (RISK-001, RISK-012) ; ADR 0003"
 status = "draft"
 
