@@ -723,3 +723,87 @@ method = "test"
 level = "bench"
 requirements = ["SYS-REQ-042"]
 status = "planned"
+
+[[verification]]
+id = "VER-102"
+method = "analysis"
+level = "system"
+requirements = ["SYS-REQ-020"]
+status = "planned"
+
+[[verification]]
+id = "VER-103"
+method = "analysis"
+level = "system"
+requirements = ["SYS-REQ-043"]
+status = "planned"
+
+[[verification]]
+id = "VER-104"
+method = "test"
+level = "bench"
+requirements = ["SYS-REQ-043"]
+status = "planned"
+
+[[verification]]
+id = "VER-105"
+method = "test"
+level = "system"
+requirements = ["SYS-REQ-044"]
+status = "planned"
+
+[[verification]]
+id = "VER-106"
+method = "analysis"
+level = "system"
+requirements = ["SYS-REQ-044"]
+status = "planned"
+
+[[verification]]
+id = "VER-107"
+method = "test"
+level = "bench"
+requirements = ["SYS-REQ-045"]
+status = "planned"
+
+[[verification]]
+id = "VER-108"
+method = "analysis"
+level = "system"
+requirements = ["SYS-REQ-045"]
+status = "planned"
+
+[[verification]]
+id = "VER-109"
+method = "test"
+level = "bench"
+requirements = ["SYS-REQ-046"]
+status = "planned"
+
+[[verification]]
+id = "VER-110"
+method = "test"
+level = "system"
+requirements = ["SYS-REQ-047"]
+status = "planned"
+
+[[verification]]
+id = "VER-111"
+method = "test"
+level = "bench"
+requirements = ["SYS-REQ-048"]
+status = "planned"
+
+[[verification]]
+id = "VER-112"
+method = "test"
+level = "bench"
+requirements = ["SYS-REQ-044"]
+status = "planned"
+
+[[verification]]
+id = "VER-113"
+method = "test"
+level = "bench"
+requirements = ["SYS-REQ-047"]
+status = "planned"

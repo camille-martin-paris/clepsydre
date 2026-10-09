@@ -16,8 +16,8 @@
 [[requirement]]
 id = "SYS-REQ-001"
 title = "Supervision indépendante du volume délivré"
-text = "Un canal de sécurité indépendant du canal de commande doit mesurer le volume délivré et placer la pompe en état sûr lorsque l'écart au volume attendu dépasse le plus grand de 10 % du volume attendu et 0,5 mL."
-source = "Mesure CTRL-001 (RISK-001, RISK-012)"
+text = "Un canal de sécurité indépendant du canal de commande doit mesurer le volume délivré par la position du piston, au moyen d'un capteur qui lui est propre, et placer la pompe en état sûr lorsque l'écart au volume attendu dépasse le plus grand de 10 % du volume attendu et 0,5 mL, ou lorsque la vitesse du piston dépasse la borne du mode actif sur une fenêtre de 2 s."
+source = "Mesure CTRL-001 (RISK-001, RISK-012) ; ADR 0003"
 status = "draft"
 
 [[requirement]]
@@ -44,35 +44,35 @@ status = "draft"
 [[requirement]]
 id = "SYS-REQ-005"
 title = "Anti-écoulement libre"
-text = "Aucun écoulement libre ne doit être possible lorsque le consommable est installé, retiré, ou que la porte est ouverte."
-source = "Mesure CTRL-004 (RISK-003) ; UN-04 ; IEC 60601-2-24"
+text = "Aucun écoulement libre ne doit être possible, ni par siphonage. Seringue en place, le piston doit être retenu par le pousseur, la seringue fixée dans le berceau, et la vis d'entraînement ne doit pas pouvoir être entraînée par le piston. Lorsque le piston est libéré ou la seringue retirée, ces protections n'agissant plus, l'écoulement libre doit être empêché par une valve anti-siphon du prolongateur : la liste des consommables vérifiés n'admet que des prolongateurs qui en sont munis. Avant de libérer le piston, la pompe doit en outre demander de clamper le prolongateur."
+source = "Mesure CTRL-004 (RISK-003) ; UN-04 ; IEC 60601-2-24 ; ADR 0002, ADR 0003"
 status = "draft"
 
 [[requirement]]
 id = "SYS-REQ-006"
-title = "Porte et consommable"
-text = "La pompe doit refuser de démarrer, ou arrêter la perfusion et déclencher une alarme de priorité haute, si la porte est ouverte ou si le consommable est absent ou mal positionné."
+title = "Seringue et piston"
+text = "La pompe doit refuser de démarrer, ou arrêter la perfusion et déclencher une alarme de priorité haute, si la seringue est absente ou mal positionnée dans le berceau, ou si le piston n'est pas capturé par le pousseur."
 source = "Mesure CTRL-005 (RISK-002, RISK-003) ; UN-04"
 status = "draft"
 
 [[requirement]]
 id = "SYS-REQ-007"
 title = "Air dans la ligne"
-text = "La pompe doit détecter une bulle d'air unitaire d'au moins 50 µL et un volume d'air cumulé d'au moins 1 mL sur 15 min, puis placer la pompe en état sûr. Ces seuils ne peuvent être configurés qu'à la baisse."
+text = "La pompe doit détecter sur le prolongateur, en aval de la seringue, une bulle d'air unitaire d'au moins 50 µL et un volume d'air cumulé d'au moins 1 mL sur 15 min, puis placer la pompe en état sûr. Ces seuils ne peuvent être configurés qu'à la baisse."
 source = "Mesure CTRL-006 (RISK-004) ; UN-06 ; IEC 60601-2-24"
 status = "draft"
 
 [[requirement]]
 id = "SYS-REQ-008"
 title = "Délai d'alarme d'occlusion"
-text = "Au seuil de pression par défaut, la pompe doit déclencher l'alarme d'occlusion aval en 30 min au plus à 1 mL/h et en 2 min au plus à 25 mL/h, délais mesurés selon l'IEC 60601-2-24 et publiés avec le seuil de pression."
+text = "Au seuil par défaut, la pompe doit déclencher l'alarme d'occlusion aval, détectée par la force sur le pousseur, en 30 min au plus à 1 mL/h et en 2 min au plus à 25 mL/h, pour chaque modèle de seringue de la liste vérifiée ; délais mesurés selon l'IEC 60601-2-24 et publiés avec le seuil, par modèle de seringue."
 source = "Mesure CTRL-007 (RISK-005) ; UN-06 ; IEC 60601-2-24"
 status = "draft"
 
 [[requirement]]
 id = "SYS-REQ-009"
 title = "Bolus post-occlusion"
-text = "Le volume libéré à la levée d'une occlusion aval, mesuré selon l'IEC 60601-2-24 au seuil de pression le plus élevé, doit rester inférieur à 0,2 mL."
+text = "À la détection d'une occlusion aval, la pompe doit faire reculer le pousseur d'une course calculée pour le modèle de seringue ; le volume libéré à la levée de l'occlusion, mesuré selon l'IEC 60601-2-24 au seuil le plus élevé, doit rester inférieur à 0,2 mL pour chaque modèle de la liste vérifiée."
 source = "Mesure CTRL-008 (RISK-006) ; UN-09 ; IEC 60601-2-24"
 status = "draft"
 
@@ -149,8 +149,8 @@ status = "draft"
 [[requirement]]
 id = "SYS-REQ-020"
 title = "Alarme de repli"
-text = "Une alarme technique sonore doit retentir même si le processeur principal est défaillant."
-source = "Mesure CTRL-016 (RISK-012, RISK-014)"
+text = "Pendant une perfusion, une alarme technique sonore doit retentir même si le processeur de commande ou le processeur de sécurité est défaillant, ou si aucun processeur n'est alimenté. Elle repose sur un circuit autonome, alimenté par une réserve propre, armé par le canal de sécurité au démarrage de la perfusion et déclenché par la perte de son signal de vie ; elle doit retentir au moins 2 min sur cette réserve."
+source = "Mesure CTRL-016 (RISK-010, RISK-012, RISK-014) ; ADR 0003"
 status = "draft"
 
 [[requirement]]
@@ -219,22 +219,22 @@ status = "draft"
 [[requirement]]
 id = "SYS-REQ-030"
 title = "Plage et résolution du débit"
-text = "Le débit programmable doit couvrir 0,1 à 999 mL/h si le principe volumétrique est retenu, ou 0,1 à 200 mL/h pour un pousse-seringue (ADR #13), avec une résolution de 0,1 mL/h ; toute valeur hors de cette plage doit être refusée."
-source = "UN-01 ; usage prévu H-02, H-03"
+text = "Le débit programmable doit couvrir 0,1 à 200 mL/h avec une résolution de 0,1 mL/h, dans la limite du débit maximal du modèle de seringue installé ; toute valeur hors de cette plage doit être refusée."
+source = "UN-01 ; usage prévu H-02, H-03 ; ADR 0002"
 status = "draft"
 
 [[requirement]]
 id = "SYS-REQ-031"
 title = "Volume à perfuser"
-text = "Le volume à perfuser doit être programmable de 0,1 à 9 999 mL avec une résolution de 0,1 mL ; le volume perfusé et le volume restant doivent être affichés pendant la perfusion."
-source = "UN-01, UN-02 ; usage prévu H-05"
+text = "Le volume à perfuser doit être programmable de 0,1 mL au volume utile de la seringue installée, avec une résolution de 0,1 mL ; le volume perfusé et le volume restant doivent être affichés pendant la perfusion."
+source = "UN-01, UN-02 ; usage prévu H-05 ; ADR 0002"
 status = "draft"
 
 [[requirement]]
 id = "SYS-REQ-032"
 title = "Fin de perfusion"
-text = "La pompe doit déclencher une préalarme de fin de perfusion un délai configurable avant la fin (1 à 30 min, 5 min par défaut). À l'atteinte du volume à perfuser, elle doit déclencher l'alarme de fin de perfusion et, selon la bibliothèque, s'arrêter ou poursuivre à un débit de maintien de veine ouverte qui ne peut dépasser ni le débit programmé ni 5 mL/h."
-source = "UN-10 ; scénario S6 ; IEC 60601-2-24"
+text = "La pompe doit déclencher une préalarme de fin de perfusion un délai configurable avant la fin (1 à 30 min, 5 min par défaut). À l'atteinte du volume à perfuser, elle doit déclencher l'alarme de fin de perfusion et, selon la bibliothèque, s'arrêter ou poursuivre à un débit de maintien de veine ouverte qui ne peut dépasser ni le débit programmé ni 5 mL/h. La position du piston doit en outre déclencher la préalarme de seringue presque vide, au même délai, et l'alarme de seringue vide, qui arrête la perfusion."
+source = "UN-10 ; scénario S6 ; IEC 60601-2-24 ; ADR 0002"
 status = "draft"
 
 [[requirement]]
@@ -308,6 +308,48 @@ source = "RISK-002, RISK-014 ; UN-06"
 status = "draft"
 
 [[requirement]]
+id = "SYS-REQ-043"
+title = "Vitesse maximale bornée par conception"
+text = "La vitesse maximale du pousseur doit être bornée par la conception mécanique et électronique, indépendamment du logiciel, de sorte que le volume délivré entre le début d'un emballement et l'état sûr reste inférieur à 0,5 mL avec la plus grande seringue de la liste vérifiée."
+source = "Mesure CTRL-024 (RISK-001, RISK-012) ; ADR 0003"
+status = "draft"
+
+[[requirement]]
+id = "SYS-REQ-044"
+title = "Programmation verrouillée par le canal de sécurité"
+text = "Le canal de sécurité doit surveiller la programmation qu'il a renvoyée pour affichage au récapitulatif et que le soignant a confirmée. Il doit lire lui-même les touches Démarrer, Confirmer et Arrêt, et n'accepter une programmation que sur un appui sur Confirmer qu'il observe dans les 30 s suivant le renvoi de la copie. Il doit refuser toute nouvelle programmation tant qu'il autorise le moteur. Pendant une perfusion, il ne doit admettre que : la pause et l'arrêt, à tout moment ; la reprise, sur un appui sur Démarrer qu'il observe ; le bolus, sur un appui sur Confirmer qu'il observe, borné par la programmation confirmée ; le passage prévu au maintien de veine ouverte, déclenché par le volume qu'il mesure. Toute autre demande de la commande doit être refusée."
+source = "Mesure CTRL-025 (RISK-001, RISK-012) ; ADR 0003"
+status = "draft"
+
+[[requirement]]
+id = "SYS-REQ-045"
+title = "Coupure par autorisation dynamique"
+text = "Le pilote moteur ne doit être validé que par la combinaison matérielle d'une autorisation du canal de commande et d'une autorisation dynamique du canal de sécurité ; un processeur bloqué, réinitialisé ou hors tension doit retirer son autorisation, et l'état par défaut de la validation doit être « non validé »."
+source = "Mesure CTRL-001 (RISK-001, RISK-012) ; ADR 0003"
+status = "draft"
+
+[[requirement]]
+id = "SYS-REQ-046"
+title = "Tests de la coupure et de l'alarme autonome"
+text = "À chaque démarrage, la pompe doit vérifier que chacun des deux canaux peut couper le moteur et que le circuit d'alarme autonome retentit ; tout échec doit la mettre hors service."
+source = "Mesures CTRL-001, CTRL-016 (RISK-012, RISK-014) ; ADR 0003"
+status = "draft"
+
+[[requirement]]
+id = "SYS-REQ-047"
+title = "Identification de la seringue"
+text = "Le soignant doit choisir le modèle de seringue dans une liste de seringues vérifiées, configurée par un technicien authentifié et protégée comme la bibliothèque de médicaments ; la pompe doit mesurer le diamètre du corps de la seringue et refuser de démarrer s'il ne correspond pas au modèle choisi."
+source = "Mesure CTRL-026 (RISK-001, RISK-002) ; ADR 0002"
+status = "draft"
+
+[[requirement]]
+id = "SYS-REQ-048"
+title = "Délai au premier écoulement"
+text = "La pompe doit rattraper les jeux mécaniques avant le démarrage d'une perfusion ; le délai entre le démarrage et le premier écoulement doit rester inférieur à 5 min à 1 mL/h pour chaque modèle de seringue de la liste vérifiée, mesuré sur banc et publié."
+source = "Mesure CTRL-027 (RISK-002) ; ADR 0002"
+status = "draft"
+
+[[requirement]]
 id = "SW-REQ-001"
 title = "Machine à états"
 text = "Le logiciel de commande doit être une machine à états explicite (arrêt, programmation, prête, perfusion, pause, alarme, état sûr, maintenance, hors service) ; toute transition non prévue doit être refusée et journalisée."
@@ -338,7 +380,7 @@ status = "draft"
 [[requirement]]
 id = "SW-REQ-005"
 title = "Calcul du volume sans dérive"
-text = "Le logiciel doit calculer le volume délivré et le volume restant en arithmétique entière ou à virgule fixe, sans erreur d'arrondi cumulée supérieure à 0,01 mL sur 9 999 mL."
+text = "Le logiciel doit calculer le volume délivré et le volume restant en arithmétique entière ou à virgule fixe, sans erreur d'arrondi cumulée supérieure à 0,01 mL sur toute la perfusion."
 source = "SYS-REQ-003, SYS-REQ-031"
 status = "draft"
 
@@ -394,8 +436,8 @@ status = "draft"
 [[requirement]]
 id = "SW-REQ-013"
 title = "Cohérence commande et supervision"
-text = "Le logiciel de commande doit transmettre au canal de sécurité la programmation en vigueur par une interface définie ; tout désaccord détecté entre les deux canaux doit placer la pompe en état sûr."
-source = "SYS-REQ-001, SYS-REQ-002 ; ADR #14"
+text = "Le logiciel de commande doit transmettre la programmation au canal de sécurité avant la confirmation, par une interface définie, et afficher au récapitulatif la copie renvoyée par ce canal ; tout désaccord détecté entre les deux canaux doit placer la pompe en état sûr."
+source = "SYS-REQ-001, SYS-REQ-002, SYS-REQ-044 ; ADR 0003"
 status = "draft"
 
 [[requirement]]

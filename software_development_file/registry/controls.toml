@@ -13,13 +13,13 @@
 
 [[control]]
 id = "CTRL-001"
-description = "Supervision indépendante du volume délivré, par un canal de sécurité distinct du canal de commande, qui place la pompe en état sûr en cas d'écart"
+description = "Supervision indépendante du volume délivré par un canal de sécurité distinct du canal de commande (processeur, horloge et capteur de position du piston propres), qui coupe le moteur par une autorisation dynamique et place la pompe en état sûr en cas d'écart ou de vitesse hors borne"
 risks = ["RISK-001", "RISK-012"]
-requirements = ["SYS-REQ-001", "SYS-REQ-002"]
+requirements = ["SYS-REQ-001", "SYS-REQ-002", "SYS-REQ-045", "SYS-REQ-046"]
 
 [[control]]
 id = "CTRL-002"
-description = "Asservissement du débit fondé sur une mesure de la position de l'actionneur, avec précision de débit vérifiée sur banc"
+description = "Asservissement du débit fondé sur la position du pousseur et la section du modèle de seringue identifié, avec précision de débit vérifiée sur banc pour chaque seringue"
 risks = ["RISK-001", "RISK-002"]
 requirements = ["SYS-REQ-003"]
 
@@ -31,31 +31,31 @@ requirements = ["SYS-REQ-004"]
 
 [[control]]
 id = "CTRL-004"
-description = "Dispositif mécanique anti-écoulement libre, actif dès que le consommable n'est pas engagé dans la pompe porte fermée"
+description = "Contre l'écoulement libre et le siphonage : seringue en place, retenue mécanique du piston par le pousseur, fixation de la seringue dans le berceau et vis d'entraînement irréversible ; piston libéré ou seringue retirée, valve anti-siphon sur le prolongateur, seul type admis dans la liste des consommables vérifiés ; demande de clampage du prolongateur avant la libération du piston, en complément"
 risks = ["RISK-003"]
 requirements = ["SYS-REQ-005"]
 
 [[control]]
 id = "CTRL-005"
-description = "Détection de la porte ouverte et de l'absence ou du mauvais positionnement du consommable, avec arrêt et alarme"
+description = "Détection de la seringue absente ou mal positionnée et du piston non capturé, avec refus du démarrage ou arrêt et alarme"
 risks = ["RISK-002", "RISK-003"]
 requirements = ["SYS-REQ-006"]
 
 [[control]]
 id = "CTRL-006"
-description = "Détection d'air dans la ligne, unitaire et cumulée, avec arrêt et alarme"
+description = "Détection d'air sur le prolongateur, unitaire et cumulée, avec arrêt et alarme"
 risks = ["RISK-004"]
 requirements = ["SYS-REQ-007"]
 
 [[control]]
 id = "CTRL-007"
-description = "Détection d'occlusion aval par la pression, dans un délai borné"
+description = "Détection d'occlusion aval par la force sur le pousseur, avec seuils et délais établis pour chaque modèle de seringue"
 risks = ["RISK-005"]
 requirements = ["SYS-REQ-008"]
 
 [[control]]
 id = "CTRL-008"
-description = "Décompression de la ligne à la détection d'une occlusion, pour limiter le bolus à sa levée"
+description = "Recul du pousseur d'une course calculée pour le modèle de seringue à la détection d'une occlusion, pour limiter le bolus à sa levée"
 risks = ["RISK-006"]
 requirements = ["SYS-REQ-009"]
 
@@ -103,9 +103,9 @@ requirements = ["SYS-REQ-018", "SYS-REQ-019"]
 
 [[control]]
 id = "CTRL-016"
-description = "Alarme technique de repli, indépendante du processeur principal"
-risks = ["RISK-012", "RISK-014"]
-requirements = ["SYS-REQ-020"]
+description = "Alarme technique de repli par un circuit autonome sur réserve propre, armé par le canal de sécurité pendant la perfusion et déclenché par la perte de son signal de vie, sans processeur alimenté ; testée à chaque démarrage"
+risks = ["RISK-010", "RISK-012", "RISK-014"]
+requirements = ["SYS-REQ-020", "SYS-REQ-046"]
 
 [[control]]
 id = "CTRL-017"
@@ -148,3 +148,27 @@ id = "CTRL-023"
 description = "Avertissement de prototype non utilisable sur un patient, sur l'appareil, à son démarrage et dans chaque version publiée"
 risks = ["RISK-021"]
 requirements = ["SYS-REQ-027"]
+
+[[control]]
+id = "CTRL-024"
+description = "Vitesse maximale du pousseur bornée par la conception mécanique et électronique, indépendamment du logiciel, pour limiter le volume délivré lors d'un emballement avant l'état sûr"
+risks = ["RISK-001", "RISK-012"]
+requirements = ["SYS-REQ-043"]
+
+[[control]]
+id = "CTRL-025"
+description = "Programmation confirmée figée dans le canal de sécurité, qui lit lui-même les touches Démarrer, Confirmer et Arrêt : confirmation, reprise et bolus admis seulement sur un appui qu'il observe, et seuls changements de mode listés"
+risks = ["RISK-001", "RISK-012"]
+requirements = ["SYS-REQ-044", "SW-REQ-013"]
+
+[[control]]
+id = "CTRL-026"
+description = "Identification du modèle de seringue : choix dans une liste vérifiée, contrôlé par la mesure du diamètre du corps ; désaccord bloquant"
+risks = ["RISK-001", "RISK-002"]
+requirements = ["SYS-REQ-047"]
+
+[[control]]
+id = "CTRL-027"
+description = "Rattrapage des jeux mécaniques avant le démarrage, avec délai au premier écoulement borné et mesuré pour chaque seringue"
+risks = ["RISK-002"]
+requirements = ["SYS-REQ-048"]
