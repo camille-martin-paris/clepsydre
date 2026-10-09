@@ -76,6 +76,17 @@ class MainTest(unittest.TestCase):
             self.assertFalse(output.exists())
             self.assertIn("« RISK-404 » inexistante", stderr.getvalue())
 
+    def test_missing_registry_directory(self):
+        with tempfile.TemporaryDirectory() as directory:
+            output = Path(directory, "matrix.md")
+            stderr = io.StringIO()
+            with redirect_stderr(stderr):
+                code = traceability_matrix.main(["traceability_matrix.py", "--registry", str(Path(directory, "absent")),
+                                                 "-o", str(output)])
+            self.assertEqual(code, 1)
+            self.assertFalse(output.exists())
+            self.assertIn("Registre introuvable", stderr.getvalue())
+
     def test_project_matrix(self):
         with tempfile.TemporaryDirectory() as directory:
             output = Path(directory, "matrix.md")

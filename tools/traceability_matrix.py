@@ -132,6 +132,10 @@ def main(argv: list[str]) -> int:
     parser.add_argument("-o", "--output", type=Path, help="fichier de sortie (sortie standard par défaut)")
     args = parser.parse_args(argv[1:])
 
+    # Un répertoire absent serait lu comme un registre vide, donc cohérent : le refuser.
+    if not args.registry.is_dir():
+        print(f"Registre introuvable : {args.registry}", file=sys.stderr)
+        return 1
     entries, errors = check_registry.load(args.registry)
     errors += check_registry.check(entries, args.registry.resolve().parent.parent)
     if errors:

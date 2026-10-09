@@ -551,6 +551,7 @@ status = "planned"
 [[verification]]
 id = "VER-077"
 method = "test"
+level = "system"
 requirements = ["SYS-REQ-042"]
 status = "planned"
 
