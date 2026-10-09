@@ -6,7 +6,10 @@
 Le registre (software_development_file/registry/) relie exigences, risques,
 mesures de maîtrise, vérifications et composants tiers (SOUP). Le script
 signale les identifiants mal formés ou en double, les références vers des
-éléments inexistants et les chaînes de traçabilité incomplètes.
+éléments inexistants (y compris les identifiants cités dans la source d'une
+exigence et le fichier de preuve d'une vérification), les éléments orphelins,
+les chaînes de traçabilité incomplètes et les exigences système ou matérielles
+sans vérification sur banc.
 
 Usage : check_registry.py [répertoire_du_registre]
 Code de retour : 0 si le registre est cohérent, 1 sinon.
@@ -27,7 +30,8 @@ SCHEMA = {
                           {"title": TEXT, "text": TEXT, "source": TEXT, "status": TEXT}),
     "risks.toml": ("risk", r"RISK-\d{3}", {"hazard": TEXT, "harm": TEXT, "status": TEXT}),
     "controls.toml": ("control", r"CTRL-\d{3}", {"description": TEXT, "risks": LIST, "requirements": LIST}),
-    "verifications.toml": ("verification", r"VER-\d{3}", {"method": TEXT, "requirements": LIST, "status": TEXT}),
+    "verifications.toml": ("verification", r"VER-\d{3}", {"method": TEXT, "level": TEXT, "requirements": LIST,
+                                                          "status": TEXT}),
     "soup.toml": ("soup", r"SOUP-\d{3}", {"name": TEXT, "version": TEXT, "usage": TEXT, "requirements": LIST,
                                           "known_anomalies": TEXT}),
 }
@@ -42,6 +46,16 @@ STATUSES = {
 }
 
 METHODS = {"test", "analysis", "inspection", "demonstration"}
+
+# Niveaux de vérification : software_development_file/verification-strategy.md.
+LEVELS = {"unit", "integration", "system", "bench", "precompliance"}
+
+# Niveaux sur la cible matérielle : une exigence système ou matérielle doit y être vérifiée,
+# le simulateur ne reproduisant que ce que son modèle contient.
+BENCH_LEVELS = {"bench", "precompliance"}
+
+# Identifiants du registre cités dans le texte libre d'une source d'exigence.
+CITED_ID = re.compile(r"\b(?:(?:SYS|SW|HW)-REQ|RISK|CTRL|VER|SOUP)-\d{3}\b")
 
 # Contrôle syntaxique d'une version épinglée : pas d'intervalle, de joker ni d'alias
 # de branche ou de canal connu. Il ne garantit pas l'immuabilité de la référence :
@@ -97,7 +111,8 @@ def field_error(value, kind: str) -> str | None:
     return None
 
 
-def check(entries: dict[str, list[dict]]) -> list[str]:
+def check(entries: dict[str, list[dict]], root: Path | None = None) -> list[str]:
+    """Contrôle le registre ; avec « root », vérifie aussi que les références de preuve existent."""
     errors = []
     ids: dict[str, set[str]] = {}
 
@@ -144,20 +159,55 @@ def check(entries: dict[str, list[dict]]) -> list[str]:
     references("verification", "requirements", "requirement")
     references("soup", "requirements", "requirement")
 
+    all_ids = set().union(*ids.values())
+    for requirement in entries["requirement"]:
+        source = requirement.get("source")
+        if isinstance(source, str):
+            for ref in CITED_ID.findall(source):
+                if ref not in all_ids:
+                    errors.append(f"requirement {requirement.get('id')}: source cite « {ref} », inexistant")
+
     controlled = {risk for c in entries["control"] for risk in strings(c, "risks")}
     for risk in entries["risk"]:
-        if risk.get("status") == "controlled" and risk.get("id") not in controlled:
+        if risk.get("id") in controlled:
+            continue
+        if risk.get("status") == "controlled":
             errors.append(f"risk {risk.get('id')}: statut « controlled » sans mesure de maîtrise")
+        elif risk.get("status") != "accepted":
+            errors.append(f"risk {risk.get('id')}: risque orphelin, aucune mesure de maîtrise "
+                          "et statut autre que « accepted »")
 
     verified = {req for v in entries["verification"] for req in strings(v, "requirements")}
+    on_bench = {req for v in entries["verification"] if v.get("level") in BENCH_LEVELS
+                for req in strings(v, "requirements")}
     for requirement in entries["requirement"]:
-        if requirement.get("status") == "approved" and requirement.get("id") not in verified:
+        identifier = requirement.get("id")
+        if identifier in verified:
+            if (isinstance(identifier, str) and identifier.startswith(("SYS-", "HW-"))
+                    and identifier not in on_bench and requirement.get("status") != "obsolete"):
+                errors.append(f"requirement {identifier}: exigence système ou matérielle sans vérification "
+                              "sur banc ni en pré-essais")
+            continue
+        if requirement.get("status") == "approved":
             errors.append(f"requirement {requirement.get('id')}: exigence approuvée sans vérification")
+        elif requirement.get("status") != "obsolete":
+            errors.append(f"requirement {requirement.get('id')}: exigence sans vérification prévue")
 
     for verification in entries["verification"]:
+        where = f"verification {verification.get('id')}"
         method = verification.get("method")
         if isinstance(method, str) and method and method not in METHODS:
-            errors.append(f"verification {verification.get('id')}: méthode « {method} » inconnue")
+            errors.append(f"{where}: méthode « {method} » inconnue")
+        level = verification.get("level")
+        if isinstance(level, str) and level and level not in LEVELS:
+            errors.append(f"{where}: niveau « {level} » inconnu")
+        reference = verification.get("reference")
+        if verification.get("status") in {"passed", "failed"} and "reference" not in verification:
+            errors.append(f"{where}: statut « {verification.get('status')} » sans référence de preuve")
+        if isinstance(reference, str) and reference.strip():
+            problem = reference_problem(reference, root)
+            if problem:
+                errors.append(f"{where}: référence « {reference} » {problem}")
 
     for soup in entries["soup"]:
         version = soup.get("version")
@@ -169,13 +219,40 @@ def check(entries: dict[str, list[dict]]) -> list[str]:
     return errors
 
 
+def reference_problem(reference: str, root: Path | None) -> str | None:
+    """Motif de refus d'une référence de preuve, ou None si elle est recevable.
+
+    La preuve est un fichier du dépôt, désigné par un chemin relatif, suivi
+    éventuellement d'une ancre (« tests/a.cpp#cas »). Un chemin absolu, une
+    ancre seule, un répertoire ou un chemin qui sort du dépôt, y compris par un
+    lien symbolique, sont refusés. Sans racine, seule la forme est contrôlée.
+    """
+    path = reference.split("#", 1)[0].strip()
+    if not path:
+        return "ne désigne aucun fichier"
+    if Path(path).is_absolute():
+        return "doit être un chemin relatif au dépôt"
+    if root is None:
+        return None
+    root = root.resolve()
+    target = (root / path).resolve()
+    if not target.is_relative_to(root):
+        return "sort du dépôt"
+    if not target.exists():
+        return "introuvable dans le dépôt"
+    if not target.is_file():
+        return "n'est pas un fichier"
+    return None
+
+
 def main(argv: list[str]) -> int:
     registry = Path(argv[1]) if len(argv) > 1 else DEFAULT_REGISTRY
     if not registry.is_dir():
         print(f"Registre introuvable : {registry}", file=sys.stderr)
         return 1
     entries, errors = load(registry)
-    errors += check(entries)
+    # La racine du dépôt est le parent de « software_development_file/registry ».
+    errors += check(entries, registry.resolve().parent.parent)
     for error in errors:
         print(f"erreur: {error}", file=sys.stderr)
     counts = ", ".join(f"{len(v)} {k}" for k, v in entries.items())

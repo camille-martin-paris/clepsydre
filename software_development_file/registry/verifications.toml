@@ -1,13 +1,18 @@
 # Vérifications des exigences. Champs :
 #   id            VER-nnn
 #   method        test | analysis | inspection | demonstration
+#   level         unit | integration | system | bench | precompliance
+#                 (niveaux de software_development_file/verification-strategy.md)
 #   requirements  liste d'identifiants d'exigences vérifiées
-#   status        planned | passed | failed
-#   reference     facultatif : test, protocole ou rapport (chemin dans le dépôt)
+#   status        planned | passed | failed ; une vérification prévue n'est pas un résultat
+#   reference     test, protocole ou rapport : fichier du dépôt, chemin relatif à sa racine,
+#                 suivi éventuellement d'une « #ancre » ; obligatoire pour passed et failed
+# Chaque SYS-REQ et HW-REQ a au moins une vérification de niveau bench ou precompliance.
 #
 # [[verification]]
 # id = "VER-001"
 # method = "test"
+# level = "unit"
 # requirements = ["SW-REQ-001"]
 # status = "planned"
 # reference = "tests/…"
@@ -15,467 +20,706 @@
 [[verification]]
 id = "VER-001"
 method = "test"
+level = "bench"
 requirements = ["SYS-REQ-001"]
 status = "planned"
 
 [[verification]]
 id = "VER-002"
 method = "analysis"
+level = "system"
 requirements = ["SYS-REQ-001"]
 status = "planned"
 
 [[verification]]
 id = "VER-003"
 method = "test"
+level = "bench"
 requirements = ["SYS-REQ-002"]
 status = "planned"
 
 [[verification]]
 id = "VER-004"
 method = "test"
+level = "bench"
 requirements = ["SYS-REQ-003"]
 status = "planned"
 
 [[verification]]
 id = "VER-005"
 method = "test"
+level = "bench"
 requirements = ["SYS-REQ-004"]
 status = "planned"
 
 [[verification]]
 id = "VER-006"
 method = "test"
+level = "bench"
 requirements = ["SYS-REQ-005"]
 status = "planned"
 
 [[verification]]
 id = "VER-007"
 method = "inspection"
+level = "bench"
 requirements = ["SYS-REQ-005"]
 status = "planned"
 
 [[verification]]
 id = "VER-008"
 method = "test"
+level = "bench"
 requirements = ["SYS-REQ-006"]
 status = "planned"
 
 [[verification]]
 id = "VER-009"
 method = "test"
+level = "bench"
 requirements = ["SYS-REQ-007"]
 status = "planned"
 
 [[verification]]
 id = "VER-010"
 method = "test"
+level = "bench"
 requirements = ["SYS-REQ-008"]
 status = "planned"
 
 [[verification]]
 id = "VER-011"
 method = "test"
+level = "bench"
 requirements = ["SYS-REQ-009"]
 status = "planned"
 
 [[verification]]
 id = "VER-012"
 method = "test"
+level = "system"
 requirements = ["SYS-REQ-010"]
 status = "planned"
 
 [[verification]]
 id = "VER-013"
 method = "test"
+level = "system"
 requirements = ["SYS-REQ-011"]
 status = "planned"
 
 [[verification]]
 id = "VER-014"
 method = "test"
+level = "system"
 requirements = ["SYS-REQ-012"]
 status = "planned"
 
 [[verification]]
 id = "VER-015"
 method = "inspection"
+level = "system"
 requirements = ["SYS-REQ-013"]
 status = "planned"
 
 [[verification]]
 id = "VER-016"
 method = "test"
+level = "system"
 requirements = ["SYS-REQ-014"]
 status = "planned"
 
 [[verification]]
 id = "VER-017"
 method = "test"
+level = "bench"
 requirements = ["SYS-REQ-015"]
 status = "planned"
 
 [[verification]]
 id = "VER-018"
 method = "test"
+level = "bench"
 requirements = ["SYS-REQ-016"]
 status = "planned"
 
 [[verification]]
 id = "VER-019"
 method = "test"
+level = "bench"
 requirements = ["SYS-REQ-017"]
 status = "planned"
 
 [[verification]]
 id = "VER-020"
 method = "analysis"
+level = "system"
 requirements = ["SYS-REQ-017"]
 status = "planned"
 
 [[verification]]
 id = "VER-021"
 method = "test"
+level = "bench"
 requirements = ["SYS-REQ-018"]
 status = "planned"
 
 [[verification]]
 id = "VER-022"
 method = "analysis"
+level = "system"
 requirements = ["SYS-REQ-018"]
 status = "planned"
 
 [[verification]]
 id = "VER-023"
 method = "test"
+level = "system"
 requirements = ["SYS-REQ-019"]
 status = "planned"
 
 [[verification]]
 id = "VER-024"
 method = "analysis"
+level = "system"
 requirements = ["SYS-REQ-019"]
 status = "planned"
 
 [[verification]]
 id = "VER-025"
 method = "test"
+level = "bench"
 requirements = ["SYS-REQ-020"]
 status = "planned"
 
 [[verification]]
 id = "VER-026"
 method = "test"
+level = "system"
 requirements = ["SYS-REQ-021"]
 status = "planned"
 
 [[verification]]
 id = "VER-027"
 method = "inspection"
+level = "system"
 requirements = ["SYS-REQ-021"]
 status = "planned"
 
 [[verification]]
 id = "VER-028"
 method = "test"
+level = "bench"
 requirements = ["SYS-REQ-022"]
 status = "planned"
 
 [[verification]]
 id = "VER-029"
 method = "test"
+level = "system"
 requirements = ["SYS-REQ-023"]
 status = "planned"
 
 [[verification]]
 id = "VER-030"
 method = "test"
+level = "bench"
 requirements = ["SYS-REQ-024"]
 status = "planned"
 
 [[verification]]
 id = "VER-031"
 method = "test"
+level = "system"
 requirements = ["SYS-REQ-025"]
 status = "planned"
 
 [[verification]]
 id = "VER-032"
 method = "test"
+level = "system"
 requirements = ["SYS-REQ-026"]
 status = "planned"
 
 [[verification]]
 id = "VER-033"
 method = "inspection"
+level = "bench"
 requirements = ["SYS-REQ-027"]
 status = "planned"
 
 [[verification]]
 id = "VER-034"
 method = "test"
+level = "bench"
 requirements = ["SYS-REQ-027"]
 status = "planned"
 
 [[verification]]
 id = "VER-035"
 method = "test"
+level = "system"
 requirements = ["SYS-REQ-028"]
 status = "planned"
 
 [[verification]]
 id = "VER-036"
 method = "analysis"
+level = "system"
 requirements = ["SYS-REQ-028"]
 status = "planned"
 
 [[verification]]
 id = "VER-037"
 method = "test"
+level = "system"
 requirements = ["SYS-REQ-029"]
 status = "planned"
 
 [[verification]]
 id = "VER-038"
 method = "test"
+level = "system"
 requirements = ["SYS-REQ-030"]
 status = "planned"
 
 [[verification]]
 id = "VER-039"
 method = "test"
+level = "system"
 requirements = ["SYS-REQ-031"]
 status = "planned"
 
 [[verification]]
 id = "VER-040"
 method = "test"
+level = "system"
 requirements = ["SYS-REQ-032"]
 status = "planned"
 
 [[verification]]
 id = "VER-041"
 method = "test"
+level = "bench"
 requirements = ["SYS-REQ-033"]
 status = "planned"
 
 [[verification]]
 id = "VER-042"
 method = "test"
+level = "bench"
 requirements = ["SYS-REQ-034"]
 status = "planned"
 
 [[verification]]
 id = "VER-043"
 method = "test"
+level = "system"
 requirements = ["SYS-REQ-035"]
 status = "planned"
 
 [[verification]]
 id = "VER-044"
 method = "test"
+level = "system"
 requirements = ["SYS-REQ-036"]
 status = "planned"
 
 [[verification]]
 id = "VER-045"
 method = "test"
+level = "system"
 requirements = ["SYS-REQ-037"]
 status = "planned"
 
 [[verification]]
 id = "VER-046"
 method = "test"
+level = "system"
 requirements = ["SYS-REQ-038"]
 status = "planned"
 
 [[verification]]
 id = "VER-047"
 method = "inspection"
+level = "system"
 requirements = ["SYS-REQ-039"]
 status = "planned"
 
 [[verification]]
 id = "VER-048"
 method = "test"
+level = "system"
 requirements = ["SYS-REQ-040"]
 status = "planned"
 
 [[verification]]
 id = "VER-049"
 method = "inspection"
+level = "system"
 requirements = ["SYS-REQ-040"]
 status = "planned"
 
 [[verification]]
 id = "VER-050"
 method = "test"
+level = "system"
 requirements = ["SYS-REQ-041"]
 status = "planned"
 
 [[verification]]
 id = "VER-051"
 method = "test"
+level = "integration"
 requirements = ["SW-REQ-001"]
 status = "planned"
 
 [[verification]]
 id = "VER-052"
 method = "analysis"
+level = "unit"
 requirements = ["SW-REQ-001"]
 status = "planned"
 
 [[verification]]
 id = "VER-053"
 method = "test"
+level = "unit"
 requirements = ["SW-REQ-002"]
 status = "planned"
 
 [[verification]]
 id = "VER-054"
 method = "test"
+level = "unit"
 requirements = ["SW-REQ-003"]
 status = "planned"
 
 [[verification]]
 id = "VER-055"
 method = "test"
+level = "unit"
 requirements = ["SW-REQ-004"]
 status = "planned"
 
 [[verification]]
 id = "VER-056"
 method = "test"
+level = "unit"
 requirements = ["SW-REQ-005"]
 status = "planned"
 
 [[verification]]
 id = "VER-057"
 method = "analysis"
+level = "unit"
 requirements = ["SW-REQ-005"]
 status = "planned"
 
 [[verification]]
 id = "VER-058"
 method = "test"
+level = "unit"
 requirements = ["SW-REQ-006"]
 status = "planned"
 
 [[verification]]
 id = "VER-059"
 method = "test"
+level = "integration"
 requirements = ["SW-REQ-007"]
 status = "planned"
 
 [[verification]]
 id = "VER-060"
 method = "inspection"
+level = "unit"
 requirements = ["SW-REQ-007"]
 status = "planned"
 
 [[verification]]
 id = "VER-061"
 method = "test"
+level = "integration"
 requirements = ["SW-REQ-008"]
 status = "planned"
 
 [[verification]]
 id = "VER-062"
 method = "test"
+level = "unit"
 requirements = ["SW-REQ-009"]
 status = "planned"
 
 [[verification]]
 id = "VER-063"
 method = "analysis"
+level = "unit"
 requirements = ["SW-REQ-009"]
 status = "planned"
 
 [[verification]]
 id = "VER-064"
 method = "test"
+level = "unit"
 requirements = ["SW-REQ-010"]
 status = "planned"
 
 [[verification]]
 id = "VER-065"
 method = "test"
+level = "unit"
 requirements = ["SW-REQ-011"]
 status = "planned"
 
 [[verification]]
 id = "VER-066"
 method = "analysis"
+level = "unit"
 requirements = ["SW-REQ-012"]
 status = "planned"
 
 [[verification]]
 id = "VER-067"
 method = "test"
+level = "unit"
 requirements = ["SW-REQ-012"]
 status = "planned"
 
 [[verification]]
 id = "VER-068"
 method = "test"
+level = "integration"
 requirements = ["SW-REQ-013"]
 status = "planned"
 
 [[verification]]
 id = "VER-069"
 method = "test"
+level = "unit"
 requirements = ["SW-REQ-014"]
 status = "planned"
 
 [[verification]]
 id = "VER-070"
 method = "test"
+level = "unit"
 requirements = ["SW-REQ-015"]
 status = "planned"
 
 [[verification]]
 id = "VER-071"
 method = "test"
+level = "unit"
 requirements = ["SW-REQ-016"]
 status = "planned"
 
 [[verification]]
 id = "VER-072"
 method = "test"
+level = "unit"
 requirements = ["SW-REQ-017"]
 status = "planned"
 
 [[verification]]
 id = "VER-073"
 method = "test"
+level = "unit"
 requirements = ["SW-REQ-018"]
 status = "planned"
 
 [[verification]]
 id = "VER-074"
 method = "analysis"
+level = "unit"
 requirements = ["SW-REQ-018"]
 status = "planned"
 
 [[verification]]
 id = "VER-075"
 method = "test"
+level = "precompliance"
 requirements = ["HW-REQ-001"]
 status = "planned"
 
 [[verification]]
 id = "VER-076"
 method = "test"
+level = "precompliance"
 requirements = ["HW-REQ-002"]
 status = "planned"
 
 [[verification]]
 id = "VER-077"
 method = "test"
+level = "system"
 requirements = ["SYS-REQ-042"]
 status = "planned"
 
 [[verification]]
 id = "VER-078"
 method = "analysis"
+level = "system"
 requirements = ["SYS-REQ-038"]
+status = "planned"
+
+[[verification]]
+id = "VER-079"
+method = "test"
+level = "bench"
+requirements = ["SYS-REQ-010"]
+status = "planned"
+
+[[verification]]
+id = "VER-080"
+method = "test"
+level = "bench"
+requirements = ["SYS-REQ-011"]
+status = "planned"
+
+[[verification]]
+id = "VER-081"
+method = "test"
+level = "bench"
+requirements = ["SYS-REQ-012"]
+status = "planned"
+
+[[verification]]
+id = "VER-082"
+method = "inspection"
+level = "bench"
+requirements = ["SYS-REQ-013"]
+status = "planned"
+
+[[verification]]
+id = "VER-083"
+method = "test"
+level = "bench"
+requirements = ["SYS-REQ-014"]
+status = "planned"
+
+[[verification]]
+id = "VER-084"
+method = "test"
+level = "bench"
+requirements = ["SYS-REQ-019"]
+status = "planned"
+
+[[verification]]
+id = "VER-085"
+method = "test"
+level = "bench"
+requirements = ["SYS-REQ-021"]
+status = "planned"
+
+[[verification]]
+id = "VER-086"
+method = "test"
+level = "bench"
+requirements = ["SYS-REQ-023"]
+status = "planned"
+
+[[verification]]
+id = "VER-087"
+method = "test"
+level = "bench"
+requirements = ["SYS-REQ-025"]
+status = "planned"
+
+[[verification]]
+id = "VER-088"
+method = "test"
+level = "bench"
+requirements = ["SYS-REQ-026"]
+status = "planned"
+
+[[verification]]
+id = "VER-089"
+method = "test"
+level = "bench"
+requirements = ["SYS-REQ-028"]
+status = "planned"
+
+[[verification]]
+id = "VER-090"
+method = "test"
+level = "bench"
+requirements = ["SYS-REQ-029"]
+status = "planned"
+
+[[verification]]
+id = "VER-091"
+method = "test"
+level = "bench"
+requirements = ["SYS-REQ-030"]
+status = "planned"
+
+[[verification]]
+id = "VER-092"
+method = "test"
+level = "bench"
+requirements = ["SYS-REQ-031"]
+status = "planned"
+
+[[verification]]
+id = "VER-093"
+method = "test"
+level = "bench"
+requirements = ["SYS-REQ-032"]
+status = "planned"
+
+[[verification]]
+id = "VER-094"
+method = "test"
+level = "bench"
+requirements = ["SYS-REQ-035"]
+status = "planned"
+
+[[verification]]
+id = "VER-095"
+method = "test"
+level = "bench"
+requirements = ["SYS-REQ-036"]
+status = "planned"
+
+[[verification]]
+id = "VER-096"
+method = "test"
+level = "bench"
+requirements = ["SYS-REQ-037"]
+status = "planned"
+
+[[verification]]
+id = "VER-097"
+method = "test"
+level = "bench"
+requirements = ["SYS-REQ-038"]
+status = "planned"
+
+[[verification]]
+id = "VER-098"
+method = "inspection"
+level = "bench"
+requirements = ["SYS-REQ-039"]
+status = "planned"
+
+[[verification]]
+id = "VER-099"
+method = "test"
+level = "bench"
+requirements = ["SYS-REQ-040"]
+status = "planned"
+
+[[verification]]
+id = "VER-100"
+method = "test"
+level = "bench"
+requirements = ["SYS-REQ-041"]
+status = "planned"
+
+[[verification]]
+id = "VER-101"
+method = "test"
+level = "bench"
+requirements = ["SYS-REQ-042"]
 status = "planned"
