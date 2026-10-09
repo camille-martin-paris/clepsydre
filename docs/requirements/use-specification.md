@@ -86,7 +86,7 @@ Chaque scénario décrit le déroulement nominal, puis les situations susceptibl
 | | |
 | --- | --- |
 | Profil | P1 |
-| Préalables | Pompe contrôlée et en service ; prescription disponible ; consommable compatible |
+| Préalables | Pompe contrôlée et en service ; prescription disponible ; seringue d'un modèle de la liste vérifiée, remplie et purgée |
 | Déroulement | 1. Fixer la pompe sur la potence et la brancher. 2. Mettre en marche ; l'autotest s'exécute et l'avertissement de prototype s'affiche. 3. Installer la seringue remplie et purgée dans le berceau, fermer la bride et engager le piston dans le pousseur. 4. Choisir le modèle de seringue dans la liste ; la pompe contrôle sa présence, son diamètre et la capture du piston. |
 | Points d'attention | Seringue mal positionnée, non listée ou d'un autre modèle que celui choisi ; piston non engagé dans le pousseur (siphonage) ; écoulement libre pendant l'installation si le prolongateur n'est pas clampé ; autotest en échec ignoré ; pompe d'un autre service avec une autre configuration. |
 
@@ -133,7 +133,7 @@ Chaque scénario décrit le déroulement nominal, puis les situations susceptibl
 | Profil | P1 |
 | Préalables | Volume programmé bientôt atteint |
 | Déroulement | 1. Recevoir l'alerte de fin imminente. 2. Préparer la suite : nouvelle seringue, ou arrêt. 3. À la fin, la pompe passe en débit de maintien de veine (si prévu) ou s'arrête et alarme. 4. Arrêter, déconnecter, retirer le consommable sans écoulement libre. |
-| Points d'attention | Alerte de fin ignorée ; débit de maintien non souhaité ; consommable retiré clamp ouvert. |
+| Points d'attention | Alerte de fin ignorée ; débit de maintien non souhaité ; seringue retirée prolongateur non clampé. |
 
 ### S7 — Maintenance
 
