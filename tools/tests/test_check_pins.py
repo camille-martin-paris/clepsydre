@@ -98,8 +98,13 @@ class WorkflowTest(unittest.TestCase):
                                  "installe sans épinglage contrôlé")
 
     def test_pip_without_hashes(self):
-        self.assertError(PINNED_WORKFLOW.replace("--require-hashes --only-binary=:all: -r tools/requirements/reuse.txt",
-                                                 "reuse==6.2.0"), "pip install sans --require-hashes")
+        locked = "pip install --require-hashes --only-binary=:all: -r tools/requirements/reuse.txt"
+        for command in ("pip install reuse==6.2.0", '"$RUNNER_TEMP/venv/bin/pip" install reuse==6.2.0',
+                        "'venv/bin/pip3' install -r tools/requirements/reuse.txt", "python -m pip install reuse"):
+            with self.subTest(command=command):
+                self.assertError(PINNED_WORKFLOW.replace(locked, command), "pip install sans --require-hashes")
+        quoted = '"$RUNNER_TEMP/venv/bin/pip" install --require-hashes -r tools/requirements/reuse.txt'
+        self.assertEqual(self.errors(PINNED_WORKFLOW.replace(locked, quoted)), [])
 
     def test_download_without_checksum(self):
         self.assertError(PINNED_WORKFLOW.replace('echo "x  a.tar.gz" | sha256sum --check', "tar -xzf a.tar.gz"),

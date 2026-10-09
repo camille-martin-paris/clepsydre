@@ -37,7 +37,8 @@ DIGEST = re.compile(r"@sha256:[0-9a-f]{64}$")
 FULL_VERSION = re.compile(r"^\d+\.\d+\.\d+$")
 
 APT = re.compile(r"\bapt(?:-get)?\s+(?:-\S+\s+)*(?:install|update|upgrade)\b")
-PIP_INSTALL = re.compile(r"\bpip3?\s+install\b")
+# « pip install », y compris par un chemin entre guillemets (« "$VENV/bin/pip" install ») ou « -m pip ».
+PIP_INSTALL = re.compile(r"\bpip3?['\"]?\s+install\b")
 DOWNLOAD = re.compile(r"\b(?:curl|wget)\b")
 CHECKSUM = re.compile(r"\bsha256sum\s+(?:--check|-c)\b")
 UNCONTROLLED = re.compile(r"\b(?:pipx|npx|npm\s+(?:install|i|ci)|gem\s+install|go\s+install|cargo\s+install|uvx)\b")
