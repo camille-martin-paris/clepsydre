@@ -27,7 +27,8 @@ from pathlib import Path
 DEFAULT_ROOT = Path(__file__).resolve().parent.parent
 
 USES = re.compile(r"^\s*(?:-\s+)?uses:\s*['\"]?([^\s'\"#]+)")
-IMAGE = re.compile(r"^\s*(?:-\s+)?(?:image|container):\s*['\"]?([^\s'\"#]+)")
+IMAGE = re.compile(r"^\s*(?:-\s+)?(?:image|container):\s*['\"]?(\$\{\{[^}]*\}\}|[^\s'\"#]+)")
+MATRIX_REFERENCE = re.compile(r"^\$\{\{\s*matrix((?:\.[A-Za-z_][A-Za-z0-9_-]*)+)\s*\}\}$")
 RUN = re.compile(r"^(\s*)(-\s+)?run:\s*(.*)$")
 PYTHON_VERSION = re.compile(r"^\s*python-version:\s*['\"]?(\$\{\{[^}]*\}\}|[^\s'\"#]+)")
 ENV_VALUE = re.compile(r"^\s+([A-Z][A-Z0-9_]*):\s*['\"]?([^\s'\"#]+)")
@@ -73,6 +74,37 @@ def run_blocks(lines: list[str]) -> list[tuple[int, str]]:
     return blocks
 
 
+def matrix_values(lines: list[str], key: str) -> list[tuple[int, str]]:
+    """Valeurs données à la clé « key » dans le workflow : scalaire, liste en ligne,
+    liste en bloc ou table en ligne (« { name: a, key: b } ») ; (numéro de ligne, valeur)."""
+    values = []
+    block_key = re.compile(rf"^(\s*)(?:-\s+)?{re.escape(key)}:\s*(.*)$")
+    flow_key = re.compile(rf"[{{,]\s*{re.escape(key)}:\s*([^,}}]+)")
+    for index, line in enumerate(lines):
+        number = index + 1
+        for match in flow_key.finditer(line):
+            values.append((number, match.group(1).strip().strip("'\"")))
+        match = block_key.match(line)
+        if not match:
+            continue
+        rest = match.group(2).split(" #", 1)[0].strip()
+        if rest.startswith("["):
+            values += [(number, item.strip().strip("'\"")) for item in rest.strip("[]").split(",") if item.strip()]
+        elif rest:
+            values.append((number, rest.strip("'\"")))
+        else:
+            indent = len(match.group(1))
+            following = index + 1
+            while following < len(lines) and (not lines[following].strip() or
+                                              len(lines[following]) - len(lines[following].lstrip()) > indent):
+                item = lines[following].strip()
+                if item.startswith("- "):
+                    values.append((following + 1, item[2:].strip().strip("'\"")))
+                following += 1
+    # La ligne qui référence la matrice (« image: ${{ matrix.image }} ») n'en est pas une valeur.
+    return [(number, value) for number, value in values if not value.startswith("${{")]
+
+
 def check_workflow(path: Path, label: str) -> list[str]:
     errors = []
     lines = path.read_text(encoding="utf-8").splitlines()
@@ -94,10 +126,27 @@ def check_workflow(path: Path, label: str) -> list[str]:
                     errors.append(f"{where}: action « {ref} » sans empreinte SHA-256")
             elif not COMMIT.search(ref):
                 errors.append(f"{where}: action « {ref} » non épinglée par commit complet")
-        # Une image tirée d'une matrice (« ${{ matrix.… }} ») est contrôlée sur la ligne de la matrice.
-        if (match := IMAGE.match(line)) and not (image := resolve(match.group(1))).startswith("${{"):
-            if not DIGEST.search(image):
-                errors.append(f"{where}: image « {image} » sans empreinte SHA-256")
+        if match := IMAGE.match(line):
+            image = resolve(match.group(1))
+            if not image.startswith("${{"):
+                if not DIGEST.search(image):
+                    errors.append(f"{where}: image « {image} » sans empreinte SHA-256")
+            elif reference := MATRIX_REFERENCE.match(image):
+                # Image tirée d'une matrice : chaque valeur de la clé référencée est contrôlée,
+                # quel que soit son nom.
+                key = reference.group(1).rsplit(".", 1)[1]
+                values = matrix_values(lines, key)
+                if not values:
+                    errors.append(f"{where}: valeurs de « {image} » introuvables dans la matrice")
+                for value_line, value in values:
+                    # Une valeur sous une clé « image: » est déjà contrôlée comme image littérale.
+                    if IMAGE.match(lines[value_line - 1]):
+                        continue
+                    if not DIGEST.search(value):
+                        errors.append(f"{label}:{value_line}: image « {value} » (matrice, {image}) "
+                                      "sans empreinte SHA-256")
+            else:
+                errors.append(f"{where}: image « {image} » : expression non vérifiable")
         if (match := PYTHON_VERSION.match(line)) and not FULL_VERSION.match(version := resolve(match.group(1))):
             errors.append(f"{where}: python-version « {version} » n'est pas une version complète X.Y.Z")
     for number, block in run_blocks(lines):

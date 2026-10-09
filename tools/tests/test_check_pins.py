@@ -71,6 +71,41 @@ class WorkflowTest(unittest.TestCase):
         self.assertError(PINNED_WORKFLOW.replace(f"gcc:16.1.0@{DIGEST}", "gcc:16.1.0"),
                          "image « gcc:16.1.0 » sans empreinte")
 
+    def test_matrix_image_under_any_key(self):
+        # Contre-épreuve de revue : clé de matrice autre que « image ».
+        workflow = """jobs:
+  build:
+    container: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: ["ubuntu:26.04"]
+"""
+        self.assertError(workflow, "image « ubuntu:26.04 » (matrice, ${{ matrix.os }}) sans empreinte")
+        self.assertEqual(self.errors(workflow.replace('"ubuntu:26.04"', f'"ubuntu:26.04@{DIGEST}"')), [])
+
+    def test_matrix_image_forms(self):
+        block = f"""jobs:
+  build:
+    container: ${{{{ matrix.cible.os }}}}
+    strategy:
+      matrix:
+        cible:
+          - {{ name: a, os: ubuntu:26.04@{DIGEST} }}
+          - {{ name: b, os: debian:13 }}
+        os:
+          - alpine:3
+"""
+        errors = self.errors(block)
+        self.assertTrue(any("« debian:13 »" in e for e in errors), errors)
+        self.assertTrue(any("« alpine:3 »" in e for e in errors), errors)
+        self.assertFalse(any("ubuntu" in e for e in errors), errors)
+
+    def test_matrix_image_without_values(self):
+        self.assertError("jobs:\n  build:\n    container: ${{ matrix.absent }}\n", "introuvables dans la matrice")
+
+    def test_unverifiable_image_expression(self):
+        self.assertError("jobs:\n  build:\n    container: ${{ inputs.image }}\n", "expression non vérifiable")
+
     def test_docker_action_without_digest(self):
         self.assertError(PINNED_WORKFLOW.replace("uses: ./.github/actions/local", "uses: docker://alpine:3"),
                          "« docker://alpine:3 » sans empreinte")
