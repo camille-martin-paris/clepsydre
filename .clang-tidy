@@ -1,0 +1,56 @@
+# Analyse statique du code C++23 de Clepsydre ; voir docs/development/build.md.
+# Les exclusions sont justifiées ci-dessous ; toute nouvelle exclusion est justifiée dans sa PR.
+Checks: >
+  -*,
+  bugprone-*,
+  cert-*,
+  clang-analyzer-*,
+  concurrency-*,
+  cppcoreguidelines-*,
+  misc-*,
+  modernize-*,
+  performance-*,
+  portability-*,
+  readability-*,
+  -bugprone-easily-swappable-parameters,
+  -cppcoreguidelines-avoid-magic-numbers,
+  -readability-magic-numbers,
+  -cppcoreguidelines-macro-usage,
+  -misc-include-cleaner,
+  -modernize-use-trailing-return-type,
+  -readability-identifier-length,
+  -readability-function-cognitive-complexity,
+  -readability-redundant-declaration
+# Justification des exclusions :
+# - easily-swappable-parameters : les unités sont portées par des types dédiés (CONTRIBUTING.md).
+# - magic-numbers : trop bruyant pour les tests et les constantes physiques nommées en revue.
+# - macro-usage : les macros CLEPSYDRE_* de configuration sont admises et revues.
+# - include-cleaner : faux positifs avec les modules C++.
+# - use-trailing-return-type : convention du projet, type de retour en tête.
+# - identifier-length : noms courts admis dans les portées locales réduites (t, v).
+# - function-cognitive-complexity : remplacé par la revue et la couverture de tests.
+# - redundant-declaration : faux positifs sur operator new/delete déclarés dans le fragment
+#   global d'un module (clang-tidy 20 et 21) ; à réactiver quand l'outil sera corrigé.
+WarningsAsErrors: '*'
+HeaderFilterRegex: '.*/(src|tests)/.*'
+CheckOptions:
+  - key: readability-identifier-naming.NamespaceCase
+    value: lower_case
+  - key: readability-identifier-naming.ClassCase
+    value: CamelCase
+  - key: readability-identifier-naming.StructCase
+    value: CamelCase
+  - key: readability-identifier-naming.EnumCase
+    value: CamelCase
+  - key: readability-identifier-naming.FunctionCase
+    value: camelBack
+  - key: readability-identifier-naming.VariableCase
+    value: camelBack
+  - key: readability-identifier-naming.PrivateMemberCase
+    value: camelBack
+  - key: readability-identifier-naming.PrivateMemberSuffix
+    value: _
+  - key: readability-identifier-naming.MacroDefinitionCase
+    value: UPPER_CASE
+  - key: readability-identifier-naming.MacroDefinitionPrefix
+    value: CLEPSYDRE_
