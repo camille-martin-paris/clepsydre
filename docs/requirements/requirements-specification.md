@@ -190,7 +190,7 @@ Chaque valeur ci-dessous est une proposition de départ. Elle doit être confirm
 | SYS-REQ-002 | État sûr en 1 s au plus | Ordre de grandeur d'une boucle de surveillance embarquée ; à confirmer par l'analyse temporelle (#14). |
 | SYS-REQ-003 | ± 5 % en régime établi | Hypothèse H-04 de l'usage prévu ; ordre de grandeur des pompes du marché, à confirmer sur banc (#73). |
 | SYS-REQ-004 | 60 s après le temps de délivrance de 0,05 mL | Rend le délai proportionné au débit ; à 25 mL/h, environ 67 s. |
-| SYS-REQ-005 | Valve anti-siphon sur chaque prolongateur admis | Seule protection qui agit encore lorsque le piston est libéré ou la seringue retirée ; sa pression d'ouverture doit dépasser la hauteur de siphonage maximale, à fixer avec la liste des consommables. |
+| SYS-REQ-005 | Valve anti-siphon sur chaque prolongateur admis | Seule protection qui agit encore lorsque le piston est libéré ou la seringue retirée. Principe retenu par l'auteur le 2026-10-09 ; la pression d'ouverture, qui doit dépasser la hauteur de siphonage maximale, reste à fixer avec la liste des consommables. |
 | SYS-REQ-007 | 50 µL unitaire ; 1 mL cumulé sur 15 min | Valeurs usuelles des détecteurs d'air ; détecteur placé sur le prolongateur (ADR 0002). La mesure est maintenue par la révision C de l'analyse (RISK-004) ; aucune réduction sans justification. |
 | SYS-REQ-008 | 30 min à 1 mL/h ; 2 min à 25 mL/h, pour chaque seringue | Débits d'essai usuels de l'IEC 60601-2-24, qui demande de publier ces délais sans fixer de limite. Avec un pousse-seringue, le délai croît avec la section et l'élasticité de la seringue : à mesurer par modèle (#74). |
 | SYS-REQ-009 | < 0,2 mL, pour chaque seringue | Valeur proposée avec décompression par recul du pousseur (CTRL-008) ; à confirmer sur banc pour chaque modèle (#74). |
@@ -205,7 +205,7 @@ Chaque valeur ci-dessous est une proposition de départ. Elle doit être confirm
 | SYS-REQ-036 | Pause sonore de 2 min au plus | Durée usuelle de pause des signaux sonores ; l'IEC 60601-1-8 demande qu'elle soit définie, à confirmer. |
 | SYS-REQ-042 | Rappel à 2 min d'une pompe non démarrée ou en pause | Évite une interruption de thérapie oubliée ; durée à valider en évaluation formative (#40). |
 | SYS-REQ-043 | < 0,5 mL délivrés entre emballement et état sûr | Aligné sur le seuil d'écart de SYS-REQ-001 ; fixe la vitesse maximale avec le délai de SYS-REQ-002 (ADR 0003). |
-| SYS-REQ-044 | Confirmation observée dans les 30 s suivant le renvoi de la copie | Laisse lire le récapitulatif sans qu'une confirmation tardive s'applique à une copie ancienne ; à valider en évaluation formative (#40). |
+| SYS-REQ-044 | Confirmation observée dans les 30 s suivant le renvoi de la copie | Laisse lire le récapitulatif sans qu'une confirmation tardive s'applique à une copie ancienne. Valeur retenue par l'auteur le 2026-10-09 ; reste à valider en évaluation formative (#40). |
 | SYS-REQ-048 | Premier écoulement en moins de 5 min à 1 mL/h | Ordre de grandeur à comparer à l'état de l'art des pousse-seringues ; à mesurer sur banc pour chaque seringue (#73). |
 | SW-REQ-004 | 20 ms de stabilité | Valeur courante pour des contacts mécaniques ; à ajuster au clavier retenu. |
 | SW-REQ-005 | Erreur cumulée < 0,01 mL sur toute la perfusion | Négligeable devant la résolution de 0,1 mL. |
