@@ -6,17 +6,16 @@ Un SOUP est un composant logiciel embarqué dans Clepsydre qui n'a pas été dé
 
 ## Composants retenus
 
-Aucun composant n'est retenu à ce jour. La source lisible par machine est [`registry/soup.toml`](registry/soup.toml) ; le tableau ci-dessous en donne la vue lisible.
+La source lisible par machine est [`registry/soup.toml`](registry/soup.toml) ; le tableau ci-dessous en donne la vue lisible.
 
 | Identifiant | Composant | Version épinglée | Usage | Exigences de fonctionnement et de performance | Anomalies connues (date de revue) |
 | --- | --- | --- | --- | --- | --- |
-| — | — | — | — | — | — |
+| SOUP-001 | [mddlog](https://github.com/ambroise-leclerc/mddlog), EUPL-1.2, projet mddlog (Ambroise Leclerc) | 0.3.0, commit `073761b7a6d5ed29ed87bc37c85967db72386d3c` | Audit et cœur de diagnostic sur le processeur de commande ([ADR 0005](../docs/adr/0005-journalisation-et-evenements-d-audit.md)) ; **retenu sous conditions**, évaluation complète dans [#44](https://github.com/camille-martin-paris/clepsydre/issues/44) | SYS-REQ-018, SYS-REQ-019, SYS-REQ-034, SW-REQ-008, SW-REQ-009 | Aucune anomalie étiquetée bug ouverte ; mddlog #147 (TSan, libc++ 21, chemin non retenu) ; antérieure à 1.0 ; aucune cible embarquée testée ; pas de fournisseur d'ancrage réel livré (2026-10-09) |
 
 ## Composants envisagés
 
 | Composant | Usage envisagé | Décision attendue |
 | --- | --- | --- |
-| [mddlog](https://github.com/ambroise-leclerc/mddlog) | Journalisation de diagnostic et d'événements d'audit | ADR [#16](https://github.com/camille-martin-paris/clepsydre/issues/16) |
 | Bibliothèque standard C++23 de la chaîne retenue | Ensemble du logiciel | Chaîne de build [#19](https://github.com/camille-martin-paris/clepsydre/issues/19) |
 
 ## Évaluation d'un SOUP
