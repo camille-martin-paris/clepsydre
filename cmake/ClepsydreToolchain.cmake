@@ -48,6 +48,25 @@ target_compile_options(clepsydre_warnings INTERFACE
     -Wnull-dereference -Wformat=2 -Wimplicit-fallthrough
     $<$<CXX_COMPILER_ID:GNU>:-Wduplicated-cond -Wduplicated-branches -Wlogical-op -Wuseless-cast>)
 
+# Sanitizers : liste séparée par des virgules, par exemple « address,undefined » ou « thread ».
+# Une erreur détectée interrompt le programme (pas de reprise), pour faire échouer le test.
+set(CLEPSYDRE_SANITIZERS "" CACHE STRING "Sanitizers à activer (address, undefined, thread)")
+if(CLEPSYDRE_SANITIZERS)
+    string(REPLACE "," ";" _clepsydre_sanitizer_list "${CLEPSYDRE_SANITIZERS}")
+    set(_clepsydre_known_sanitizers address undefined thread)
+    foreach(_sanitizer IN LISTS _clepsydre_sanitizer_list)
+        if(NOT _sanitizer IN_LIST _clepsydre_known_sanitizers)
+            message(FATAL_ERROR "Sanitizer inconnu : ${_sanitizer}")
+        endif()
+    endforeach()
+    if("thread" IN_LIST _clepsydre_sanitizer_list AND "address" IN_LIST _clepsydre_sanitizer_list)
+        message(FATAL_ERROR "ThreadSanitizer et AddressSanitizer ne peuvent pas être combinés.")
+    endif()
+    add_compile_options(-fsanitize=${CLEPSYDRE_SANITIZERS} -fno-sanitize-recover=all
+                        -fno-omit-frame-pointer)
+    add_link_options(-fsanitize=${CLEPSYDRE_SANITIZERS})
+endif()
+
 option(CLEPSYDRE_CLANG_TIDY "Exécuter clang-tidy pendant la compilation" OFF)
 if(CLEPSYDRE_CLANG_TIDY)
     if(NOT CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
