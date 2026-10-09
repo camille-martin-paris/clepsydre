@@ -67,6 +67,21 @@ Contrepartie : un changement ultérieur de licence demanderait l'accord de tous 
 
 Chaque commit porte la ligne `Signed-off-by` ; `git commit -s` l'ajoute. Elle certifie que vous avez le droit de soumettre la contribution sous la licence du projet, selon les termes du DCO.
 
+L'adresse de la ligne `Signed-off-by` doit être celle de l'auteur du commit. Pour ne pas publier votre adresse personnelle, utilisez l'adresse `noreply` fournie par GitHub, pour l'auteur comme pour la signature. Personne ne signe pour une autre personne : un commit dont l'auteur n'a pas certifié l'origine est réécrit par cet auteur avant la fusion.
+
+### Commits antérieurs à l'adoption du DCO
+
+Les commits suivants précèdent l'adoption du DCO et ne portent pas `Signed-off-by` :
+
+| Commit | Autrice | Objet |
+| --- | --- | --- |
+| `483840a` | Camille Martin | Création du dépôt et de la licence EUPL-1.2 |
+| `3555d22` | Camille Martin | Présentation du projet dans le README |
+
+Sur `develop`, le contenu de `3555d22` est entré avec la fusion de la pull request #83 (commit `7c4f9be`, Ambroise Leclerc, co-écrit par Camille Martin), elle aussi antérieure à l'adoption du DCO et sans `Signed-off-by`.
+
+Ces commits ne sont pas réécrits : `main` et `develop` sont protégées contre les poussées forcées, et une réécriture changerait l'identifiant de toutes les versions qui en dérivent. Leurs auteurs en certifient l'origine selon les termes du DCO par un commentaire dans l'issue [#4](https://github.com/camille-martin-paris/clepsydre/issues/4). Tout commit postérieur à la fusion de ce document doit porter `Signed-off-by`.
+
 ## Pull requests
 
 - Ciblez `develop`. Reliez l'issue avec `Closes #n` dans la description.
