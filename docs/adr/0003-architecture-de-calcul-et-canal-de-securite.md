@@ -2,11 +2,11 @@
 
 | Champ | Valeur |
 | --- | --- |
-| Statut | Proposée, soumise à la décision de la mainteneuse |
+| Statut | Retenue par l'auteur (Ambroise Leclerc) le 2026-10-09 ; acceptation par l'approbatrice (Camille Martin) requise, l'approbateur d'un document n'en étant pas l'auteur ([plan de développement](../../software_development_file/development-plan.md#rôles-et-responsabilités)) |
 | Date | 2026-10-09 |
 | Issue | [#14](https://github.com/camille-martin-paris/clepsydre/issues/14) |
 | Épique | [#12](https://github.com/camille-martin-paris/clepsydre/issues/12) |
-| Dépend de | [ADR 0002](0002-principe-de-pompage.md) (pousse-seringue, proposée) |
+| Dépend de | [ADR 0002](0002-principe-de-pompage.md) (pousse-seringue) |
 
 > [!CAUTION]
 > Clepsydre ne doit pas être utilisé sur un être humain ni sur un animal. Cette ADR fixe un principe d'architecture ; l'indépendance et l'efficacité du canal de sécurité restent à démontrer par l'analyse détaillée et par les essais.
@@ -27,7 +27,7 @@ L'issue pose trois questions :
 2. un superviseur capable d'arrêter le moteur sur une **défaillance unique** de la commande ;
 3. le comportement sûr en cas de blocage ou de redémarrage de chaque processeur.
 
-Cette ADR suppose le pousse-seringue proposé par l'[ADR 0002](0002-principe-de-pompage.md). Si une autre option était retenue, la mesure indépendante du volume (position du piston) serait à revoir ; le reste de l'architecture resterait valable.
+Cette ADR suppose le pousse-seringue retenu par l'[ADR 0002](0002-principe-de-pompage.md). Si une autre option était retenue, la mesure indépendante du volume (position du piston) serait à revoir ; le reste de l'architecture resterait valable.
 
 ## Critères
 
@@ -47,9 +47,9 @@ Cette ADR suppose le pousse-seringue proposé par l'[ADR 0002](0002-principe-de-
 | D. Microcontrôleur de sûreté à double cœur en lockstep | Un processeur dont deux cœurs exécutent le même code et se comparent | **Écartée comme mesure unique** : détecte les défaillances aléatoires du cœur, mais pas une erreur de spécification ou de logiciel, commune aux deux cœurs, ni la défaillance d'un capteur ; outils souvent propriétaires. Utilisable plus tard comme processeur de commande, en complément de B |
 | E. Superviseur en logique matérielle (CPLD ou FPGA) | Comparaison câblée de la position du piston à une consigne | **Écartée** : le calcul du volume attendu pour des programmations variables (modes, bolus, pauses) est complexe en logique câblée et introduit une discipline de conception supplémentaire |
 
-## Décision proposée
+## Décision
 
-**Option B : deux microcontrôleurs, commande et sécurité.** **Cette décision revient à la mainteneuse** ; l'ADR reste au statut « proposée » jusqu'à son acceptation explicite.
+**Option B : deux microcontrôleurs, commande et sécurité.** Retenue par l'auteur le 2026-10-09 ; elle prend effet à son acceptation par l'approbatrice, consignée dans [reviews.md](../../software_development_file/reviews.md).
 
 ```mermaid
 flowchart LR
