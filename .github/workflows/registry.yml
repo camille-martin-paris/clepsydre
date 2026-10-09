@@ -1,4 +1,5 @@
-# Vérifie la cohérence du registre de traçabilité du dossier de développement.
+# Vérifie la cohérence du registre de traçabilité du dossier de développement
+# et génère la matrice de traçabilité.
 name: Registre de traçabilité
 
 on:
@@ -21,3 +22,14 @@ jobs:
         run: python3 -m unittest discover -s tools/tests -v
       - name: Vérification du registre
         run: python3 tools/check_registry.py
+      # La matrice n'est générée que si le registre est cohérent. Elle est publiée dans le résumé
+      # de l'exécution et comme artefact ; la preuve d'archive est le rapport de version (#77).
+      - name: Matrice de traçabilité
+        run: |
+          python3 tools/traceability_matrix.py --revision "$GITHUB_SHA" -o traceability-matrix.md
+          cat traceability-matrix.md >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: matrice-de-tracabilite
+          path: traceability-matrix.md
+          if-no-files-found: error

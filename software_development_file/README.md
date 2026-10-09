@@ -29,11 +29,23 @@ risque (RISK) ──maîtrisé par──▶ mesure (CTRL) ──mise en œuvre p
                                                      composant tiers (SOUP) ──doit satisfaire──┘
 ```
 
-[`tools/check_registry.py`](../tools/check_registry.py) contrôle les identifiants, les références et la complétude des chaînes ; la CI l'exécute sur chaque pull request :
+[`tools/check_registry.py`](../tools/check_registry.py) contrôle le registre ; la CI l'exécute sur chaque pull request et échoue sur la moindre erreur :
+
+| Contrôle | Erreur signalée |
+| --- | --- |
+| Identifiants | Motif invalide, doublon |
+| Champs | Champ obligatoire absent, mal typé ou vide ; champ inconnu ; statut, méthode ou niveau inconnu |
+| Références cassées | Mesure, vérification ou SOUP qui renvoie à un élément inexistant ; source d'exigence qui cite un identifiant du registre inexistant ; référence de preuve absente du dépôt |
+| Éléments orphelins | Risque sans mesure de maîtrise, sauf s'il est `accepted` ; exigence sans vérification, sauf si elle est `obsolete` |
+| Chaînes incomplètes | Risque `controlled` sans mesure ; exigence `approved` sans vérification ; vérification `passed` ou `failed` sans référence de preuve |
+| SOUP | Version non épinglée |
+
+[`tools/traceability_matrix.py`](../tools/traceability_matrix.py) génère la matrice de traçabilité en Markdown, uniquement si le registre est cohérent. Elle relie risques, mesures, exigences et vérifications, et donne l'état de vérification de chaque exigence. **La présence d'un lien n'est pas un résultat d'essai** : une vérification `planned` est seulement prévue, et une exigence n'est « vérifiée » que si toutes ses vérifications sont `passed`, chacune avec une référence de preuve. La CI publie la matrice dans le résumé de l'exécution et comme artefact ; la matrice d'une version publiée est reprise dans son rapport de vérification ([#77](https://github.com/camille-martin-paris/clepsydre/issues/77)).
 
 ```bash
 python3 tools/check_registry.py
+python3 tools/traceability_matrix.py -o matrice.md
 python3 -m unittest discover -s tools/tests
 ```
 
-La matrice de traçabilité publiée sera générée à partir de ce registre ([#11](https://github.com/camille-martin-paris/clepsydre/issues/11)).
+Ces outils contrôlent la structure et la complétude du registre, pas la justesse de son contenu ; ils ne sont pas qualifiés (réserve R3, [#89](https://github.com/camille-martin-paris/clepsydre/issues/89)).

@@ -14,7 +14,8 @@ import check_registry  # noqa: E402
 REQUIREMENT = {"id": "SW-REQ-001", "title": "t", "text": "x", "source": "s", "status": "approved"}
 RISK = {"id": "RISK-001", "hazard": "h", "harm": "d", "status": "controlled"}
 CONTROL = {"id": "CTRL-001", "description": "c", "risks": ["RISK-001"], "requirements": ["SW-REQ-001"]}
-VERIFICATION = {"id": "VER-001", "method": "test", "requirements": ["SW-REQ-001"], "status": "planned"}
+VERIFICATION = {"id": "VER-001", "method": "test", "level": "unit", "requirements": ["SW-REQ-001"],
+                "status": "planned"}
 SOUP = {"id": "SOUP-001", "name": "lib", "version": "1.2.3", "usage": "u", "requirements": ["SW-REQ-001"],
         "known_anomalies": "aucune connue"}
 
@@ -68,9 +69,52 @@ class CheckRegistryTest(unittest.TestCase):
     def test_approved_requirement_without_verification(self):
         self.assertError(registry(verification=[]), "sans vérification")
 
-    def test_draft_requirement_may_lack_verification(self):
+    def test_draft_requirement_without_planned_verification(self):
         entries = registry(requirement=[{**REQUIREMENT, "status": "draft"}], verification=[])
+        self.assertError(entries, "sans vérification prévue")
+
+    def test_obsolete_requirement_may_lack_verification(self):
+        entries = registry(requirement=[{**REQUIREMENT, "status": "obsolete"}], verification=[])
         self.assertEqual(check_registry.check(entries), [])
+
+    def test_verification_level(self):
+        missing = {k: v for k, v in VERIFICATION.items() if k != "level"}
+        self.assertError(registry(verification=[missing]), "« level » absent")
+        self.assertError(registry(verification=[{**VERIFICATION, "level": "acceptance"}]), "niveau « acceptance » inconnu")
+
+    def test_source_citing_unknown_identifier(self):
+        cited = {**REQUIREMENT, "source": "Mesure CTRL-001 (RISK-001) ; SYS-REQ-042"}
+        self.assertError(registry(requirement=[cited]), "source cite « SYS-REQ-042 », inexistant")
+
+    def test_source_citing_known_identifiers(self):
+        cited = {**REQUIREMENT, "source": "Mesure CTRL-001 (RISK-001) ; UN-03 ; #24"}
+        self.assertEqual(check_registry.check(registry(requirement=[cited])), [])
+
+    def test_orphan_draft_risk(self):
+        self.assertError(registry(control=[], risk=[{**RISK, "status": "draft"}]), "risque orphelin")
+
+    def test_accepted_risk_may_lack_control(self):
+        entries = registry(control=[], risk=[{**RISK, "status": "accepted"}])
+        self.assertEqual(check_registry.check(entries), [])
+
+    def test_result_requires_reference(self):
+        for status in ("passed", "failed"):
+            with self.subTest(status=status):
+                self.assertError(registry(verification=[{**VERIFICATION, "status": status}]),
+                                 f"statut « {status} » sans référence de preuve")
+
+    def test_reference_must_exist_in_repository(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / "tests").mkdir()
+            (root / "tests" / "a.cpp").write_text("", encoding="utf-8")
+            passed = {**VERIFICATION, "status": "passed"}
+            found = registry(verification=[{**passed, "reference": "tests/a.cpp#cas"}])
+            self.assertEqual(check_registry.check(found, root), [])
+            missing = registry(verification=[{**passed, "reference": "tests/b.cpp"}])
+            self.assertTrue(any("« tests/b.cpp » introuvable" in e for e in check_registry.check(missing, root)))
+            # Sans racine de dépôt, l'existence n'est pas contrôlée.
+            self.assertEqual(check_registry.check(missing), [])
 
     def test_unknown_verification_method(self):
         self.assertError(registry(verification=[{**VERIFICATION, "method": "intuition"}]), "méthode")
@@ -119,6 +163,8 @@ class MainTest(unittest.TestCase):
         files = {
             "requirements.toml": '[[requirement]]\nid = "SYS-REQ-001"\ntitle = "t"\ntext = "x"\n'
                                  'source = "s"\nstatus = "draft"\n',
+            "verifications.toml": '[[verification]]\nid = "VER-001"\nmethod = "test"\nlevel = "system"\n'
+                                  'requirements = ["SYS-REQ-001"]\nstatus = "planned"\n',
         }
         self.assertEqual(self.run_main(files), 0)
 
