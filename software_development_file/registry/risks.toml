@@ -9,3 +9,129 @@
 # hazard = "…"
 # harm = "…"
 # status = "draft"
+
+[[risk]]
+id = "RISK-001"
+hazard = "Énergie : débit délivré supérieur au débit programmé — Le patient reçoit le médicament plus vite que prescrit"
+harm = "Surdosage"
+status = "draft"
+
+[[risk]]
+id = "RISK-002"
+hazard = "Fonction : débit délivré inférieur au programmé ou arrêt non détecté — Le patient ne reçoit pas le traitement sans que le soignant le sache"
+harm = "Sous-dosage, interruption de thérapie"
+status = "draft"
+
+[[risk]]
+id = "RISK-003"
+hazard = "Énergie : écoulement libre par gravité — Le contenu du réservoir s'écoule sans contrôle vers le patient"
+harm = "Surdosage massif"
+status = "draft"
+
+[[risk]]
+id = "RISK-004"
+hazard = "Air dans la ligne — De l'air est perfusé dans le système veineux"
+harm = "Embolie gazeuse"
+status = "draft"
+
+[[risk]]
+id = "RISK-005"
+hazard = "Occlusion non détectée ou détectée tardivement — Le patient ne reçoit plus le traitement pendant une durée prolongée"
+harm = "Interruption de thérapie"
+status = "draft"
+
+[[risk]]
+id = "RISK-006"
+hazard = "Énergie : bolus libéré à la levée d'une occlusion — Le volume accumulé est perfusé en quelques secondes"
+harm = "Surdosage"
+status = "draft"
+
+[[risk]]
+id = "RISK-007"
+hazard = "Utilisation : erreur de saisie lors de la programmation — La pompe perfuse à un débit ou un volume différent de la prescription"
+harm = "Surdosage ou sous-dosage"
+status = "draft"
+
+[[risk]]
+id = "RISK-008"
+hazard = "Utilisation : confusion d'unités ou de médicament — La dose délivrée diffère de la dose prescrite d'un facteur important"
+harm = "Surdosage ou sous-dosage"
+status = "draft"
+
+[[risk]]
+id = "RISK-009"
+hazard = "Énergie : bolus au-delà des limites — Un volume important est perfusé en peu de temps"
+harm = "Surdosage"
+status = "draft"
+
+[[risk]]
+id = "RISK-010"
+hazard = "Énergie électrique : perte d'alimentation pendant la perfusion — La perfusion s'arrête sans que le soignant soit prévenu à temps"
+harm = "Interruption de thérapie"
+status = "draft"
+
+[[risk]]
+id = "RISK-011"
+hazard = "Information : perte, altération ou retour arrière du journal d'événements — Après un incident, la séquence réelle des programmations, alarmes et actions ne peut pas être établie"
+harm = "Cause d'incident non identifiée, récurrence chez d'autres patients"
+status = "draft"
+
+[[risk]]
+id = "RISK-012"
+hazard = "Défaillance du processeur ou du logiciel de commande — L'actionneur est commandé de façon incontrôlée, ou s'arrête sans alarme"
+harm = "Surdosage ou interruption de thérapie"
+status = "draft"
+
+[[risk]]
+id = "RISK-013"
+hazard = "Fausse alarme interrompant la thérapie — La perfusion s'arrête alors qu'elle se déroulait correctement"
+harm = "Interruption de thérapie"
+status = "draft"
+
+[[risk]]
+id = "RISK-014"
+hazard = "Utilisation : alarme non perçue ou ignorée — Une situation dangereuse signalée par la pompe n'est pas traitée"
+harm = "Dommage de la situation non traitée (jusqu'au décès)"
+status = "draft"
+
+[[risk]]
+id = "RISK-015"
+hazard = "Utilisation : modification non autorisée ou involontaire — La perfusion est modifiée ou arrêtée à l'insu du soignant"
+harm = "Surdosage ou interruption de thérapie"
+status = "draft"
+
+[[risk]]
+id = "RISK-016"
+hazard = "Utilisation : programmation de la mauvaise pompe — Le débit prévu pour un médicament est appliqué à un autre"
+harm = "Surdosage ou sous-dosage"
+status = "draft"
+
+[[risk]]
+id = "RISK-017"
+hazard = "Énergie électrique : courant de fuite ou contact avec une tension dangereuse — Un courant traverse le patient ou le soignant"
+harm = "Électrisation, électrocution"
+status = "draft"
+
+[[risk]]
+id = "RISK-018"
+hazard = "Environnement : pénétration de liquide — L'électronique ou le clavier se dégrade, provoquant un comportement erroné"
+harm = "Surdosage ou interruption de thérapie"
+status = "draft"
+
+[[risk]]
+id = "RISK-019"
+hazard = "Information : bibliothèque de médicaments erronée — Les limites de dose protègent mal ou bloquent à tort"
+harm = "Surdosage ou interruption de thérapie"
+status = "draft"
+
+[[risk]]
+id = "RISK-020"
+hazard = "Information : logiciel ou mise à jour corrompu ou non autorisé — La pompe fonctionne avec un logiciel non vérifié"
+harm = "Surdosage ou interruption de thérapie"
+status = "draft"
+
+[[risk]]
+id = "RISK-021"
+hazard = "Utilisation clinique d'un prototype non évalué — Un patient est perfusé par un dispositif dont la sécurité n'est pas démontrée"
+harm = "Tout dommage ci-dessus"
+status = "draft"

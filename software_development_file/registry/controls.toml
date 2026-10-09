@@ -10,3 +10,141 @@
 # description = "…"
 # risks = ["RISK-001"]
 # requirements = ["SW-REQ-001"]
+
+[[control]]
+id = "CTRL-001"
+description = "Supervision indépendante du volume délivré, par un canal de sécurité distinct du canal de commande, qui place la pompe en état sûr en cas d'écart"
+risks = ["RISK-001", "RISK-012"]
+requirements = ["SYS-REQ-001", "SYS-REQ-002"]
+
+[[control]]
+id = "CTRL-002"
+description = "Asservissement du débit fondé sur une mesure de la position de l'actionneur, avec précision de débit vérifiée sur banc"
+risks = ["RISK-001", "RISK-002"]
+requirements = ["SYS-REQ-003"]
+
+[[control]]
+id = "CTRL-003"
+description = "Détection d'un actionneur qui ne délivre pas alors qu'une perfusion est en cours"
+risks = ["RISK-002"]
+requirements = ["SYS-REQ-004"]
+
+[[control]]
+id = "CTRL-004"
+description = "Dispositif mécanique anti-écoulement libre, actif dès que le consommable n'est pas engagé dans la pompe porte fermée"
+risks = ["RISK-003"]
+requirements = ["SYS-REQ-005"]
+
+[[control]]
+id = "CTRL-005"
+description = "Détection de la porte ouverte et de l'absence ou du mauvais positionnement du consommable, avec arrêt et alarme"
+risks = ["RISK-002", "RISK-003"]
+requirements = ["SYS-REQ-006"]
+
+[[control]]
+id = "CTRL-006"
+description = "Détection d'air dans la ligne, unitaire et cumulée, avec arrêt et alarme"
+risks = ["RISK-004"]
+requirements = ["SYS-REQ-007"]
+
+[[control]]
+id = "CTRL-007"
+description = "Détection d'occlusion aval par la pression, dans un délai borné"
+risks = ["RISK-005"]
+requirements = ["SYS-REQ-008"]
+
+[[control]]
+id = "CTRL-008"
+description = "Décompression de la ligne à la détection d'une occlusion, pour limiter le bolus à sa levée"
+risks = ["RISK-006"]
+requirements = ["SYS-REQ-009"]
+
+[[control]]
+id = "CTRL-009"
+description = "Saisie protégée : filtrage des rebonds de touche, format numérique sans ambiguïté, récapitulatif à confirmer explicitement"
+risks = ["RISK-007"]
+requirements = ["SYS-REQ-010", "SYS-REQ-011"]
+
+[[control]]
+id = "CTRL-010"
+description = "Bibliothèque de médicaments avec limites dures bloquantes et limites souples à confirmer"
+risks = ["RISK-007", "RISK-008", "RISK-009"]
+requirements = ["SYS-REQ-012"]
+
+[[control]]
+id = "CTRL-011"
+description = "Affichage de l'unité avec chaque valeur, et du médicament et de la concentration pendant toute la perfusion"
+risks = ["RISK-008"]
+requirements = ["SYS-REQ-013"]
+
+[[control]]
+id = "CTRL-012"
+description = "Bolus et purge bornés en volume et en débit ; purge refusée une fois la perfusion démarrée"
+risks = ["RISK-009"]
+requirements = ["SYS-REQ-014"]
+
+[[control]]
+id = "CTRL-013"
+description = "Batterie avec bascule secteur/batterie sans interruption, alarmes d'autonomie faible et épuisée, alarme de perte d'alimentation"
+risks = ["RISK-010"]
+requirements = ["SYS-REQ-015", "SYS-REQ-016"]
+
+[[control]]
+id = "CTRL-014"
+description = "Chien de garde indépendant et autotests du processeur et des mémoires, avec état sûr en cas d'échec"
+risks = ["RISK-001", "RISK-012"]
+requirements = ["SYS-REQ-017"]
+
+[[control]]
+id = "CTRL-015"
+description = "Journal d'événements à écriture confirmée sur support durable, avec détection d'altération et de retour arrière"
+risks = ["RISK-011"]
+requirements = ["SYS-REQ-018", "SYS-REQ-019"]
+
+[[control]]
+id = "CTRL-016"
+description = "Alarme technique de repli, indépendante du processeur principal"
+risks = ["RISK-012", "RISK-014"]
+requirements = ["SYS-REQ-020"]
+
+[[control]]
+id = "CTRL-017"
+description = "Catalogue d'alarmes avec priorités et signaux distinctifs, conditions confirmées avant déclenchement et taux de fausses alarmes mesuré"
+risks = ["RISK-013", "RISK-014"]
+requirements = ["SYS-REQ-021", "SYS-REQ-022"]
+
+[[control]]
+id = "CTRL-018"
+description = "Verrouillage de l'interface et authentification des fonctions protégées par rôle"
+risks = ["RISK-015", "RISK-019"]
+requirements = ["SYS-REQ-023"]
+
+[[control]]
+id = "CTRL-019"
+description = "Identification visible de la pompe et de la perfusion en cours, lisible à distance"
+risks = ["RISK-016"]
+requirements = ["SYS-REQ-024"]
+
+[[control]]
+id = "CTRL-020"
+description = "Conception électrique selon l'IEC 60601-1 : isolement, courants de fuite, alimentation"
+risks = ["RISK-017"]
+requirements = ["HW-REQ-001"]
+
+[[control]]
+id = "CTRL-021"
+description = "Boîtier protégé contre la pénétration des liquides et compatible avec les produits de nettoyage"
+risks = ["RISK-018"]
+requirements = ["HW-REQ-002"]
+
+[[control]]
+id = "CTRL-022"
+description = "Contrôle d'intégrité et d'origine de la bibliothèque de médicaments et du logiciel avant leur utilisation"
+risks = ["RISK-019", "RISK-020"]
+requirements = ["SYS-REQ-025", "SYS-REQ-026"]
+
+[[control]]
+id = "CTRL-023"
+description = "Avertissement de prototype non utilisable sur un patient, sur l'appareil, à son démarrage et dans chaque version publiée"
+risks = ["RISK-021"]
+requirements = ["SYS-REQ-027"]
