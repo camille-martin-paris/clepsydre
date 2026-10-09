@@ -2,7 +2,7 @@
 
 | Champ | Valeur |
 | --- | --- |
-| Statut | Retenue par l'auteur (Ambroise Leclerc) le 2026-10-09 ; acceptation par l'approbatrice (Camille Martin) requise, l'approbateur d'un document n'en étant pas l'auteur ([plan de développement](../../software_development_file/development-plan.md#rôles-et-responsabilités)) |
+| Statut | **Acceptée** le 2026-10-09 par Camille Martin, approbatrice ([approbation](https://github.com/camille-martin-paris/clepsydre/pull/100#pullrequestreview-5471704019), révision `bd0188b`) ; retenue par l'auteur, Ambroise Leclerc. Acceptation consignée dans [reviews.md](../../software_development_file/reviews.md) |
 | Date | 2026-10-09 |
 | Issue | [#13](https://github.com/camille-martin-paris/clepsydre/issues/13) |
 | Épique | [#12](https://github.com/camille-martin-paris/clepsydre/issues/12) |
@@ -82,7 +82,7 @@ Des galets écrasent une tubulure contre une piste circulaire. Cette option est 
 
 ## Décision
 
-**Option A, pousse-seringue**, pour le prototype de Clepsydre. Retenue par l'auteur le 2026-10-09 ; elle prend effet à son acceptation par l'approbatrice, consignée dans [reviews.md](../../software_development_file/reviews.md).
+**Option A, pousse-seringue**, pour le prototype de Clepsydre. Retenue par l'auteur et acceptée par l'approbatrice le 2026-10-09 ([reviews.md](../../software_development_file/reviews.md)). L'acceptation porte sur le choix du principe ; elle ne vaut ni validation sur banc ni validation du dispositif.
 
 Raisons :
 
