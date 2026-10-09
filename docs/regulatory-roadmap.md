@@ -22,7 +22,7 @@
 
 - Une pompe à perfusion est un dispositif médical actif au sens de l'article 2 du MDR [S1].
 - **Règle 12** (annexe VIII) : les dispositifs actifs destinés à administrer des médicaments dans le corps sont de classe IIa, sauf si l'administration est potentiellement dangereuse compte tenu de la nature des substances, de la partie du corps concernée et du mode d'administration ; ils relèvent alors de la classe IIb [S1].
-- Une pompe destinée à perfuser par voie intraveineuse des médicaments dont le surdosage peut être grave relève de la branche « potentiellement dangereuse » : **classe IIb probable**. Le guide MDCG 2021-24 détaille l'application de la règle 12 [S2]. *L'exemple précis des pompes à perfusion dans ce guide est à confirmer.*
+- Une pompe destinée à perfuser par voie intraveineuse des médicaments dont le surdosage peut être grave relève de la branche « potentiellement dangereuse » : **classe IIb probable**. Le guide MDCG 2021-24 rév. 1 cite les pompes à perfusion parmi les exemples de classe IIb de la règle 12 (tableau de la règle 12, p. 48) [S2].
 - Le logiciel qui commande le dispositif relève de la même classe que le dispositif (annexe VIII, règle d'application 3.3) [S1]. Il n'est pas qualifié séparément comme logiciel dispositif médical.
 
 ### Conséquences d'une classe IIb
@@ -35,7 +35,7 @@
 
 ### Fabrication interne par un établissement de santé
 
-L'article 5, paragraphe 5, du MDR permet à un établissement de santé de fabriquer et d'utiliser en interne des dispositifs sans marquage CE, sous conditions, notamment l'absence de dispositif équivalent disponible sur le marché et un système de management de la qualité approprié [S1]. *L'applicabilité de cette voie à un dérivé de Clepsydre est à confirmer au cas par cas ; elle ne lève pas l'avertissement d'usage non clinique du projet.*
+L'article 5, paragraphe 5, du MDR permet à un établissement de santé de fabriquer et d'utiliser en interne des dispositifs sans marquage CE, sous conditions [S1]. Parmi elles, l'établissement doit disposer d'un système de management de la qualité approprié et justifier dans sa documentation que les besoins spécifiques du groupe cible de patients ne peuvent pas être satisfaits, ou ne peuvent pas l'être au niveau de performance approprié, par un dispositif équivalent disponible sur le marché (point d) [S1], [S13]. L'existence d'un dispositif équivalent n'exclut donc pas cette voie, s'il ne répond pas suffisamment à ces besoins. *L'applicabilité de cette voie à un dérivé de Clepsydre est à confirmer au cas par cas ; elle ne lève pas l'avertissement d'usage non clinique du projet.*
 
 ## États-Unis
 
@@ -86,7 +86,7 @@ Le projet vise à faciliter ce travail en fournissant une documentation de conce
 
 ## Accès aux textes normatifs
 
-- Les règlements et guides publics (MDR, MDCG, CFR, guides de la FDA) sont librement accessibles et peuvent être cités [S1]–[S9].
+- Les règlements et guides publics (MDR, MDCG, CFR, guides de la FDA) sont librement accessibles et peuvent être cités [S1]–[S9], [S13].
 - Les normes ISO et IEC sont protégées par le droit d'auteur. Le projet **ne reproduit aucun texte, tableau ni figure** de ces normes : il cite leur numéro, leur titre et le numéro de paragraphe, et reformule les exigences en ses propres termes.
 - Sources autorisées pour les consulter : boutiques ISO [S10] et IEC [S11], organismes nationaux de normalisation (AFNOR en France [S12]), bibliothèques universitaires abonnées. Les aperçus gratuits de la plateforme ISO OBP couvrent le sommaire et les premières sections. *L'existence d'un accès gratuit en lecture seule aux normes harmonisées en France est à confirmer auprès de l'AFNOR.*
 - Une contribution qui s'appuie sur une norme indique l'édition consultée ; elle ne joint pas la norme au dépôt.
@@ -95,10 +95,10 @@ Le projet vise à faciliter ce travail en fournissant une documentation de conce
 
 | Réf. | Source |
 | --- | --- |
-| S1 | Règlement (UE) 2017/745 relatif aux dispositifs médicaux, version consolidée : https://eur-lex.europa.eu/eli/reg/2017/745/oj |
-| S2 | MDCG 2021-24, *Guidance on classification of medical devices* : https://health.ec.europa.eu/medical-devices-sector/new-regulations/guidance-mdcg-endorsed-documents-and-other-guidance_en |
+| S1 | Règlement (UE) 2017/745 relatif aux dispositifs médicaux. Version consolidée du 19 juillet 2026 (`02017R0745-20260719`), la plus récente identifiée le 2026-10-09 : https://eur-lex.europa.eu/eli/reg/2017/745/2026-07-19/fra ; texte d'origine : https://eur-lex.europa.eu/eli/reg/2017/745/oj |
+| S2 | MDCG 2021-24 rév. 1 (avril 2026), *Guidance on classification of medical devices* : https://health.ec.europa.eu/document/download/cbb19821-a517-4e13-bf87-fdc6ddd1782e_en?filename=mdcg_2021-24_en.pdf |
 | S3 | Normes harmonisées au titre du MDR, Commission européenne : https://single-market-economy.ec.europa.eu/single-market/european-standards/harmonised-standards/medical-devices_en |
-| S4 | MDCG 2019-16, *Guidance on cybersecurity for medical devices* : même page que [S2] |
+| S4 | MDCG 2019-16, *Guidance on cybersecurity for medical devices* : https://health.ec.europa.eu/medical-devices-sector/new-regulations/guidance-mdcg-endorsed-documents-and-other-guidance_en |
 | S5 | 21 CFR 880.5725, *Infusion pump* : https://www.ecfr.gov/current/title-21/chapter-I/subchapter-H/part-880/subpart-F/section-880.5725 |
 | S6 | FDA, base de classification des produits, code FRN : https://www.accessdata.fda.gov/scripts/cdrh/cfdocs/cfPCD/classification.cfm?ID=FRN |
 | S7 | FDA, *Infusion Pumps Total Product Life Cycle — Guidance for Industry and FDA Staff* (2 décembre 2014) : https://www.fda.gov/media/78369/download |
@@ -107,6 +107,7 @@ Le projet vise à faciliter ce travail en fournissant une documentation de conce
 | S10 | Catalogue ISO : https://www.iso.org/standards.html ; plateforme de consultation en ligne : https://www.iso.org/obp |
 | S11 | Boutique IEC : https://webstore.iec.ch |
 | S12 | AFNOR, boutique des normes : https://www.boutique.afnor.org |
+| S13 | MDCG 2023-1 (janvier 2023), *Guidance on the health institution exemption under Article 5(5) of Regulation (EU) 2017/745 and Regulation (EU) 2017/746*, §3.6 : https://health.ec.europa.eu/system/files/2023-01/mdcg_2023-1_en.pdf |
 
 ## Révision
 
