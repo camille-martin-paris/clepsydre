@@ -55,10 +55,12 @@ La licence de chaque fichier est déclarée selon la [spécification REUSE 3.3](
 - `REUSE.toml` associe chaque répertoire à sa licence ; c'est la source de vérité pour les fichiers qui ne peuvent pas porter d'en-tête (formats binaires de CAO, images, nomenclatures exportées).
 - Les fichiers texte qui acceptent les commentaires (C++, CMake, scripts, KiCad) portent en plus un en-tête :
 
+  <!-- REUSE-IgnoreStart -->
   ```cpp
   // SPDX-FileCopyrightText: 2026 Contributeurs du projet Clepsydre
   // SPDX-License-Identifier: EUPL-1.2
   ```
+  <!-- REUSE-IgnoreEnd -->
 
 - Un fichier sous une licence différente de celle de son répertoire (composant tiers, par exemple) porte son propre en-tête, qui l'emporte sur `REUSE.toml`.
 
