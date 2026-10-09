@@ -1,0 +1,38 @@
+# Compile et teste le logiciel avec les versions minimales des compilateurs pris en charge.
+# Chaque étape (configuration, compilation, édition de liens, tests) est un pas distinct.
+name: Build
+
+on:
+  push:
+    branches: [develop, main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: ${{ matrix.compiler.name }}
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        compiler:
+          - { name: gcc-14, cxx: g++-14, packages: g++-14 }
+          - { name: clang-18, cxx: clang++-18, packages: clang-18 clang-tools-18 }
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - name: Outils
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends ninja-build ${{ matrix.compiler.packages }}
+          cmake --version | head -1
+          ${{ matrix.compiler.cxx }} --version | head -1
+      - name: Configuration
+        run: cmake -S . -B build/ci -G Ninja -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_COMPILER=${{ matrix.compiler.cxx }}
+      - name: Compilation
+        run: cmake --build build/ci --target clepsydre_compile
+      - name: Édition de liens
+        run: cmake --build build/ci
+      - name: Tests
+        run: ctest --test-dir build/ci --output-on-failure --no-tests=error
