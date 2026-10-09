@@ -36,7 +36,7 @@ Ce code de conduite s'applique à la fois au sein des espaces du projet ainsi qu
 
 ## Application
 
-Les cas de comportements abusifs, harcelants ou tout autre comportement inacceptable peuvent être signalés aux dirigeant·e·s de la communauté responsables de l'application du code de conduite à [ADRESSE DE SIGNALEMENT À FOURNIR PAR LA MAINTENEUSE].
+Les cas de comportements abusifs, harcelants ou tout autre comportement inacceptable peuvent être signalés à la mainteneuse, Camille Martin, par message privé sur Discord, après avoir rejoint le serveur via [ce lien d'invitation](https://discord.gg/camille-martin-paris). Ne publiez pas les détails du signalement dans les salons publics du serveur.
 Toutes les plaintes seront examinées et feront l'objet d'une enquête rapide et équitable.
 
 Tou·te·s les dirigeant·e·s de la communauté sont tenu·e·s de respecter la vie privée et la sécurité des personnes ayant signalé un incident.
