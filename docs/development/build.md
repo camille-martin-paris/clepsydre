@@ -81,15 +81,15 @@ Le workflow [`.github/workflows/ci.yml`](../../.github/workflows/ci.yml) s'exéc
 
 | Tâche | Contenu | Phases publiées séparément |
 | --- | --- | --- |
-| `build (<compilateur>, <variante>)` | GCC 14 et Clang 18 (versions minimales), chacun en `debug`, `asan-ubsan` et `tsan` : six combinaisons | Configuration, compilation, édition de liens, tests ; un tableau de résultats par tâche dans le résumé de l'exécution |
+| `build (<compilateur>, <variante>)` | GCC 16.1 et Clang 20 (planchers), chacun en `debug`, `asan-ubsan` et `tsan` : six combinaisons, dans les images épinglées | Configuration, compilation, édition de liens, tests ; un tableau de résultats par tâche dans le résumé de l'exécution |
 | `format` | clang-format 21.1.8 sur tous les fichiers C++ suivis par Git | — |
-| `clang-tidy` | Clang 18 et clang-tidy 18, toute remarque bloquante | Configuration, analyse |
+| `clang-tidy` | Clang 20 et clang-tidy 20 (image `ubuntu:26.04`), toute remarque bloquante | Configuration, analyse |
 | `licences` | `reuse lint` (reuse 6.2.0) | — |
 | `registry` ([`registry.yml`](../../.github/workflows/registry.yml)) | Tests du vérificateur et cohérence du registre de traçabilité | Tests, vérification |
 
 La matrice de traçabilité générée s'ajoutera à la tâche `registry` ([#11](https://github.com/camille-martin-paris/clepsydre/issues/11)).
 
-Réglages d'exécution des sanitizers en CI : `halt_on_error=1` pour les trois, détection des fuites mémoire avec AddressSanitizer. Sur Ubuntu 24.04, ThreadSanitizer demande de réduire l'entropie ASLR (`vm.mmap_rnd_bits=28`), sans quoi il refuse de démarrer.
+Réglages d'exécution des sanitizers en CI : `halt_on_error=1` pour les trois, détection des fuites mémoire avec AddressSanitizer. Par précaution, les conteneurs sont lancés sans filtre seccomp : ThreadSanitizer peut désactiver l'ASLR par `personality()`, appel que le profil seccomp par défaut de Docker restreint. La nécessité de ce réglage n'a pas été démontrée.
 
 ### Contre-épreuves des sanitizers
 
