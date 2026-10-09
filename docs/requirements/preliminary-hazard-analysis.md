@@ -2,8 +2,8 @@
 
 | Champ | Valeur |
 | --- | --- |
-| Statut | Version initiale, soumise à relecture |
-| Révision | A |
+| Statut | Analyse préliminaire acceptée pour confirmer la classe C ; mesures proposées restant à vérifier |
+| Révision | B |
 | Issue | [#9](https://github.com/camille-martin-paris/clepsydre/issues/9) |
 | Méthode | [Plan de gestion des risques](risk-management-plan.md) ; ISO 14971:2019, ISO/TR 24971:2020 |
 
@@ -112,7 +112,7 @@ Ces exigences, au statut `draft`, traduisent les mesures proposées. La spécifi
 
 ## Constats
 
-1. **Classe de sécurité logicielle.** Le logiciel contribue à 17 des 21 situations dangereuses. Parmi elles, plusieurs peuvent entraîner un décès (G5) : RISK-001, RISK-004, RISK-006, RISK-007, RISK-008, RISK-009, RISK-012, RISK-014 à RISK-016, RISK-019 et RISK-020. Aucune mesure externe au logiciel n'est encore démontrée. L'analyse confirme donc la classe C proposée dans le [dossier de développement](../../software_development_file/safety-classification.md). Elle ne permet de l'abaisser pour aucun élément logiciel tant que la ségrégation et le canal de sécurité indépendant (CTRL-001, CTRL-016) ne sont pas démontrés. La levée de la réserve R2 relève de l'acceptation de cette analyse.
+1. **Classe de sécurité logicielle.** Le logiciel contribue à 17 des 21 situations dangereuses. Parmi elles, plusieurs peuvent entraîner un décès (G5) : RISK-001, RISK-004, RISK-006, RISK-007, RISK-008, RISK-009, RISK-012, RISK-014 à RISK-016, RISK-019 et RISK-020. Aucune mesure externe au logiciel n'est encore démontrée. L'analyse confirme donc la classe C dans le [dossier de développement](../../software_development_file/safety-classification.md). Elle ne permet de l'abaisser pour aucun élément logiciel tant que la ségrégation et le canal de sécurité indépendant (CTRL-001, CTRL-016) ne sont pas démontrés. La réserve R2 est levée par l'acceptation explicite de cette analyse le 2026-10-09, consignée dans [reviews.md](../../software_development_file/reviews.md).
 2. **Mesures structurantes.** CTRL-001 (supervision indépendante), CTRL-014 (chien de garde et autotests) et CTRL-016 (alarme de repli) conditionnent l'architecture de calcul. Elles sont transmises à l'ADR [#14](https://github.com/camille-martin-paris/clepsydre/issues/14).
 3. **Mesures dépendant du principe de pompage.** CTRL-004 (anti-écoulement libre) et CTRL-008 (décompression après occlusion) dépendent du choix entre pousse-seringue et pompe volumétrique ; elles sont transmises à l'ADR [#13](https://github.com/camille-martin-paris/clepsydre/issues/13).
 4. **Dangers introduits par les mesures.** Une détection trop sensible (CTRL-005 à CTRL-007) peut produire de fausses alarmes, qui interrompent la thérapie (RISK-013) et entretiennent la lassitude des soignants face aux alarmes (RISK-014). CTRL-017 traite ce risque.
@@ -128,4 +128,5 @@ Ces exigences, au statut `draft`, traduisent les mesures proposées. La spécifi
 
 | Révision | Date | Auteur | Modification |
 | --- | --- | --- | --- |
-| A | 2026-10-09 | Ambroise Leclerc | Création, soumise à relecture |
+| A | 2026-10-09 | Ambroise Leclerc | Création ; révision corrigée acceptée par Camille Martin dans #94 et intégrée au commit `75169c378cf326937f730a5a436baa69d42734f0` |
+| B | 2026-10-09 | Camille Martin | Constat 1 : levée explicite de R2 après acceptation de l'analyse ; classe C confirmée, mesures restant à vérifier ; mise à jour assistée par Codex dans #95 |

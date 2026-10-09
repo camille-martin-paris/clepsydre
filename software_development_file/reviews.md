@@ -5,6 +5,7 @@ Chaque acceptation d'un document du dossier ou d'une version publiée est consig
 | Date | Document ou version | Révision (commit) | Auteur | Relecteur | Approbateur | Décision | Réserves |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | 2026-10-09 | Dossier de développement initial : `software_development_file/`, `tools/check_registry.py` et ses tests, `.github/workflows/registry.yml` | `c06e004` sur `develop` ; contenu identique à la révision approuvée `9765b55` de [#87](https://github.com/camille-martin-paris/clepsydre/pull/87#pullrequestreview-5466991745) | Ambroise Leclerc | Camille Martin | Camille Martin | Acceptée avec réserves | R1 à R3 ci-dessous |
+| 2026-10-09 | Plan de gestion des risques et analyse préliminaire des dangers ; confirmation de la classe C | `75169c378cf326937f730a5a436baa69d42734f0` sur `develop`, fusion de [#94](https://github.com/camille-martin-paris/clepsydre/pull/94) | Ambroise Leclerc | Camille Martin, revue assistée par Codex | Camille Martin, décision explicite exécutée par Codex | Acceptée pour confirmer la classe C ; R2 levée | R1 et R3 restent ouvertes ; les mesures de maîtrise proposées restent à vérifier |
 
 Décisions possibles : acceptée, acceptée avec réserves, refusée. Lorsqu'un assistant logiciel (LLM, outil de revue automatique) a contribué à la rédaction ou à la relecture, l'entrée le précise dans la section « Moyens de rédaction et de revue » : la personne nommée reste responsable du contenu, l'assistant est un moyen. Une acceptation sous cumul de rôles porte la réserve « revue non indépendante » ([plan de développement](development-plan.md#attribution-actuelle-et-cumuls-de-rôles)).
 
@@ -15,10 +16,23 @@ Décisions possibles : acceptée, acceptée avec réserves, refusée. Lorsqu'un 
 | Réserve | Objet | Levée prévue |
 | --- | --- | --- |
 | R1 | Revue non indépendante : la relectrice est aussi l'approbatrice (cumul consigné dans le [plan de développement](development-plan.md#attribution-actuelle-et-cumuls-de-rôles)). | Nouvelle relecture par une personne indépendante avant toute évaluation de conformité |
-| R2 | La classe de sécurité C est proposée, pas confirmée. | Analyse préliminaire des dangers [#9](https://github.com/camille-martin-paris/clepsydre/issues/9) |
+| R2 — levée le 2026-10-09 | La classe de sécurité C, initialement proposée, est confirmée par l'analyse préliminaire des dangers. | Acceptation explicite par Camille Martin de l'analyse [#9](https://github.com/camille-martin-paris/clepsydre/issues/9), intégrée par [#94](https://github.com/camille-martin-paris/clepsydre/pull/94) au commit `75169c378cf326937f730a5a436baa69d42734f0` |
 | R3 | `tools/check_registry.py` n'est pas qualifié comme outil : il contrôle la structure et la complétude du registre, pas la justesse de son contenu ni l'immuabilité des versions SOUP. Cette acceptation ne vaut ni qualification de l'outil ni validation du dispositif. | Qualification des outils, y compris des assistants LLM ([#89](https://github.com/camille-martin-paris/clepsydre/issues/89)), en complément de la chaîne de vérification ([#20](https://github.com/camille-martin-paris/clepsydre/issues/20)) |
 
 ## Moyens de rédaction et de revue
+
+### Analyse préliminaire des dangers [#94](https://github.com/camille-martin-paris/clepsydre/pull/94) et levée de R2 [#95](https://github.com/camille-martin-paris/clepsydre/pull/95) (2026-10-09)
+
+| Opération | Contributions concernées | Responsable | Moyen |
+| --- | --- | --- | --- |
+| Rédaction et corrections | #94 : plan de gestion des risques, analyse préliminaire des dangers et registre | Ambroise Leclerc, sous son compte | Claude Code (Claude Opus 5.5, Anthropic), selon la déclaration d'assistance de #94 |
+| Analyse de relecture, approbations et fusion | #94 | Camille Martin, à sa demande et sous son compte | Codex |
+| Revue automatique complémentaire | #94 | — | GitHub Copilot ; ne compte pas comme relecture |
+| Décision de lever R2 | Analyse acceptée au commit `75169c378cf326937f730a5a436baa69d42734f0` | Camille Martin, décision explicite | Codex, exécution et consignation de la décision |
+| Rédaction et corrections documentaires | #95 : revues, classification et historique de l'analyse | Camille Martin, à sa demande et sous son compte | Codex |
+| Relecture et propositions de compléments | #95, révision `9070b55` | Ambroise Leclerc, sous son compte | Claude Code (Claude Opus 5.5, Anthropic), selon sa [relecture](https://github.com/camille-martin-paris/clepsydre/pull/95#pullrequestreview-5469111528) |
+
+Ces opérations ne constituent pas une attestation de lecture personnelle des contributions de #94 ou #95. Une telle attestation doit être formulée par la personne concernée ; aucune n'est déduite de l'utilisation d'un assistant ou de l'exécution d'une approbation.
 
 ### Dossier de développement initial et épique [#1](https://github.com/camille-martin-paris/clepsydre/issues/1) (2026-10-09)
 
