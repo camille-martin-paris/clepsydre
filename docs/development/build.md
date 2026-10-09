@@ -87,6 +87,8 @@ Le workflow [`.github/workflows/ci.yml`](../../.github/workflows/ci.yml) s'exéc
 | `licences` | `reuse lint` (reuse 6.2.0) | — |
 | `registry` ([`registry.yml`](../../.github/workflows/registry.yml)) | Tests du vérificateur et cohérence du registre de traçabilité | Tests, vérification |
 
+Les images sont épinglées par empreinte, mais les paquets qu'`apt` y ajoute (Ninja, Clang 20, clang-tidy 20, CMake de l'image `ubuntu:26.04`) proviennent de dépôts évolutifs : deux exécutions peuvent installer des versions différentes. Chaque tâche `build` et `clang-tidy` consigne donc dans le résumé de l'exécution la version de CMake et la liste complète des paquets installés avec leur version. La reproductibilité de ces installations est suivie dans [#89](https://github.com/camille-martin-paris/clepsydre/issues/89).
+
 La matrice de traçabilité générée s'ajoutera à la tâche `registry` ([#11](https://github.com/camille-martin-paris/clepsydre/issues/11)).
 
 Réglages d'exécution des sanitizers en CI : `halt_on_error=1` pour les trois, détection des fuites mémoire avec AddressSanitizer. Par précaution, les conteneurs sont lancés sans filtre seccomp : ThreadSanitizer peut désactiver l'ASLR par `personality()`, appel que le profil seccomp par défaut de Docker restreint. La nécessité de ce réglage n'a pas été démontrée.
