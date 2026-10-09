@@ -22,10 +22,19 @@ Décisions possibles : acceptée, acceptée avec réserves, refusée. Lorsqu'un 
 
 ### Dossier de développement initial et épique [#1](https://github.com/camille-martin-paris/clepsydre/issues/1) (2026-10-09)
 
-| Activité | Personne responsable | Assistance utilisée |
-| --- | --- | --- |
-| Rédaction des livrables des PR #83 à #88 | Ambroise Leclerc | Claude Code (modèle Claude Opus 5.5, Anthropic), service distant |
-| Relecture et approbation des PR #83 à #88 | Camille Martin | Codex, sous le compte GitHub de Camille Martin |
-| Revue automatique complémentaire | — | GitHub Copilot (revue de pull request) ; ses remarques ont été examinées par l'auteur, elles ne comptent pas comme relecture |
+Seules les opérations attestées par l'historique Git et GitHub sont consignées ici.
 
-Chaque contribution assistée a été relue et acceptée par une personne nommée. Ces assistants ne sont pas qualifiés ; leur usage relève de la réserve R3. Le projet vise à les remplacer par une assistance locale, avec des LLM à poids ouverts dont l'aptitude aux usages du projet est qualifiée ; voir le [plan de développement](development-plan.md#assistance-par-llm).
+| Opération | Contributions concernées | Responsable | Moyen |
+| --- | --- | --- | --- |
+| Rédaction, commits et ouverture des PR | Livrables des PR #83 à #88, sauf le commit ci-dessous | Ambroise Leclerc, à sa demande et sous son compte | Claude Code (modèle Claude Opus 5.5, Anthropic), service distant |
+| Rédaction du contact privé du code de conduite | PR #85 : commit `5106f4a`, devenu `a7eae8b` après rebase puis `6cefba0` sur `develop` | Camille Martin, à sa demande et sous son compte | Codex |
+| Réponses aux remarques de relecture, corrections, rebase | PR #83 à #88 | Ambroise Leclerc, sous son compte | Claude Code (modèle Claude Opus 5.5, Anthropic), service distant |
+| Analyse de relecture publiée | PR #83 à #88 | Camille Martin, sous son compte | Codex |
+| Revue automatique complémentaire | PR #83 à #88 | — | GitHub Copilot (revue de pull request) ; ne compte pas comme relecture |
+| Approbations | PR #83 à #88 | Camille Martin, à sa demande explicite et sous son compte | Codex |
+| Fusion | #83, sous le compte `ambroise-leclerc` | Ambroise Leclerc | Non consigné |
+| Fusions | #84 à #88, sous le compte `camille-martin-paris` | Camille Martin, à sa demande explicite | Codex |
+
+Ces traces établissent la responsabilité et l'autorisation des personnes nommées. Elles ne prouvent pas, à elles seules, une lecture personnelle de chaque contribution par son auteur ou par la mainteneuse : aucune attestation de lecture personnelle n'est consignée à ce jour pour ces contributions. Une personne qui a effectué cette lecture peut l'attester en ajoutant ici une entrée datée, avec les contributions concernées.
+
+Ces assistants ne sont pas qualifiés ; leur usage relève de la réserve R3. Le projet vise à les remplacer par une assistance locale, avec des LLM à poids ouverts dont l'aptitude aux usages du projet est qualifiée ; voir le [plan de développement](development-plan.md#assistance-par-llm).

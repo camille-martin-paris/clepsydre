@@ -79,6 +79,7 @@ Règles applicables dès maintenant :
 
 - Toute pull request indique l'assistance utilisée (outil, modèle, usage) dans son modèle de description ; [reviews.md](reviews.md) la reprend pour chaque acceptation.
 - Le contenu produit par un assistant est relu par une personne avant fusion ; les sources qu'il cite sont vérifiées, en particulier pour les normes et la réglementation.
+- Une analyse de relecture effectuée par un assistant est déclarée comme telle. Une approbation ou une fusion exécutée par un assistant sous le compte d'une personne atteste son autorisation, pas sa lecture personnelle : celle-ci est attestée explicitement par la personne, dans la pull request ou dans [reviews.md](reviews.md).
 - Aucune donnée personnelle ni information confidentielle n'est transmise à un service d'assistance distant.
 
 ### Trajectoire vers une assistance locale et qualifiée
