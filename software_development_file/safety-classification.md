@@ -2,10 +2,10 @@
 
 | Champ | Valeur |
 | --- | --- |
-| Statut | Proposée ; à confirmer par l'analyse préliminaire des dangers ([#9](https://github.com/camille-martin-paris/clepsydre/issues/9)) |
+| Statut | Confirmée le 2026-10-09 par acceptation de l'analyse préliminaire des dangers ([#9](https://github.com/camille-martin-paris/clepsydre/issues/9), [#94](https://github.com/camille-martin-paris/clepsydre/pull/94), commit `75169c378cf326937f730a5a436baa69d42734f0`) ; réserve R2 levée dans [reviews.md](reviews.md) |
 | Référence | IEC 62304:2006+A1:2015, §4.3 |
 
-## Classe proposée : C
+## Classe confirmée : C
 
 Le système logiciel de Clepsydre est classé **C** jusqu'à ce que l'architecture et l'analyse de risques justifient une autre classe pour certains éléments.
 
@@ -15,6 +15,8 @@ Le système logiciel de Clepsydre est classé **C** jusqu'à ce que l'architectu
 2. Pour de nombreux médicaments administrés par perfusion, une sur- ou sous-perfusion peut entraîner une blessure grave ou un décès. Le dommage possible est donc grave.
 3. L'IEC 62304 (§4.3) permet de tenir compte de mesures de maîtrise externes au système logiciel. Le projet prévoit un superviseur de sécurité indépendant ([#29](https://github.com/camille-martin-paris/clepsydre/issues/29), [#59](https://github.com/camille-martin-paris/clepsydre/issues/59)), mais son architecture, son indépendance et son efficacité ne sont pas encore démontrées. Il n'est donc pas pris en compte pour abaisser la classe.
 4. En l'absence de mesure de maîtrise externe démontrée, la classe C s'impose.
+
+L'[analyse préliminaire des dangers](../docs/requirements/preliminary-hazard-analysis.md) confirme cette justification : le logiciel contribue à 17 des 21 situations dangereuses, dont plusieurs peuvent entraîner un décès (G5). Aucune mesure externe au logiciel n'est encore démontrée. Camille Martin a explicitement demandé la levée de R2 après l'approbation et la fusion de #94 ; cette décision est exécutée et consignée avec l'assistance de Codex.
 
 ## Éléments logiciels
 
