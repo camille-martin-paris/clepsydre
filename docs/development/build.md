@@ -10,7 +10,7 @@ Ce document décrit la chaîne de build du logiciel : langage, compilateurs pris
 | Ninja | 1.11 | Seul générateur CMake qui gère les dépendances entre modules C++ |
 | GCC | 16.1 ; **16.2 refusé** | Plancher de mddlog : GCC 15 ne relit pas le module `std` de libstdc++ à travers un second niveau de BMI ; GCC 16.2 a corrompu les BMI de mddlog. GCC 14 provoque en outre une erreur interne sur nos modules avec `-fsanitize=address,undefined` (CI du 2026-10-09). |
 | Clang | 20 | Plancher de mddlog ; clang-tidy 18 ne charge pas les modules du projet (« module not found », CI du 2026-10-09). Fournir `clang-scan-deps` de la même version. |
-| clang-tidy | Même version majeure que Clang | Analyse statique ; doit lire les modules compilés par ce Clang |
+| clang-tidy | Même version majeure que Clang | Analyse statique ; doit lire les modules compilés par ce Clang. La configuration contrôle la version du binaire retenu et refuse une version majeure différente. |
 | clang-format | 18 | Formatage selon [`.clang-format`](../../.clang-format) |
 
 Ces planchers sont alignés sur ceux de mddlog afin qu'une intégration éventuelle n'oblige pas à les relever ; ils seront réexaminés par l'ADR [#16](https://github.com/camille-martin-paris/clepsydre/issues/16).
