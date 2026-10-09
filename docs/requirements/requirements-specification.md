@@ -29,11 +29,11 @@ Le registre fait foi : les tableaux ci-dessous en reproduisent les énoncés, et
 
 | Type | Nombre |
 | --- | --- |
-| Exigences système (SYS-REQ) | 41 |
+| Exigences système (SYS-REQ) | 42 |
 | Exigences logicielles (SW-REQ) | 18 |
 | Exigences matérielles (HW-REQ) | 2 |
-| **Total** | **61** |
-| Vérifications prévues (VER, `planned`) | 76 |
+| **Total** | **62** |
+| Vérifications prévues (VER, `planned`) | 77 |
 
 Les numéros SYS-REQ-001 à 028 et HW-REQ-001 à 002 viennent de l'analyse préliminaire des dangers. Leurs seuils, auparavant « à définir », sont fixés ici, et leur source mentionne désormais les besoins et les normes. Les numéros suivants sont nouveaux.
 
@@ -77,6 +77,7 @@ Les numéros SYS-REQ-001 à 028 et HW-REQ-001 à 002 viennent de l'analyse prél
 | --- | --- | --- | --- | --- |
 | SYS-REQ-021 | Priorités et signaux d'alarme | Chaque condition d'alarme doit avoir la priorité fixée par le catalogue des alarmes de ce document et être signalée par les signaux visuels et sonores de cette priorité selon l'IEC 60601-1-8 ; une alarme de priorité supérieure ne doit jamais être masquée par une alarme de priorité inférieure. | Mesure CTRL-017 (RISK-013, RISK-014) ; UN-06, UN-07 ; IEC 60601-1-8 | essai (VER-026) ; inspection (VER-027) |
 | SYS-REQ-036 | Pause du signal sonore | Le soignant doit pouvoir suspendre le signal sonore d'une alarme pour 2 min au plus ; la condition reste surveillée et affichée, et le signal reprend à l'échéance si elle persiste ou dès qu'une condition de priorité supérieure apparaît. | UN-08 ; RISK-014 ; IEC 60601-1-8 | essai (VER-044) |
+| SYS-REQ-042 | Rappel de pompe inactive | Une pompe programmée mais non démarrée, ou en pause, depuis 2 min doit déclencher une alarme de rappel de priorité moyenne, jusqu'au démarrage, à la reprise ou à l'annulation de la programmation. | RISK-002, RISK-014 ; UN-06 | essai (VER-077) |
 | SYS-REQ-020 | Alarme de repli | Une alarme technique sonore doit retentir même si le processeur principal est défaillant. | Mesure CTRL-016 (RISK-012, RISK-014) | essai (VER-025) |
 | SYS-REQ-022 | Fausses alarmes | Le taux d'alarmes interrompant à tort la perfusion doit rester inférieur à 1 pour 100 h de perfusion, mesuré sur banc et pendant l'évaluation formative. | Mesure CTRL-017 (RISK-013, RISK-014) | essai (VER-028) |
 
@@ -95,7 +96,7 @@ Priorités au sens de l'IEC 60601-1-8. Le catalogue complet, avec délais de con
 | Reprise après réinitialisation pendant une perfusion | Haute | SYS-REQ-038 |
 | Fin de perfusion | Moyenne | SYS-REQ-032 |
 | Autonomie faible | Moyenne | SYS-REQ-016 |
-| Pompe programmée non démarrée, ou en pause, depuis 2 min | Moyenne | SYS-REQ-029 |
+| Pompe programmée non démarrée, ou en pause, depuis 2 min | Moyenne | SYS-REQ-042 |
 | Préalarme de fin de perfusion | Basse | SYS-REQ-032 |
 | Bascule sur batterie | Signal d'information | SYS-REQ-015 |
 
@@ -185,7 +186,6 @@ Chaque valeur ci-dessous est une proposition de départ. Elle doit être confirm
 | SYS-REQ-008 | 30 min à 1 mL/h ; 2 min à 25 mL/h | Débits d'essai usuels de l'IEC 60601-2-24, qui demande de publier ces délais sans fixer de limite ; valeurs à comparer à l'état de l'art (#13, #74). |
 | SYS-REQ-009 | < 0,2 mL | Valeur proposée pour une pompe avec décompression (CTRL-008) ; à confirmer sur banc (#74). |
 | SYS-REQ-016 | 30 min avant épuisement ; 5 min avant l'arrêt | Laisse le temps de rebrancher ou de remplacer la pompe ; à confirmer avec l'IEC 60601-2-24 et l'ADR #15. |
-| SYS-REQ-021 | Rappel à 2 min d'une pompe non démarrée ou en pause | Évite une interruption de thérapie oubliée ; durée à valider en évaluation formative (#40). |
 | SYS-REQ-022 | < 1 pour 100 h de perfusion | Objectif initial à mesurer sur banc (#74) et en évaluation formative (#40). |
 | SYS-REQ-024 | Lisible à 3 m | Distance d'un poste de soin au lit dans une chambre ; à valider en évaluation formative (#40). |
 | SYS-REQ-032 | Préalarme 1 à 30 min, 5 min par défaut ; maintien de veine ouverte ≤ min(débit programmé, 5 mL/h) | Laisse préparer la poche suivante ; le débit de maintien de veine ouverte reste borné par la prescription. |
@@ -193,6 +193,7 @@ Chaque valeur ci-dessous est une proposition de départ. Elle doit être confirm
 | SYS-REQ-034 | 10 000 événements | Couvre plusieurs semaines d'usage intensif ; à confirmer par l'ADR #16. |
 | SYS-REQ-035 | Résolution 1 s ; dérive < 1 min par mois | Ordre de grandeur d'une horloge temps réel à quartz courante ; à confirmer par l'ADR #17. |
 | SYS-REQ-036 | Pause sonore de 2 min au plus | Durée usuelle de pause des signaux sonores ; l'IEC 60601-1-8 demande qu'elle soit définie, à confirmer. |
+| SYS-REQ-042 | Rappel à 2 min d'une pompe non démarrée ou en pause | Évite une interruption de thérapie oubliée ; durée à valider en évaluation formative (#40). |
 | SW-REQ-004 | 20 ms de stabilité | Valeur courante pour des contacts mécaniques ; à ajuster au clavier retenu. |
 | SW-REQ-005 | Erreur cumulée < 0,01 mL sur 9 999 mL | Négligeable devant la résolution de 0,1 mL. |
 | SW-REQ-011 | Mémoire programme vérifiée au moins une fois par heure | À confirmer par l'analyse de la couverture de diagnostic (#14). |
@@ -210,7 +211,7 @@ Chaque besoin UN-01 à UN-17 de la [spécification d'utilisation](use-specificat
 | UN-03 | SYS-REQ-010, SYS-REQ-012, SYS-REQ-014 |
 | UN-04 | SYS-REQ-005, SYS-REQ-006 |
 | UN-05 | SYS-REQ-014, SYS-REQ-028 |
-| UN-06 | SYS-REQ-007, SYS-REQ-008, SYS-REQ-021 |
+| UN-06 | SYS-REQ-007, SYS-REQ-008, SYS-REQ-021, SYS-REQ-042 |
 | UN-07 | SYS-REQ-021 |
 | UN-08 | SYS-REQ-036 |
 | UN-09 | SYS-REQ-009 |
