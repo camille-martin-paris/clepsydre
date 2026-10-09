@@ -39,9 +39,11 @@ jobs:
           - name: gcc-16.1
             image: gcc:16.1.0@sha256:d8dec2859f964120119abd1380563247bf02c5d64f5bcdea496dbace1f48c6f0
             cxx: g++
+            apt: ""
           - name: clang-20
             image: ubuntu:26.04@sha256:f144425ff09be612d6d9ad965196e9cdc23dae1f42110a8a11a3e9a8198759f7
             cxx: clang++-20
+            apt: cmake ninja-build clang-20 clang-tools-20 libclang-rt-20-dev
         variant:
           - { name: debug, sanitizers: "" }
           - { name: asan-ubsan, sanitizers: "address,undefined" }
@@ -54,6 +56,15 @@ jobs:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           persist-credentials: false
+      # Index et paquets de l'instantané : une panne de snapshot.ubuntu.com ne touche que le
+      # premier remplissage du cache (tools/ci/apt-install.sh, docs/development/build.md).
+      - uses: actions/cache@0400d5f644dc74513175e3cd8d07132dd4860809 # v4.2.4
+        if: matrix.compiler.apt != ''
+        with:
+          path: |
+            /var/lib/apt/lists
+            /var/cache/apt/archives
+          key: apt-${{ env.APT_SNAPSHOT }}-${{ hashFiles('tools/ci/apt-install.sh') }}-${{ matrix.compiler.apt }}
       - name: Outils
         run: |
           if [ "${{ matrix.compiler.cxx }}" = "g++" ]; then
@@ -68,7 +79,7 @@ jobs:
             unzip -o "$RUNNER_TEMP/ninja.zip" -d /usr/local/bin
             ninja --version
           else
-            sh tools/ci/apt-install.sh cmake ninja-build clang-20 clang-tools-20 libclang-rt-20-dev
+            sh tools/ci/apt-install.sh ${{ matrix.compiler.apt }}
           fi
           cmake --version | head -1
           ${{ matrix.compiler.cxx }} --version | head -1
@@ -135,13 +146,21 @@ jobs:
   clang-tidy:
     runs-on: ubuntu-24.04
     container: ubuntu:26.04@sha256:f144425ff09be612d6d9ad965196e9cdc23dae1f42110a8a11a3e9a8198759f7
+    env:
+      APT_PACKAGES: cmake ninja-build clang-20 clang-tools-20 clang-tidy-20
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           persist-credentials: false
+      - uses: actions/cache@0400d5f644dc74513175e3cd8d07132dd4860809 # v4.2.4
+        with:
+          path: |
+            /var/lib/apt/lists
+            /var/cache/apt/archives
+          key: apt-${{ env.APT_SNAPSHOT }}-${{ hashFiles('tools/ci/apt-install.sh') }}-${{ env.APT_PACKAGES }}
       - name: Outils
         run: |
-          sh tools/ci/apt-install.sh cmake ninja-build clang-20 clang-tools-20 clang-tidy-20
+          sh tools/ci/apt-install.sh $APT_PACKAGES
           clang-tidy-20 --version | head -2
       - name: Versions installées
         # Les paquets apt viennent de l'instantané APT_SNAPSHOT ; leurs versions sont consignées
