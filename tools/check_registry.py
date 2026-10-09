@@ -32,12 +32,12 @@ SCHEMA = {
     "controls.toml": ("control", r"CTRL-\d{3}", {"description": TEXT, "risks": LIST, "requirements": LIST}),
     "verifications.toml": ("verification", r"VER-\d{3}", {"method": TEXT, "level": TEXT, "requirements": LIST,
                                                           "status": TEXT}),
-    "soup.toml": ("soup", r"SOUP-\d{3}", {"name": TEXT, "version": TEXT, "usage": TEXT, "requirements": LIST,
-                                          "known_anomalies": TEXT}),
+    "soup.toml": ("soup", r"SOUP-\d{3}", {"name": TEXT, "version": TEXT, "supplier": TEXT, "license": TEXT,
+                                          "usage": TEXT, "requirements": LIST, "known_anomalies": TEXT}),
 }
 
 # Champs facultatifs admis en plus de « id » et des champs obligatoires.
-OPTIONAL = {"verification": {"reference": TEXT}}
+OPTIONAL = {"verification": {"reference": TEXT}, "soup": {"purl": TEXT}}
 
 STATUSES = {
     "requirement": {"draft", "approved", "obsolete"},
