@@ -61,7 +61,7 @@ Quatre heures à 2 W demandent 8 Wh utiles. Avec une marge pour le vieillissemen
 ### 1. Bascule sans interruption
 
 - **Bloc secteur externe médical** (2 MOPP) fournissant une très basse tension continue.
-- **Chemin d'alimentation prioritaire** (*power path*) : le système est alimenté par l'entrée quand elle est présente, sinon par la batterie, à travers des **diodes idéales**. La bascule est donc matérielle et instantanée : aucun logiciel n'intervient pour maintenir la perfusion (SYS-REQ-015).
+- **Chemin d'alimentation prioritaire** (*power path*) : le système est alimenté par l'entrée quand elle est présente, sinon par la batterie, à travers des **diodes idéales** ou un multiplexeur d'alimentation. La bascule est matérielle, sans intervention logicielle pour maintenir la perfusion (SYS-REQ-015). Elle n'est pas instantanée : son délai et le creux de tension qu'elle provoque sont **bornés par le dimensionnement** (capacités de maintien en aval du chemin d'alimentation) et **vérifiés sous charge**, moteur en mouvement, sans réinitialisation d'aucun processeur.
 - Le logiciel ne fait que **constater** la bascule (présence de l'entrée) et la signaler, puis la journaliser.
 
 ### 2. Batterie, jauge et fin d'autonomie
@@ -81,7 +81,13 @@ La perte du secteur n'est pas une coupure : la batterie prend le relais. La **co
 - **Détection** : un superviseur de tension, matériel, signale la coupure imminente à chaque processeur par une interruption, avant le seuil de fonctionnement.
 - **Réserve de maintien** : des condensateurs (supercondensateurs si nécessaire) sur l'alimentation des processeurs et de la mémoire non volatile. Ils sont dimensionnés pour **terminer l'écriture en cours la plus longue du support retenu** ([#16](https://github.com/camille-martin-paris/clepsydre/issues/16)), journaliser si possible la coupure, puis passer en état sûr, avec une marge d'un facteur 2.
 - **Ordre des actions à la coupure** : retrait de l'autorisation moteur (déjà l'état par défaut, ADR 0003), refus de toute nouvelle écriture, achèvement de l'écriture en cours, événement « coupure » si la réserve le permet.
-- **Écritures sûres en cas de coupure** : l'état de perfusion et le journal sont écrits de façon à ce qu'une coupure à n'importe quel instant laisse soit l'ancienne, soit la nouvelle version intègre (SYS-REQ-038, SW-REQ-017). La réserve réduit le nombre d'écritures interrompues, mais **la sûreté ne repose pas sur elle**.
+- **Écritures sûres en cas de coupure** : l'état de perfusion et le journal sont écrits de façon à ce qu'une coupure à n'importe quel instant laisse soit l'ancienne, soit la nouvelle version intègre (SW-REQ-017). La réserve réduit le nombre d'écritures interrompues, mais **la sûreté ne repose pas sur elle**.
+- **Borne supérieure du volume délivré** (SYS-REQ-038). L'atomicité ne suffit pas : une ancienne version intègre peut sous-estimer le volume déjà délivré. La garantie repose sur une **réservation avant délivrance** :
+  - avant d'autoriser la délivrance d'un incrément de volume, au plus 0,1 mL (valeur proposée), le processeur de commande écrit durablement la **borne réservée** : le volume délivré augmenté de cet incrément ;
+  - la consigne ne dépasse jamais la borne réservée. Faute de nouvelle réservation confirmée, le pousseur s'arrête à la borne ; une réservation qui échoue place la pompe en état sûr ;
+  - à n'importe quel instant de coupure, la dernière borne durable est donc **supérieure ou égale** au volume réellement délivré, que la réserve de maintien ait fonctionné ou non ;
+  - à la reprise, le volume restant proposé est calculé à partir de cette borne. Le déplacement du piston mesuré par le capteur de position du processeur de sécurité (ADR 0003) sert de contrôle : s'il dépasse la borne au-delà de la tolérance, si la position de départ enregistrée manque, ou si la seringue a pu être déplacée, **aucune reprise n'est proposée** et une nouvelle programmation complète est exigée ;
+  - l'état de perfusion est conservé en **mémoire ferroélectrique (FRAM)**, dont l'endurance en écriture supporte une réservation par incrément, jusqu'à 2 000 écritures par heure à 200 mL/h ; le journal reste en mémoire flash (ADR de [#16](https://github.com/camille-martin-paris/clepsydre/issues/16)).
 - **Réserve de l'alarme autonome** (ADR 0003) : une **pile lithium primaire** dédiée, préférée au supercondensateur car l'énergie d'un supercondensateur de taille raisonnable est trop juste pour 2 min de signal sonore. Sa tension en charge est contrôlée au test de démarrage, et elle est remplacée en maintenance.
 - **Horloge** : l'horloge temps réel a sa propre réserve (pile ou supercondensateur), traitée par l'ADR [#17](https://github.com/camille-martin-paris/clepsydre/issues/17).
 
@@ -93,15 +99,16 @@ La perte du secteur n'est pas une coupure : la batterie prend le relais. La **co
 
 - **nouveau danger** : emballement thermique ou incendie de la batterie (énergie thermique), à ajouter à l'analyse ; mesures : chimie LiFePO4, circuit de protection, charge limitée en température, cellules conformes à l'IEC 62133-2 ;
 - **SYS-REQ-015** : bascule matérielle par diodes idéales, sans intervention logicielle ;
+- **SYS-REQ-038** : préciser la réservation avant délivrance et le contrôle par la position du piston (VER-046, VER-078) ;
 - **SYS-REQ-016** : estimation prudente de l'autonomie, contrôle indépendant par la tension, arrêt commandé à l'épuisement ;
-- nouvelles exigences : **bloc secteur externe 2 MOPP** ; **jauge coulométrique** et son exactitude ; **détection de coupure imminente** et **réserve de maintien** ; **pile de l'alarme autonome** et son test ;
+- nouvelles exigences : **bloc secteur externe 2 MOPP** ; **jauge coulométrique** et son exactitude ; **détection de coupure imminente** et **réserve de maintien** ; **pile de l'alarme autonome** et son test ; **délai et creux de tension de la bascule** bornés ; **réservation durable du volume avant délivrance**, par incréments d'au plus 0,1 mL, en mémoire FRAM ;
 - **SYS-REQ-020** : la réserve de l'alarme autonome est une pile lithium primaire surveillée.
 
 ### Conception
 
 - **Électronique** ([#56](https://github.com/camille-martin-paris/clepsydre/issues/56), [#63](https://github.com/camille-martin-paris/clepsydre/issues/63), [#64](https://github.com/camille-martin-paris/clepsydre/issues/64)) : connecteur et bloc externe, chemin d'alimentation à diodes idéales, chargeur LiFePO4, jauge coulométrique, protection de la batterie, superviseur de tension, réserve de maintien, pile de l'alarme autonome.
 - **Logiciel** ([#65](https://github.com/camille-martin-paris/clepsydre/issues/65)) : alarmes d'autonomie, arrêt commandé, gestion de l'interruption de coupure imminente.
-- **Bancs** ([#75](https://github.com/camille-martin-paris/clepsydre/issues/75)) : consommation réelle, autonomie, exactitude de la jauge, coupures à des instants aléatoires pendant les écritures.
+- **Bancs** ([#75](https://github.com/camille-martin-paris/clepsydre/issues/75)) : consommation réelle, autonomie, exactitude de la jauge, délai et creux de tension de la bascule sous charge, coupures à des instants aléatoires pendant les écritures et **entre une délivrance et l'écriture qui la suit**, avec réserve de maintien présente, absente ou défaillante ; vérification qu'après chaque coupure la borne durable majore le volume pesé.
 
 ## Limites
 
