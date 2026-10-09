@@ -26,7 +26,7 @@ Toute autre famille de compilateurs (MSVC, compilateurs embarqués) est refusée
 | 2026-10-09 | Ubuntu 26.04 | GCC 16.1, Clang 20, 21 et 22, clang-tidy 20 et 21, CMake 4.2, Ninja 1.13 | Configuration, compilation, édition de liens et tests réussis |
 | 2026-10-09 | Ubuntu 26.04 | GCC 15.2 | Refusé à la configuration, comme attendu |
 
-La CI vérifie les compilateurs planchers à chaque pull request, dans des images épinglées par empreinte : `gcc:16.1.0` (CMake 4.2.3 téléchargé et vérifié par SHA-256) et `ubuntu:26.04` (Clang 20, CMake 4.2.3). Voir [Intégration continue](#intégration-continue).
+La CI vérifie les compilateurs planchers à chaque pull request, dans des images épinglées par empreinte : `gcc:16.1.0` (CMake 4.2.3 et Ninja 1.13.2 téléchargés et vérifiés par SHA-256) et `ubuntu:26.04` (Clang 20, CMake 4.2.3 et Ninja 1.13.2, depuis un instantané daté de l'archive). Voir [Intégration continue](#intégration-continue) et [Dépendances épinglées](#dépendances-épinglées).
 
 ## Commandes
 
@@ -73,7 +73,54 @@ Les préréglages appellent `g++` et `clang++`. Pour un compilateur suffixé par
 
 ## Tests
 
-Les tests sont des exécutables enregistrés dans CTest par `clepsydre_add_test` (voir [`tests/CMakeLists.txt`](../../tests/CMakeLists.txt)). Un test réussit s'il effectue au moins une vérification et qu'aucune n'échoue. Le support minimal [`tests/support/expect.hpp`](../../tests/support/expect.hpp) évite toute dépendance externe ; le choix d'un cadriciel de test sera consigné avec l'épinglage des dépendances ([#22](https://github.com/camille-martin-paris/clepsydre/issues/22)).
+Les tests sont des exécutables enregistrés dans CTest par `clepsydre_add_test` (voir [`tests/CMakeLists.txt`](../../tests/CMakeLists.txt)). Un test réussit s'il effectue au moins une vérification et qu'aucune n'échoue. Le support minimal [`tests/support/expect.hpp`](../../tests/support/expect.hpp) évite toute dépendance externe ; aucun cadriciel de test n'est retenu à ce jour. Un cadriciel ajouté serait une dépendance épinglée selon [Dépendances épinglées](#dépendances-épinglées) ; il n'est pas embarqué et n'est donc pas un SOUP.
+
+## Dépendances épinglées
+
+Chaque dépendance du build et de la CI est épinglée par **révision complète** : deux exécutions sur le même commit utilisent ainsi les mêmes composants ([#22](https://github.com/camille-martin-paris/clepsydre/issues/22)). La tâche `pins` le contrôle à chaque pull request avec [`tools/check_pins.py`](../../tools/check_pins.py) :
+
+| Dépendance | Épinglage | Où |
+| --- | --- | --- |
+| Action GitHub | Commit complet (40 caractères), version en commentaire | `.github/workflows/` |
+| Image de conteneur | Empreinte SHA-256 | `.github/workflows/` |
+| Paquets apt (image `ubuntu:26.04`) | Instantané daté de l'archive Ubuntu (`APT_SNAPSHOT`), installé par [`tools/ci/apt-install.sh`](../../tools/ci/apt-install.sh) ; aucun appel direct à `apt` | `ci.yml` |
+| Archive téléchargée (CMake, Ninja) | Version exacte ; SHA-256 vérifié par `sha256sum --check` dans le même pas | `ci.yml` |
+| Outils Python (clang-format, reuse) | Verrou donnant la version exacte et les empreintes de toutes les dépendances, installé par `pip --require-hashes --only-binary=:all:` | [`tools/requirements/`](../../tools/requirements/) |
+| Python des tâches | Version complète X.Y.Z dans `actions/setup-python` | `.github/workflows/` |
+| Dépendance CMake (`FetchContent`, `ExternalProject`) | `GIT_TAG` de commit complet ou `URL_HASH SHA256` ; aucune à ce jour | `CMakeLists.txt`, `cmake/` |
+
+L'instantané n'est servi qu'en HTTPS, et l'image de base n'a pas de certificats racine. Le script installe donc d'abord `ca-certificates` depuis la poche de publication de la distribution, figée depuis sa sortie. Dans les deux cas, apt authentifie les index par la clé de l'archive Ubuntu.
+
+**Monter une version** : dans une pull request dédiée, qui ne fait que cela et dont la CI est verte. La description donne la raison, l'ancienne et la nouvelle version, et l'effet sur les SOUP le cas échéant.
+
+- Outils Python : modifier le fichier `.in`, puis régénérer le verrou en excluant les publications de moins de deux semaines, et rétablir l'en-tête du fichier :
+
+  ```bash
+  uv pip compile --generate-hashes --exclude-newer <date ISO, il y a 14 jours> \
+    --python-version 3.12 --python-platform x86_64-manylinux_2_28 \
+    tools/requirements/reuse.in -o tools/requirements/reuse.txt
+  ```
+
+- Paquets apt : avancer `APT_SNAPSHOT` dans `ci.yml`.
+- Archive téléchargée : changer la version et l'empreinte, relevée sur la page de publication amont.
+
+**Limites** :
+- l'image des exécuteurs GitHub (`ubuntu-24.04`) évolue sans épinglage possible ; les tâches installent donc elles-mêmes leurs outils, épinglés, ou s'exécutent dans une image épinglée ;
+- le contrôle est textuel : il ne remplace pas la relecture d'une montée de version ;
+- l'outil reste soumis à la réserve R3 ([#89](https://github.com/camille-martin-paris/clepsydre/issues/89)).
+
+## Nomenclature logicielle (SBOM)
+
+[`tools/sbom.py`](../../tools/sbom.py) génère la SBOM au format CycloneDX 1.6 (JSON). Elle décrit :
+- le logiciel embarqué, avec sa licence et son commit ;
+- chaque composant tiers (SOUP) du [registre](../../software_development_file/registry/soup.toml), avec sa version, son fournisseur, sa licence et, s'il est connu, son identifiant Package URL.
+
+La SBOM n'est générée que si le registre est cohérent. Elle est reproductible : son horodatage est la date du commit.
+
+- À chaque pull request, la tâche `registry` génère la SBOM de la révision et la publie comme artefact.
+- À la poussée d'une étiquette `vX.Y.Z`, le workflow [`version.yml`](../../.github/workflows/version.yml) génère la SBOM de la version, après le contrôle de l'épinglage et du registre. Le processus de publication la joint à la version, avec le rapport de vérification ([#77](https://github.com/camille-martin-paris/clepsydre/issues/77)) : les artefacts d'exécution ne sont conservés que pour une durée limitée.
+
+Les outils de build et de vérification ne figurent pas dans la SBOM, qui décrit le produit ; ils sont épinglés comme indiqué ci-dessus.
 
 ## Intégration continue
 
@@ -85,9 +132,10 @@ Le workflow [`.github/workflows/ci.yml`](../../.github/workflows/ci.yml) s'exéc
 | `format` | clang-format 21.1.8 sur tous les fichiers C++ suivis par Git | — |
 | `clang-tidy` | Clang 20 et clang-tidy 20 (image `ubuntu:26.04`), toute remarque bloquante | Configuration, analyse |
 | `licences` | `reuse lint` (reuse 6.2.0) | — |
-| `registry` ([`registry.yml`](../../.github/workflows/registry.yml)) | Tests des outils du registre, cohérence du registre de traçabilité, matrice de traçabilité publiée dans le résumé et comme artefact | Tests, vérification, matrice |
+| `pins` | [`tools/check_pins.py`](../../tools/check_pins.py) : chaque dépendance du build et de la CI est épinglée par révision complète | — |
+| `registry` ([`registry.yml`](../../.github/workflows/registry.yml)) | Tests des outils du dépôt, cohérence du registre de traçabilité, matrice de traçabilité publiée dans le résumé et comme artefact, SBOM de la révision publiée comme artefact | Tests, vérification, matrice, SBOM |
 
-Les images sont épinglées par empreinte, mais les paquets qu'`apt` y ajoute (Ninja, Clang 20, clang-tidy 20, CMake de l'image `ubuntu:26.04`) proviennent de dépôts évolutifs : deux exécutions peuvent installer des versions différentes. Chaque tâche `build` et `clang-tidy` consigne donc dans le résumé de l'exécution la version de CMake et la liste complète des paquets installés avec leur version. La reproductibilité de ces installations est suivie dans [#89](https://github.com/camille-martin-paris/clepsydre/issues/89).
+Chaque dépendance est épinglée ([Dépendances épinglées](#dépendances-épinglées)). Chaque tâche `build` et `clang-tidy` consigne en outre, dans le résumé de l'exécution, la version de CMake et la liste complète des paquets installés avec leur version.
 
 Réglages d'exécution des sanitizers en CI : `halt_on_error=1` pour les trois, détection des fuites mémoire avec AddressSanitizer. Par précaution, les conteneurs sont lancés sans filtre seccomp : ThreadSanitizer peut désactiver l'ASLR par `personality()`, appel que le profil seccomp par défaut de Docker restreint. La nécessité de ce réglage n'a pas été démontrée.
 
