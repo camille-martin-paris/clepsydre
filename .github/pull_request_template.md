@@ -11,6 +11,12 @@ Closes #
 - [ ] Composants tiers (SOUP) : aucun ajouté ni modifié / liste SOUP mise à jour
 - [ ] Documentation mise à jour
 
+## Assistance
+
+<!-- Outil, modèle et usage, ou « aucune ». Voir software_development_file/development-plan.md#assistance-par-llm. -->
+
+- Assistance utilisée :
+
 ## Vérification
 
 <!-- Tests ajoutés ou exécutés, essais, résultats. -->
