@@ -91,6 +91,10 @@ Chaque dépendance du build et de la CI est épinglée par **révision complète
 
 L'instantané n'est servi qu'en HTTPS, et l'image de base n'a pas de certificats racine. Le script installe donc d'abord `ca-certificates` depuis la poche de publication de la distribution, figée depuis sa sortie. Dans les deux cas, apt authentifie les index par la clé de l'archive Ubuntu.
 
+**Cache des paquets apt** ([#107](https://github.com/camille-martin-paris/clepsydre/issues/107)). Les index et les paquets de l'instantané sont mis en cache par `actions/cache`. La clé combine `APT_SNAPSHOT`, l'empreinte du script et la liste des paquets ; une même clé désigne donc toujours le même contenu. Avec un cache valide, le script installe **sans réseau** : un paquet absent du cache fait basculer vers le téléchargement. Sans cache, chaque téléchargement est tenté plusieurs fois, et un index injoignable fait échouer le script avec un message explicite. Limites :
+- une panne de `snapshot.ubuntu.com` bloque encore le premier remplissage du cache, c'est-à-dire une nouvelle valeur de `APT_SNAPSHOT`, une nouvelle liste de paquets ou un cache expiré, car GitHub efface un cache inutilisé pendant 7 jours ;
+- les paquets lus dans le cache sont contrôlés par apt contre les index en cache, eux-mêmes authentifiés à leur téléchargement ; un cache n'est écrit que par les workflows du dépôt, dans la portée de sa branche.
+
 **Monter une version** : dans une pull request dédiée, qui ne fait que cela et dont la CI est verte. La description donne la raison, l'ancienne et la nouvelle version, et l'effet sur les SOUP le cas échéant.
 
 - Outils Python : modifier le fichier `.in`, puis régénérer le verrou en excluant les publications de moins de deux semaines, et rétablir l'en-tête du fichier :
