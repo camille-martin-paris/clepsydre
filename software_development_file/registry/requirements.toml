@@ -275,7 +275,7 @@ status = "draft"
 [[requirement]]
 id = "SYS-REQ-038"
 title = "Reprise après réinitialisation"
-text = "Après une réinitialisation ou une coupure totale d'alimentation survenue pendant une perfusion, la pompe ne doit pas reprendre la perfusion d'elle-même : elle doit déclencher une alarme de priorité haute et proposer la dernière programmation, qui ne reprend qu'après confirmation par le soignant."
+text = "Après une réinitialisation ou une coupure totale d'alimentation survenue pendant une perfusion, la pompe ne doit pas reprendre la perfusion d'elle-même : elle doit déclencher une alarme de priorité haute. Si l'état de perfusion enregistré est intègre, elle doit proposer la perfusion interrompue avec son débit, son volume à perfuser, le volume déjà délivré et le volume restant ; la confirmation par le soignant ne doit relancer que le volume restant, jamais le volume initial entier. Le volume délivré enregistré ne doit jamais être inférieur au volume effectivement délivré, de sorte que le volume restant proposé ne soit jamais surestimé. Si l'état enregistré est absent ou corrompu, aucune reprise ne doit être proposée : la pompe doit indiquer que le volume déjà délivré est inconnu et exiger une nouvelle programmation complète."
 source = "RISK-010, RISK-012 ; UN-11"
 status = "draft"
 
@@ -345,8 +345,8 @@ status = "draft"
 [[requirement]]
 id = "SW-REQ-006"
 title = "Consigne d'actionneur bornée"
-text = "Avant chaque envoi à l'actionneur, le logiciel doit vérifier que la consigne ne dépasse ni le débit programmé, ni le débit de bolus ou de purge autorisé, ni le débit maximal de la pompe ; une consigne hors bornes doit placer la pompe en état sûr."
-source = "SYS-REQ-001, SYS-REQ-014, SYS-REQ-030"
+text = "Avant chaque envoi à l'actionneur, le logiciel doit vérifier que la consigne ne dépasse pas la borne du mode actif : en perfusion, le débit programmé ou calculé, puis le débit de maintien de veine ouverte après la fin de perfusion ; en bolus, le débit de bolus autorisé par les limites du médicament ; en purge, le débit autorisé pour la purge. Chaque borne est plafonnée par le débit maximal de la pompe, et seule la borne du mode actif s'applique ; hors de ces modes, toute consigne non nulle est hors bornes. Le mode et sa borne doivent changer ensemble, sans état intermédiaire où une consigne serait vérifiée contre la borne d'un autre mode. Une consigne hors bornes doit placer la pompe en état sûr."
+source = "SYS-REQ-001, SYS-REQ-014, SYS-REQ-029, SYS-REQ-030, SYS-REQ-032"
 status = "draft"
 
 [[requirement]]
