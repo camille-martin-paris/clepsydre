@@ -3,7 +3,7 @@
 | Champ | Valeur |
 | --- | --- |
 | Statut | Version initiale, soumise à relecture |
-| Révision | A |
+| Révision | B |
 | Issue | [#8](https://github.com/camille-martin-paris/clepsydre/issues/8) |
 | Références | [Usage prévu](../intended-use.md) ; IEC 62366-1:2015+A1:2020, §5.1 (spécification d'utilisation) |
 
@@ -23,7 +23,7 @@ Aucun entretien ni aucune observation d'utilisateurs n'a encore été mené. Les
 | Partie du corps | Système veineux, par l'intermédiaire d'un accès veineux et d'une tubulure ; la pompe elle-même n'est pas en contact avec le patient | Usage prévu |
 | Profils d'utilisateurs | IDE (P1), médecin prescripteur (P2), technicien biomédical (P3) ; patient à domicile (P4) hors périmètre initial | [Profils](#profils-dutilisateurs) |
 | Environnement d'utilisation | Unités d'hospitalisation d'un établissement de soins | [Environnement](#environnement-dutilisation) |
-| Principe de fonctionnement | Un actionneur déplace le liquide (seringue ou cassette, selon l'ADR [#13](https://github.com/camille-martin-paris/clepsydre/issues/13)) ; le logiciel commande l'actionneur, surveille les capteurs et déclenche les alarmes | Usage prévu |
+| Principe de fonctionnement | Pousse-seringue ([ADR 0002](../adr/0002-principe-de-pompage.md)) : un pousseur déplace le piston d'une seringue standard de 60 mL au plus ; le logiciel commande l'actionneur, surveille les capteurs et déclenche les alarmes | Usage prévu |
 
 ## Profils d'utilisateurs
 
@@ -62,7 +62,7 @@ Statut de chaque besoin : **à valider** (voir [Statut des besoins](#statut-des-
 | UN-01 | P1 | Programmer une perfusion conforme à la prescription en un nombre limité d'étapes, avec un récapitulatif à confirmer avant le démarrage | Scénario S3 ; erreurs de programmation [FDA 2010] |
 | UN-02 | P1, P2 | Voir sans ambiguïté le médicament, le débit, le volume perfusé, le volume restant et l'unité de chaque valeur | Confusion d'unités [FDA 2010] |
 | UN-03 | P1 | Être protégé contre une saisie erronée : touche répétée involontairement, décimale mal placée, valeur hors des limites du médicament | Rebond de touche [FDA 2010] ; bibliothèque de médicaments ([#37](https://github.com/camille-martin-paris/clepsydre/issues/37)) |
-| UN-04 | P1 | Installer le consommable sans risque d'écoulement libre, y compris en le retirant ou en ouvrant la porte | Scénarios S1 et S2 |
+| UN-04 | P1 | Installer la seringue sans risque d'écoulement libre, y compris en la retirant ou en libérant le piston | Scénarios S1 et S2 |
 | UN-05 | P1 | Purger la ligne de son air avant de la raccorder au patient | Scénario S2 |
 | UN-06 | P1 | Être alerté rapidement et de façon compréhensible d'une occlusion, d'air dans la ligne, d'une fin de perfusion, d'une batterie faible ou d'une défaillance, avec la cause et l'action attendue | Scénario S5 |
 | UN-07 | P1 | Distinguer les alarmes de cette pompe de celles des appareils voisins, et leur priorité | Environnement |
@@ -87,8 +87,8 @@ Chaque scénario décrit le déroulement nominal, puis les situations susceptibl
 | --- | --- |
 | Profil | P1 |
 | Préalables | Pompe contrôlée et en service ; prescription disponible ; consommable compatible |
-| Déroulement | 1. Fixer la pompe sur la potence et la brancher. 2. Mettre en marche ; l'autotest s'exécute et l'avertissement de prototype s'affiche. 3. Ouvrir la porte, installer le consommable (seringue ou cassette), fermer la porte. 4. La pompe détecte et identifie le consommable. |
-| Points d'attention | Consommable mal positionné ou incompatible ; porte mal fermée ; écoulement libre pendant l'installation si le clamp est ouvert ; autotest en échec ignoré ; pompe d'un autre service avec une autre configuration. |
+| Déroulement | 1. Fixer la pompe sur la potence et la brancher. 2. Mettre en marche ; l'autotest s'exécute et l'avertissement de prototype s'affiche. 3. Installer la seringue remplie et purgée dans le berceau, fermer la bride et engager le piston dans le pousseur. 4. Choisir le modèle de seringue dans la liste ; la pompe contrôle sa présence, son diamètre et la capture du piston. |
+| Points d'attention | Seringue mal positionnée, non listée ou d'un autre modèle que celui choisi ; piston non engagé dans le pousseur (siphonage) ; écoulement libre pendant l'installation si le prolongateur n'est pas clampé ; autotest en échec ignoré ; pompe d'un autre service avec une autre configuration. |
 
 ### S2 — Amorçage (purge)
 
@@ -123,7 +123,7 @@ Chaque scénario décrit le déroulement nominal, puis les situations susceptibl
 | --- | --- |
 | Profil | P1 |
 | Préalables | Perfusion en cours ou en pause |
-| Déroulement | 1. Percevoir l'alarme et la localiser. 2. Lire la cause et l'action proposée. 3. Mettre l'alarme en pause si nécessaire. 4. Corriger la cause (lever l'occlusion, purger l'air, changer la poche, brancher le secteur). 5. Reprendre la perfusion. |
+| Déroulement | 1. Percevoir l'alarme et la localiser. 2. Lire la cause et l'action proposée. 3. Mettre l'alarme en pause si nécessaire. 4. Corriger la cause (lever l'occlusion, purger l'air, changer la seringue, brancher le secteur). 5. Reprendre la perfusion. |
 | Points d'attention | Alarme non perçue ou confondue avec celle d'un appareil voisin ; alarmes trop fréquentes qui conduisent à les ignorer ; cause mal comprise ; bolus libéré à la levée d'une occlusion ; perfusion non reprise après la pause ; fausse alarme qui interrompt une thérapie nécessaire. |
 
 ### S6 — Fin de perfusion
@@ -132,7 +132,7 @@ Chaque scénario décrit le déroulement nominal, puis les situations susceptibl
 | --- | --- |
 | Profil | P1 |
 | Préalables | Volume programmé bientôt atteint |
-| Déroulement | 1. Recevoir l'alerte de fin imminente. 2. Préparer la suite : nouvelle poche ou nouvelle seringue, ou arrêt. 3. À la fin, la pompe passe en débit de maintien de veine (si prévu) ou s'arrête et alarme. 4. Arrêter, déconnecter, retirer le consommable sans écoulement libre. |
+| Déroulement | 1. Recevoir l'alerte de fin imminente. 2. Préparer la suite : nouvelle seringue, ou arrêt. 3. À la fin, la pompe passe en débit de maintien de veine (si prévu) ou s'arrête et alarme. 4. Arrêter, déconnecter, retirer le consommable sans écoulement libre. |
 | Points d'attention | Alerte de fin ignorée ; débit de maintien non souhaité ; consommable retiré clamp ouvert. |
 
 ### S7 — Maintenance
@@ -158,3 +158,4 @@ Les fonctions d'utilisation liées à la sécurité, au sens de l'IEC 62366-1, s
 | Révision | Date | Auteur | Modification |
 | --- | --- | --- | --- |
 | A | 2026-10-09 | Ambroise Leclerc | Création, soumise à relecture |
+| B | 2026-10-09 | Ambroise Leclerc | Pousse-seringue retenu (ADR 0002) : seringue comme consommable ; UN-04 et scénarios S1, S5 et S6 révisés ([#104](https://github.com/camille-martin-paris/clepsydre/issues/104)) |

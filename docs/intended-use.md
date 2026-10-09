@@ -32,7 +32,7 @@ L'avertissement ne pourra être retiré qu'après l'aboutissement d'une évaluat
 
 Clepsydre est une pompe à perfusion destinée à administrer par voie intraveineuse, de façon contrôlée et programmée, un médicament ou une solution liquide, à un débit ou selon un volume définis par l'utilisateur, et à alerter l'utilisateur lorsque la perfusion ne se déroule pas comme programmé (occlusion, air dans la ligne, fin de perfusion, défaillance technique, autonomie faible).
 
-Le principe de pompage (pousse-seringue ou pompe volumétrique) n'est pas encore choisi ; il fait l'objet de l'ADR [#13](https://github.com/camille-martin-paris/clepsydre/issues/13).
+Le principe retenu est le **pousse-seringue** ([ADR 0002](adr/0002-principe-de-pompage.md)) : le médicament est contenu dans une seringue standard de 60 mL au plus, dont la pompe pousse le piston. Clepsydre est donc destiné aux **perfusions de petit volume**.
 
 ### Population de patients (hypothèse)
 
@@ -59,7 +59,8 @@ Le principe de pompage (pousse-seringue ou pompe volumétrique) n'est pas encore
   - nutrition entérale ;
   - voies péridurale et intrathécale ;
   - analgésie contrôlée par le patient (PCA).
-- Les consommables (seringues, tubulures) compatibles seront limités à une liste explicitement vérifiée.
+- Perfusions de grand volume (hydratation, poches de solutés) : le volume d'une perfusion est limité à celui de la seringue installée (ADR 0002).
+- Les consommables compatibles (seringues, prolongateurs) seront limités à une liste explicitement vérifiée ; chaque modèle de seringue de la liste est identifié par la pompe.
 
 ## Hypothèses d'usage orientant les exigences
 
@@ -68,10 +69,10 @@ Les valeurs ci-dessous sont des hypothèses de travail destinées à dimensionne
 | Identifiant | Hypothèse | Valeur de travail | Effet sur la conception |
 | --- | --- | --- | --- |
 | H-01 | Types de perfusion | Débit continu ; volume à perfuser sur une durée ; bolus borné à la demande du soignant | Modes de la machine à états ([#24](https://github.com/camille-martin-paris/clepsydre/issues/24), [#25](https://github.com/camille-martin-paris/clepsydre/issues/25)) |
-| H-02 | Plage de débit | 0,1 à 999 mL/h si pompe volumétrique ; 0,1 à 200 mL/h si pousse-seringue | Choix de l'actionneur et du principe de pompage ([#13](https://github.com/camille-martin-paris/clepsydre/issues/13)) |
+| H-02 | Plage de débit | 0,1 à 200 mL/h, limitée en outre par le modèle de seringue | Pousse-seringue retenu (ADR 0002) ; mécanisme et vitesse maximale ([#52](https://github.com/camille-martin-paris/clepsydre/issues/52)) |
 | H-03 | Résolution de programmation du débit | 0,1 mL/h | Interface de programmation et asservissement ([#26](https://github.com/camille-martin-paris/clepsydre/issues/26)) |
 | H-04 | Précision de débit visée | ± 5 % en régime établi, mesurée selon la méthode de l'IEC 60601-2-24 | Banc de précision ([#73](https://github.com/camille-martin-paris/clepsydre/issues/73)) |
-| H-05 | Volume à perfuser programmable | 0,1 à 9 999 mL | Comptage de volume et alarme de fin de perfusion |
+| H-05 | Volume à perfuser programmable | 0,1 mL au volume utile de la seringue installée (60 mL au plus) | Comptage de volume, alarme de fin de perfusion et position du piston |
 | H-06 | Un canal de perfusion par appareil | Pas de perfusion multiple ni de séquencement entre appareils | Simplicité de la machine à états et de l'interface |
 | H-07 | Autonomie sur batterie | Au moins 4 h au débit de 25 mL/h | Architecture d'alimentation ([#15](https://github.com/camille-martin-paris/clepsydre/issues/15)) |
 | H-08 | Fonctionnement autonome | Aucune connexion réseau requise pour perfuser | Surface d'attaque réduite ([#67](https://github.com/camille-martin-paris/clepsydre/issues/67)) |
@@ -82,3 +83,4 @@ Les valeurs ci-dessous sont des hypothèses de travail destinées à dimensionne
 | Révision | Date | Auteur | Modification |
 | --- | --- | --- | --- |
 | A | 2026-10-09 | Contributeurs Clepsydre | Création, soumise à relecture |
+| B | 2026-10-09 | Ambroise Leclerc | Pousse-seringue retenu (ADR 0002) : périmètre restreint aux perfusions de petit volume ; H-02 et H-05 révisées ([#104](https://github.com/camille-martin-paris/clepsydre/issues/104)) |
