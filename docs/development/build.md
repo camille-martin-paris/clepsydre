@@ -22,8 +22,9 @@ Toute autre famille de compilateurs (MSVC, compilateurs embarqués) est refusée
 | Date | Système | Compilateurs | Résultat |
 | --- | --- | --- | --- |
 | 2026-10-09 | Ubuntu 26.04 | GCC 15.2 et 16.1, Clang 20, 21 et 22, clang-tidy 20 et 21, CMake 4.2, Ninja 1.13 | Configuration, compilation, édition de liens et tests réussis |
+| 2026-10-09 | Ubuntu 24.04, CI GitHub ([exécution 37905570284](https://github.com/camille-martin-paris/clepsydre/actions/runs/37905570284)) | GCC 14.2 et Clang 18.1.3 (versions minimales), CMake 3.31 | Configuration, compilation, édition de liens et tests réussis |
 
-La CI vérifie les versions minimales ([#20](https://github.com/camille-martin-paris/clepsydre/issues/20)).
+La CI vérifie les versions minimales à chaque pull request (`.github/workflows/build.yml`).
 
 ## Commandes
 
