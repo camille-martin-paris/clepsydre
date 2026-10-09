@@ -107,7 +107,7 @@ status = "draft"
 [[requirement]]
 id = "SYS-REQ-014"
 title = "Bolus et purge bornés"
-text = "Le volume et le débit d'un bolus ou d'une purge doivent être bornés par des limites configurées ; la purge doit être refusée une fois la perfusion démarrée."
+text = "Le bolus et la purge doivent être des commandes distinctes. Le volume et le débit d'un bolus doivent être bornés par les limites configurées pour le médicament ; ceux d'une purge, par des limites propres à la purge, qui ne peuvent servir à administrer un bolus. La purge doit être refusée une fois la perfusion démarrée."
 source = "Mesure de maîtrise CTRL-012 ; docs/requirements/preliminary-hazard-analysis.md"
 status = "draft"
 
@@ -200,6 +200,13 @@ id = "SYS-REQ-027"
 title = "Avertissement de prototype"
 text = "L'appareil doit porter l'avertissement « PROTOTYPE — NE PAS UTILISER SUR UN PATIENT » et l'afficher au démarrage jusqu'à acquittement explicite."
 source = "Mesure de maîtrise CTRL-023 ; docs/requirements/preliminary-hazard-analysis.md"
+status = "draft"
+
+[[requirement]]
+id = "SYS-REQ-028"
+title = "Purge sur ligne non raccordée"
+text = "Une purge ne doit être lancée que si la condition « ligne non raccordée au patient » a été établie immédiatement avant son lancement, y compris avant le premier démarrage d'une perfusion ; à défaut, la purge doit être refusée. Si la violation de cette condition est détectée ou signalée pendant la purge, celle-ci doit s'arrêter immédiatement, et l'utilisateur doit pouvoir l'arrêter à tout moment. Le moyen d'établir et de surveiller cette condition sera choisi avec l'architecture (#13, #14)."
+source = "Mesure de maîtrise CTRL-012 ; docs/requirements/preliminary-hazard-analysis.md"
 status = "draft"
 
 [[requirement]]

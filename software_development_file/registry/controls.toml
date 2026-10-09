@@ -79,9 +79,9 @@ requirements = ["SYS-REQ-013"]
 
 [[control]]
 id = "CTRL-012"
-description = "Bolus et purge bornés en volume et en débit ; purge refusée une fois la perfusion démarrée"
+description = "Bolus et purge distincts, bornés chacun par leurs propres limites de volume et de débit ; purge refusée une fois la perfusion démarrée ; purge subordonnée à la condition « ligne non raccordée au patient », refusée si cette condition n'est pas établie et arrêtée si sa violation est détectée ou signalée"
 risks = ["RISK-009"]
-requirements = ["SYS-REQ-014"]
+requirements = ["SYS-REQ-014", "SYS-REQ-028"]
 
 [[control]]
 id = "CTRL-013"
