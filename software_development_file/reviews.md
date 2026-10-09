@@ -21,6 +21,19 @@ Décisions possibles : acceptée, acceptée avec réserves, refusée. Lorsqu'un 
 
 ## Moyens de rédaction et de revue
 
+### Analyse préliminaire des dangers [#94](https://github.com/camille-martin-paris/clepsydre/pull/94) et levée de R2 [#95](https://github.com/camille-martin-paris/clepsydre/pull/95) (2026-10-09)
+
+| Opération | Contributions concernées | Responsable | Moyen |
+| --- | --- | --- | --- |
+| Rédaction et corrections | #94 : plan de gestion des risques, analyse préliminaire des dangers et registre | Ambroise Leclerc, sous son compte | Claude Code (Claude Opus 5.5, Anthropic), selon la déclaration d'assistance de #94 |
+| Analyse de relecture, approbations et fusion | #94 | Camille Martin, à sa demande et sous son compte | Codex |
+| Revue automatique complémentaire | #94 | — | GitHub Copilot ; ne compte pas comme relecture |
+| Décision de lever R2 | Analyse acceptée au commit `75169c378cf326937f730a5a436baa69d42734f0` | Camille Martin, décision explicite | Codex, exécution et consignation de la décision |
+| Rédaction et corrections documentaires | #95 : revues, classification et historique de l'analyse | Camille Martin, à sa demande et sous son compte | Codex |
+| Relecture et propositions de compléments | #95, révision `9070b55` | Ambroise Leclerc, sous son compte | Claude Code (Claude Opus 5.5, Anthropic), selon sa [relecture](https://github.com/camille-martin-paris/clepsydre/pull/95#pullrequestreview-5469111528) |
+
+Ces opérations ne constituent pas une attestation de lecture personnelle des contributions de #94 ou #95. Une telle attestation doit être formulée par la personne concernée ; aucune n'est déduite de l'utilisation d'un assistant ou de l'exécution d'une approbation.
+
 ### Dossier de développement initial et épique [#1](https://github.com/camille-martin-paris/clepsydre/issues/1) (2026-10-09)
 
 Seules les opérations attestées par l'historique Git et GitHub sont consignées ici.

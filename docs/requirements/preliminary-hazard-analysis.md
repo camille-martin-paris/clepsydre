@@ -2,8 +2,8 @@
 
 | Champ | Valeur |
 | --- | --- |
-| Statut | Version initiale, soumise à relecture |
-| Révision | A |
+| Statut | Analyse préliminaire acceptée pour confirmer la classe C ; mesures proposées restant à vérifier |
+| Révision | B |
 | Issue | [#9](https://github.com/camille-martin-paris/clepsydre/issues/9) |
 | Méthode | [Plan de gestion des risques](risk-management-plan.md) ; ISO 14971:2019, ISO/TR 24971:2020 |
 
@@ -128,4 +128,5 @@ Ces exigences, au statut `draft`, traduisent les mesures proposées. La spécifi
 
 | Révision | Date | Auteur | Modification |
 | --- | --- | --- | --- |
-| A | 2026-10-09 | Ambroise Leclerc | Création, soumise à relecture |
+| A | 2026-10-09 | Ambroise Leclerc | Création ; révision corrigée acceptée par Camille Martin dans #94 et intégrée au commit `75169c378cf326937f730a5a436baa69d42734f0` |
+| B | 2026-10-09 | Camille Martin | Constat 1 : levée explicite de R2 après acceptation de l'analyse ; classe C confirmée, mesures restant à vérifier ; mise à jour assistée par Codex dans #95 |
