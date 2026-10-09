@@ -42,6 +42,7 @@ Pour chaque incrément, les activités suivent l'ordre de l'IEC 62304, sans impo
 - Build, analyse statique, sanitizers et CI : [#19](https://github.com/camille-martin-paris/clepsydre/issues/19), [#20](https://github.com/camille-martin-paris/clepsydre/issues/20). Les outils et leurs versions sont épinglés.
 - Gestion des risques : ISO 14971.
 - Revue : chaque modification passe par une pull request relue (voir [rôles](#rôles-et-responsabilités)).
+- Vérification : niveaux, méthodes, critères et preuves définis par la [stratégie de vérification](verification-strategy.md) ([#72](https://github.com/camille-martin-paris/clepsydre/issues/72)).
 
 ## Rôles et responsabilités
 
