@@ -10,7 +10,7 @@ Référence : IEC 62304, §8.
 | Documents du dossier et exigences | Chemin dans le dépôt, révision de document, commit Git |
 | Sources matérielles | Chemin dans `hardware/`, révision matérielle (`A`, `B`…) |
 | Composants tiers (SOUP) | Identifiant `SOUP-nnn`, version épinglée ([soup.md](soup.md)) |
-| Outils de build et de vérification | Nom et version épinglée dans la configuration de build ou de CI |
+| Outils de build et de vérification | Épinglés par révision complète dans la configuration de build ou de CI (commit, empreinte, instantané daté ou verrou), contrôlés par `tools/check_pins.py` ([build.md](../docs/development/build.md#dépendances-épinglées)) |
 | Versions publiées | Étiquette Git annotée `vX.Y.Z` sur `main` |
 
 ## Contrôle des modifications
@@ -22,7 +22,7 @@ Référence : IEC 62304, §8.
 
 ## Identification d'une version
 
-Une version publiée est reconstructible à partir de son étiquette : sources, versions des dépendances et des outils, et instructions de build sont fixées dans le dépôt. Chaque version publiée est accompagnée de ses notes de version, de la liste des anomalies résiduelles, d'une SBOM ([#22](https://github.com/camille-martin-paris/clepsydre/issues/22)) et de l'avertissement d'usage non clinique.
+Une version publiée est reconstructible à partir de son étiquette : sources, versions des dépendances et des outils, et instructions de build sont fixées dans le dépôt. Chaque version publiée est accompagnée de ses notes de version, de la liste des anomalies résiduelles, d'une SBOM au format CycloneDX, générée par `tools/sbom.py` à la poussée de l'étiquette ([build.md](../docs/development/build.md#nomenclature-logicielle-sbom)) et de l'avertissement d'usage non clinique.
 
 ## État de la configuration
 

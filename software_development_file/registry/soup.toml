@@ -3,6 +3,9 @@
 #   id               SOUP-nnn
 #   name             nom du composant
 #   version          version exacte épinglée (pas d'intervalle, ni « latest », ni branche)
+#   supplier         fournisseur ou projet amont
+#   license          licence, en expression SPDX
+#   purl             facultatif : identifiant Package URL, repris dans la SBOM
 #   usage            rôle dans le logiciel
 #   requirements     exigences de fonctionnement et de performance demandées au composant
 #   known_anomalies  anomalies connues pertinentes et date de leur dernière revue
@@ -13,6 +16,8 @@
 # id = "SOUP-001"
 # name = "…"
 # version = "1.2.3"
+# supplier = "…"
+# license = "MIT"
 # usage = "…"
 # requirements = ["SW-REQ-001"]
 # known_anomalies = "Revue du 2026-10-09 : …"

@@ -6,8 +6,7 @@ Chaque acceptation d'un document du dossier ou d'une version publiée est consig
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | 2026-10-09 | Dossier de développement initial : `software_development_file/`, `tools/check_registry.py` et ses tests, `.github/workflows/registry.yml` | `c06e004` sur `develop` ; contenu identique à la révision approuvée `9765b55` de [#87](https://github.com/camille-martin-paris/clepsydre/pull/87#pullrequestreview-5466991745) | Ambroise Leclerc | Camille Martin | Camille Martin | Acceptée avec réserves | R1 à R3 ci-dessous |
 | 2026-10-09 | Plan de gestion des risques et analyse préliminaire des dangers ; confirmation de la classe C | `75169c378cf326937f730a5a436baa69d42734f0` sur `develop`, fusion de [#94](https://github.com/camille-martin-paris/clepsydre/pull/94) | Ambroise Leclerc | Camille Martin, revue assistée par Codex | Camille Martin, décision explicite exécutée par Codex | Acceptée pour confirmer la classe C ; R2 levée | R1 et R3 restent ouvertes ; les mesures de maîtrise proposées restent à vérifier |
-| 2026-10-09 | ADR 0002 : principe de pompage — pousse-seringue ([#100](https://github.com/camille-martin-paris/clepsydre/pull/100)) | `bd0188b9201b6d720c4f43dbec66a22f241c92c6` sur la branche de la PR | Ambroise Leclerc | Camille Martin, revue assistée par Codex | Camille Martin, décision explicite exécutée par Codex | Acceptée à sa demande explicite | R1 et R3 ; limites et suites documentées dans l’ADR, démonstrations et essais restant à réaliser |
-| 2026-10-09 | ADR 0003 : architecture de calcul — deux microcontrôleurs, commande et sécurité ([#101](https://github.com/camille-martin-paris/clepsydre/pull/101)) | `14676be24988fa8c9f297fdf6783a2e3992d69e1` sur la branche de la PR | Ambroise Leclerc | Camille Martin, revue assistée par Codex | Camille Martin, décision explicite exécutée par Codex | Acceptée à sa demande explicite | R1 et R3 ; limites et suites documentées dans l’ADR, démonstrations et essais restant à réaliser |
+| 2026-10-09 | ADR 0002 : principe de pompage, `docs/adr/0002-principe-de-pompage.md` | `bd0188b9201b6d720c4f43dbec66a22f241c92c6` de [#100](https://github.com/camille-martin-paris/clepsydre/pull/100#pullrequestreview-5471704019) ; seul le statut est aligné ensuite sur l'acceptation | Ambroise Leclerc | Camille Martin, revue assistée par Codex | Camille Martin, acceptation explicite exécutée par Codex | Acceptée | Revue non indépendante (cumul relectrice et approbatrice, voir R1) ; usage prévu, exigences et analyse des dangers à réviser selon l'ADR ; aucune validation sur banc |
 
 Décisions possibles : acceptée, acceptée avec réserves, refusée. Lorsqu'un assistant logiciel (LLM, outil de revue automatique) a contribué à la rédaction ou à la relecture, l'entrée le précise dans la section « Moyens de rédaction et de revue » : la personne nommée reste responsable du contenu, l'assistant est un moyen. Une acceptation sous cumul de rôles porte la réserve « revue non indépendante » ([plan de développement](development-plan.md#attribution-actuelle-et-cumuls-de-rôles)).
 
@@ -22,6 +21,17 @@ Décisions possibles : acceptée, acceptée avec réserves, refusée. Lorsqu'un 
 | R3 | `tools/check_registry.py` n'est pas qualifié comme outil : il contrôle la structure et la complétude du registre, pas la justesse de son contenu ni l'immuabilité des versions SOUP. Cette acceptation ne vaut ni qualification de l'outil ni validation du dispositif. | Qualification des outils, y compris des assistants LLM ([#89](https://github.com/camille-martin-paris/clepsydre/issues/89)), en complément de la chaîne de vérification ([#20](https://github.com/camille-martin-paris/clepsydre/issues/20)) |
 
 ## Moyens de rédaction et de revue
+
+### Décisions d'architecture : ADR 0002 [#100](https://github.com/camille-martin-paris/clepsydre/pull/100) (2026-10-09)
+
+| Opération | Contributions concernées | Responsable | Moyen |
+| --- | --- | --- | --- |
+| Rédaction et corrections | ADR 0002 | Ambroise Leclerc, sous son compte | Claude Code (Claude Opus 5.5, Anthropic), selon la déclaration d'assistance de la PR |
+| Choix de l'option retenue | ADR 0002, option A | Ambroise Leclerc, auteur, décision explicite | Claude Code, consignation de la décision |
+| Analyse de relecture et acceptation | ADR 0002, révision `bd0188b` | Camille Martin, décision explicite d'acceptation | Codex, analyse et exécution de l'approbation ([approbation](https://github.com/camille-martin-paris/clepsydre/pull/100#pullrequestreview-5471704019)) |
+| Revue automatique complémentaire | #100 | — | GitHub Copilot ; ne compte pas comme relecture |
+
+Ces opérations ne constituent pas une attestation de lecture personnelle ; une telle attestation doit être formulée par la personne concernée.
 
 ### Analyse préliminaire des dangers [#94](https://github.com/camille-martin-paris/clepsydre/pull/94) et levée de R2 [#95](https://github.com/camille-martin-paris/clepsydre/pull/95) (2026-10-09)
 
