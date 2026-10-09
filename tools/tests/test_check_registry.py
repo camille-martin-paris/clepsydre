@@ -16,8 +16,8 @@ RISK = {"id": "RISK-001", "hazard": "h", "harm": "d", "status": "controlled"}
 CONTROL = {"id": "CTRL-001", "description": "c", "risks": ["RISK-001"], "requirements": ["SW-REQ-001"]}
 VERIFICATION = {"id": "VER-001", "method": "test", "level": "unit", "requirements": ["SW-REQ-001"],
                 "status": "planned"}
-SOUP = {"id": "SOUP-001", "name": "lib", "version": "1.2.3", "usage": "u", "requirements": ["SW-REQ-001"],
-        "known_anomalies": "aucune connue"}
+SOUP = {"id": "SOUP-001", "name": "lib", "version": "1.2.3", "supplier": "f", "license": "MIT", "usage": "u",
+        "requirements": ["SW-REQ-001"], "known_anomalies": "aucune connue"}
 
 
 def registry(**overrides):

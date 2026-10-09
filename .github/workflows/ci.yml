@@ -1,7 +1,8 @@
 # Intégration continue du logiciel : build et tests avec sanitizers, formatage,
 # analyse statique et licences. La traçabilité est vérifiée par registry.yml.
 # Chaque phase est un pas distinct ; le résumé de chaque tâche publie son résultat.
-# Les images sont épinglées par empreinte : changer de version est une modification délibérée.
+# Chaque dépendance est épinglée par révision complète (tools/check_pins.py, job registry) :
+# changer de version est une modification délibérée, dans une pull request dédiée.
 name: CI
 
 on:
@@ -15,8 +16,12 @@ permissions:
 env:
   CMAKE_VERSION: "4.2.3"
   CMAKE_SHA256: 5bb505d5e0cca0480a330f7f27ccf52c2b8b5214c5bba97df08899f5ef650c23
-  CLANG_FORMAT_VERSION: "21.1.8"
-  REUSE_VERSION: "6.2.0"
+  NINJA_VERSION: "1.13.2"
+  NINJA_SHA256: 5749cbc4e668273514150a80e387a957f933c6ed3f5f11e03fb30955e2bbead6
+  # Instantané de l'archive Ubuntu dont proviennent les paquets apt (tools/ci/apt-install.sh).
+  APT_SNAPSHOT: "20260925T000000Z"
+  # clang-format est installé depuis le verrou tools/requirements/clang-format.txt.
+  PYTHON_VERSION: "3.12.14"
 
 jobs:
   build:
@@ -51,23 +56,25 @@ jobs:
           persist-credentials: false
       - name: Outils
         run: |
-          apt-get update
           if [ "${{ matrix.compiler.cxx }}" = "g++" ]; then
-            apt-get install -y --no-install-recommends ninja-build
             archive="cmake-${CMAKE_VERSION}-linux-x86_64.tar.gz"
             curl -fsSLo "$RUNNER_TEMP/$archive" "https://github.com/Kitware/CMake/releases/download/v${CMAKE_VERSION}/$archive"
             echo "${CMAKE_SHA256}  $RUNNER_TEMP/$archive" | sha256sum --check
             tar -xzf "$RUNNER_TEMP/$archive" -C /opt
             ln -sf "/opt/cmake-${CMAKE_VERSION}-linux-x86_64/bin/cmake" /usr/local/bin/cmake
             ln -sf "/opt/cmake-${CMAKE_VERSION}-linux-x86_64/bin/ctest" /usr/local/bin/ctest
+            curl -fsSLo "$RUNNER_TEMP/ninja.zip" "https://github.com/ninja-build/ninja/releases/download/v${NINJA_VERSION}/ninja-linux.zip"
+            echo "${NINJA_SHA256}  $RUNNER_TEMP/ninja.zip" | sha256sum --check
+            unzip -o "$RUNNER_TEMP/ninja.zip" -d /usr/local/bin
+            ninja --version
           else
-            apt-get install -y --no-install-recommends cmake ninja-build clang-20 clang-tools-20 libclang-rt-20-dev
+            sh tools/ci/apt-install.sh cmake ninja-build clang-20 clang-tools-20 libclang-rt-20-dev
           fi
           cmake --version | head -1
           ${{ matrix.compiler.cxx }} --version | head -1
       - name: Versions installées
-        # apt installe depuis des dépôts évolutifs : l'empreinte de l'image ne fige pas les paquets
-        # ajoutés. Leurs versions sont consignées dans le résumé ; reproductibilité suivie dans #89.
+        # Les paquets apt viennent de l'instantané APT_SNAPSHOT ; leurs versions sont consignées
+        # dans le résumé pour la traçabilité de l'exécution.
         run: |
           {
             echo "<details><summary>Paquets installés (${{ github.job }}, ${{ matrix.compiler.name }}, ${{ matrix.variant.name }})</summary>"
@@ -112,12 +119,18 @@ jobs:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           persist-credentials: false
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      - name: Outils
+        run: |
+          python -m venv "$RUNNER_TEMP/venv"
+          "$RUNNER_TEMP/venv/bin/pip" install --require-hashes --only-binary=:all: -r tools/requirements/clang-format.txt
       - name: Formatage
         run: |
           git ls-files '*.cpp' '*.cppm' '*.hpp' > sources.txt
-          pipx run --spec "clang-format==${CLANG_FORMAT_VERSION}" clang-format --version
-          xargs -a sources.txt pipx run --spec "clang-format==${CLANG_FORMAT_VERSION}" \
-            clang-format --dry-run --Werror
+          "$RUNNER_TEMP/venv/bin/clang-format" --version
+          xargs -a sources.txt "$RUNNER_TEMP/venv/bin/clang-format" --dry-run --Werror
 
   clang-tidy:
     runs-on: ubuntu-24.04
@@ -128,12 +141,11 @@ jobs:
           persist-credentials: false
       - name: Outils
         run: |
-          apt-get update
-          apt-get install -y --no-install-recommends cmake ninja-build clang-20 clang-tools-20 clang-tidy-20
+          sh tools/ci/apt-install.sh cmake ninja-build clang-20 clang-tools-20 clang-tidy-20
           clang-tidy-20 --version | head -2
       - name: Versions installées
-        # apt installe depuis des dépôts évolutifs : l'empreinte de l'image ne fige pas les paquets
-        # ajoutés. Leurs versions sont consignées dans le résumé ; reproductibilité suivie dans #89.
+        # Les paquets apt viennent de l'instantané APT_SNAPSHOT ; leurs versions sont consignées
+        # dans le résumé pour la traçabilité de l'exécution.
         run: |
           {
             echo "<details><summary>Paquets installés (${{ github.job }})</summary>"
@@ -153,9 +165,25 @@ jobs:
 
   licences:
     runs-on: ubuntu-24.04
+    # Image officielle de reuse : le paquet PyPI n'a pas de roue utilisable sur l'exécuteur.
+    container: fsfe/reuse:6.2.0@sha256:85462a75c0f8efda09ddd190b92816b70e7662577c8427429e11e1b9f25a992e
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           persist-credentials: false
       - name: Conformité REUSE
-        run: pipx run "reuse==${REUSE_VERSION}" lint
+        run: |
+          reuse --version | head -1
+          reuse lint
+
+  pins:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      - name: Dépendances épinglées
+        run: python3 tools/check_pins.py
