@@ -84,8 +84,8 @@ Force SyringePump::measuredForce() const noexcept {
     return Force::fromSi(quantize(contactForce().si(), mechanism_.forceResolution.si()));
 }
 
-Length SyringePump::measuredPusherPosition() const noexcept {
-    return Length::fromSi(quantize(pusherPosition_.si(), mechanism_.positionResolution.si()));
+Length SyringePump::measuredPlungerPosition() const noexcept {
+    return Length::fromSi(quantize(plungerPosition_.si(), mechanism_.positionResolution.si()));
 }
 
 Force SyringePump::contactForce() const noexcept {

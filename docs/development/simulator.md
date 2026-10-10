@@ -61,7 +61,7 @@ Le joint et le corps forment ensemble une compliance effective C + A²/k. Avec l
 | --- | --- | --- |
 | Compteur de pas | Pas exécutés par le moteur | Vu par le processeur de commande |
 | Force du pousseur | Force de contact entre le pousseur et le piston | Quantifiée à `forceResolution` ; sert à la détection d'occlusion (CTRL-007) |
-| Position du pousseur | Position réelle du pousseur, jeu compris | Quantifiée à `positionResolution` ; capteur propre au canal de sécurité (SYS-REQ-001) |
+| Position du piston | Déplacement du piston depuis la seringue pleine | Quantifiée à `positionResolution` ; capteur linéaire propre au canal de sécurité, distinct du comptage de pas (ADR 0003, SYS-REQ-001). Il mesure le piston et non le pousseur : en occlusion, la compression du joint fait avancer le pousseur sans déplacer le piston |
 | Diamètre de la seringue | Diamètre extérieur du corps | Identification de la seringue (SYS-REQ-047) |
 | Capture du piston | Piston capturé ou libéré | SYS-REQ-006 |
 
@@ -81,6 +81,7 @@ Les tests [`tests/sim_syringe_pump_test.cpp`](../../tests/sim_syringe_pump_test.
 | Retard au premier écoulement à bas débit : rattrapage du jeu, puis compression du joint jusqu'au frottement statique | Environ 13 min à 1 mL/h avec la seringue de 50 mL, au-delà des 5 min proposées par SYS-REQ-048 : un rattrapage avant le démarrage (CTRL-027) est nécessaire |
 | Montée de la force en occlusion, sans écoulement | Environ +40 N en 2 min à 25 mL/h |
 | Bolus à la levée de l'occlusion, borné par le volume accumulé | Environ 0,85 mL sans recul du pousseur ; environ 0,15 mL après 2 s de recul (CTRL-008) |
+| Mesure de position du piston en occlusion : elle suit le piston, pas le pousseur, quand le joint se comprime | — |
 | Vis irréversible : le pousseur ne recule pas sous la charge | — |
 | Siphonage : seringue 1 m au-dessus du patient, joint à faible frottement | Piston retenu : moins de 0,1 mL, limité par le jeu et l'élasticité du joint ; piston libéré : écoulement libre de plus de 20 mL en 10 min |
 | Fin de course : volume utile délivré, puis montée de la force | — |

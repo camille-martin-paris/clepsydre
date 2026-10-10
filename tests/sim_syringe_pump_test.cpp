@@ -193,7 +193,7 @@ void sensors(Expectations& t) {
     pump.setStepRate(rateFor(sim::millilitresPerHour(25.0), syringe50));
     pump.run(5min);
     const double force = pump.measuredForce() / exampleMechanism.forceResolution;
-    const double position = pump.measuredPusherPosition() / exampleMechanism.positionResolution;
+    const double position = pump.measuredPlungerPosition() / exampleMechanism.positionResolution;
     t.expect(std::abs(force - std::round(force)) < 1e-6,
              "force quantifiée à la résolution du capteur");
     t.expect(std::abs(position - std::round(position)) < 1e-6,
@@ -201,6 +201,25 @@ void sensors(Expectations& t) {
     t.expect(std::abs((pump.measuredForce() - pump.contactForce()).si()) <=
                  exampleMechanism.forceResolution.si(),
              "force mesurée à une résolution près");
+}
+
+void plungerSensorInOcclusion(Expectations& t) {
+    // En occlusion, le joint se comprime : le pousseur avance, le piston presque pas. La mesure
+    // du canal de sécurité doit suivre le piston (ADR 0003, SYS-REQ-001), pas le pousseur.
+    SyringePump pump{exampleMechanism, syringe50, exampleLine};
+    Line occluded = exampleLine;
+    occluded.resistance = occluded.resistance * 1e6;
+    pump.setLine(occluded);
+    pump.setStepRate(rateFor(sim::millilitresPerHour(25.0), syringe50));
+    pump.run(2min);
+    const double pusher = sim::inMillimetres(pump.pusherPosition());
+    const double plunger = sim::inMillimetres(pump.plungerPosition());
+    t.expect(pusher - plunger > 1.0,
+             std::format("pousseur et piston divergent ({} mm contre {} mm)", pusher, plunger));
+    t.expect(std::abs((pump.measuredPlungerPosition() - pump.plungerPosition()).si()) <=
+                 exampleMechanism.positionResolution.si() / 2.0,
+             std::format("la mesure suit le piston à la résolution près ({} mm)",
+                         sim::inMillimetres(pump.measuredPlungerPosition())));
 }
 
 void deterministic(Expectations& t) {
@@ -226,6 +245,7 @@ int main() {
         emptySyringe(t);
         stepRateBound(t);
         sensors(t);
+        plungerSensorInOcclusion(t);
         deterministic(t);
     });
 }

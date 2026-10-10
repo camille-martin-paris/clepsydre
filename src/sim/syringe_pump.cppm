@@ -25,7 +25,7 @@ struct Mechanism {
     Length backlash;                 // jeu entre l'écrou et le pousseur
     StepRate
         maxStepRate; // vitesse bornée par le matériel, indépendamment du logiciel (SYS-REQ-043)
-    Length positionResolution; // résolution du capteur de position du canal de sécurité
+    Length positionResolution; // résolution du capteur de position du piston du canal de sécurité
     Force forceResolution;     // résolution du capteur de force du pousseur
 };
 
@@ -118,7 +118,8 @@ public:
     [[nodiscard]] std::int64_t motorSteps() const noexcept { return motorSteps_; }
 
     [[nodiscard]] Force measuredForce() const noexcept;
-    [[nodiscard]] Length measuredPusherPosition() const noexcept;
+    // Position du piston, et non du pousseur : le joint les sépare (ADR 0003, SYS-REQ-001).
+    [[nodiscard]] Length measuredPlungerPosition() const noexcept;
 
     [[nodiscard]] Length measuredSyringeDiameter() const noexcept { return syringe_.outerDiameter; }
 
