@@ -25,6 +25,14 @@ Décisions possibles : acceptée, acceptée avec réserves, refusée. Lorsqu'un 
 
 ## Moyens de rédaction et de revue
 
+### Rectification de l'identité Git des PR #103 et #112 (2026-10-09)
+
+Camille Martin a signalé que les adresses utilisées par Codex dans les commits des PR [#103](https://github.com/camille-martin-paris/clepsydre/pull/103) et [#112](https://github.com/camille-martin-paris/clepsydre/pull/112) portaient à tort l'identifiant numérique `6860842`, qui appartient à `ambroise-leclerc`. L'API publique GitHub confirme que le compte `camille-martin-paris` porte l'identifiant `307179223` ; son adresse de contribution noreply est `307179223+camille-martin-paris@users.noreply.github.com`.
+
+L'adresse erronée `6860842+camille-martin-paris@users.noreply.github.com` figure dans les métadonnées d'auteur et les lignes `Signed-off-by` des commits `11277e62f634df024d18bcf082e43795cafcba43`, `c33c0f567c38c53fbdb362ea0eb07bbdd1d088a0`, `7933de3d9253c549db191eb63ef41685bb922660` et `052d9de6e35fa3942a67b38c0132dd8d0e201850`. Elle figure aussi dans les lignes `Signed-off-by` et `Co-authored-by` des commits de squash `3c366bb9d26732a12e8396dfa43536bacf927f50` (#103) et `55f7f8acc9c21e861bc05034626dbfd7a182612e` (#112).
+
+Cette erreur d'identité provient des commandes exécutées par Codex, pas d'une contribution attribuable à Ambroise Leclerc par ces seules métadonnées. Les opérations et décisions de Camille Martin restent documentées par les demandes et traces de revue citées dans ce dossier. L'identité Git locale a été corrigée pour les prochains commits. Les commits déjà fusionnés ne sont pas réécrits ; cette entrée rend explicite l'erreur historique. Elle ne remplace pas une certification DCO personnelle des commits concernés et ne constitue pas une attestation de lecture personnelle.
+
 ### Usage prévu et spécification d’utilisation, révisions B, [#105](https://github.com/camille-martin-paris/clepsydre/pull/105) (2026-10-09)
 
 La rédaction et les corrections sont attribuées à Ambroise Leclerc, assisté par Claude Code (Claude Opus 5.5, Anthropic), selon la description de #105. Camille Martin a demandé la relecture, la confirmation des limites puis la fusion ; Codex a exécuté la relecture, la [confirmation des limites](https://github.com/camille-martin-paris/clepsydre/pull/105#issuecomment-6084801335), l’approbation et la fusion. La revue automatique complémentaire de GitHub Copilot ne compte pas comme relecture. Les contrôles CI étaient réussis. Cette acceptation ne constitue ni une validation du dispositif ni une attestation de lecture personnelle ; les réserves R1 et R3 restent ouvertes.
