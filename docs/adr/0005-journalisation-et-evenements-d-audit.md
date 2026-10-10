@@ -2,7 +2,7 @@
 
 | Champ | Valeur |
 | --- | --- |
-| Statut | **Acceptée** le 2026-10-10 par Camille Martin, décision explicite exécutée par Codex. Acceptation consignée dans [reviews.md](../../software_development_file/reviews.md) |
+| Statut | **Acceptée** le 2026-10-09 par Camille Martin, approbatrice ([approbation](https://github.com/camille-martin-paris/clepsydre/pull/110#pullrequestreview-5474251592), révision `6f9d5e9`) ; retenue par l'auteur, Ambroise Leclerc ([décision du 2026-10-10](https://github.com/camille-martin-paris/clepsydre/pull/114#issuecomment-6099664713)) ; acceptation du choix de mddlog sous les cinq conditions de l'ADR, sans acceptation de l'évaluation SOUP. Statut consigné le 2026-10-10 dans [reviews.md](../../software_development_file/reviews.md) |
 | Date | 2026-10-09 |
 | Issue | [#16](https://github.com/camille-martin-paris/clepsydre/issues/16) |
 | Épique | [#12](https://github.com/camille-martin-paris/clepsydre/issues/12) ; mise en œuvre : [#41](https://github.com/camille-martin-paris/clepsydre/issues/41) |
@@ -49,9 +49,9 @@ Un même fait peut produire un événement d'audit et une trace de diagnostic, m
 | 4. Licence, C++23, épinglage, anomalies | EUPL-1.2 (licence du projet) ; modules C++23 ; étiquette `v0.3.0`, commit `073761b` ; anomalies publiées sur GitHub | EUPL-1.2 ; tout à écrire et à vérifier en classe C | Licences compatibles ; C++17 ou C++20 ; pas d'audit |
 | Points faibles | Version antérieure à 1.0 : API et formats non figés ([#121](https://github.com/ambroise-leclerc/mddlog/issues/121)) ; **aucune cible embarquée testée** (Linux et macOS seulement) ; adaptateurs de diagnostic qui allouent ; `import std` requis ; aucun fournisseur d'ancrage indépendant réel livré ; un seul consommateur par chaîne ; conflit d'intérêts | Effort important, sans retour d'usage extérieur | Ne satisfont pas les critères 1 à 3 |
 
-## Décision proposée
+## Décision retenue sous conditions
 
-**Option A, mddlog, sous conditions.** **Cette décision revient d'abord à l'auteur, puis à l'acceptation de l'approbatrice**, après relecture indépendante de l'évaluation (voir l'encadré).
+**Option A, mddlog 0.3.0, sous les cinq conditions ci-dessous.** Choix retenu par l'auteur, Ambroise Leclerc, le 2026-10-10 ([décision](https://github.com/camille-martin-paris/clepsydre/pull/114#issuecomment-6099664713)), et accepté par Camille Martin ([approbation](https://github.com/camille-martin-paris/clepsydre/pull/110#pullrequestreview-5474251592)). Cette acceptation porte sur le choix sous conditions ; elle ne vaut pas acceptation de l'évaluation SOUP. L'évaluation complète de #44 doit être relue par une personne autre que l'auteur de mddlog avant tout usage dans du code de classe C (voir l'encadré).
 
 ### Usage retenu
 

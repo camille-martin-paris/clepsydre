@@ -2,7 +2,7 @@
 
 | Champ | Valeur |
 | --- | --- |
-| Statut | **Acceptée** le 2026-10-10 par Camille Martin, décision explicite exécutée par Codex. Acceptation consignée dans [reviews.md](../../software_development_file/reviews.md) |
+| Statut | **Acceptée** le 2026-10-09 par Camille Martin, approbatrice ([approbation](https://github.com/camille-martin-paris/clepsydre/pull/111#pullrequestreview-5474265880), révision `923ab0b`) ; retenue par l'auteur, Ambroise Leclerc ([décision du 2026-10-10](https://github.com/camille-martin-paris/clepsydre/pull/114#issuecomment-6099664713)). Statut consigné le 2026-10-10 dans [reviews.md](../../software_development_file/reviews.md) |
 | Date | 2026-10-09 |
 | Issue | [#17](https://github.com/camille-martin-paris/clepsydre/issues/17) |
 | Épique | [#12](https://github.com/camille-martin-paris/clepsydre/issues/12) |
@@ -110,9 +110,9 @@ Les deux processeurs ne partagent **aucune** base de temps : une horloge fausse 
   - Un redémarrage d'un seul processeur ne change donc l'identité d'aucune action déjà créée. Deux actions ne peuvent pas partager un identifiant, puisque l'origine et le démarrage y figurent. Un test de corrélation après le redémarrage d'un seul processeur est prévu dans le simulateur.
 - **Numéro de série** : programmé à la fabrication en mémoire non volatile protégée ; il est le même pour les deux processeurs.
 
-## Décision proposée
+## Décision retenue
 
-**Cette décision revient d'abord à l'auteur, puis à l'acceptation de l'approbatrice** ; l'ADR reste au statut « proposée » jusque-là. Elle porte sur les trois points ci-dessus :
+**Décision retenue par l'auteur, Ambroise Leclerc**, le 2026-10-10 ([décision](https://github.com/camille-martin-paris/clepsydre/pull/114#issuecomment-6099664713)), et acceptée par Camille Martin ([approbation](https://github.com/camille-martin-paris/clepsydre/pull/111#pullrequestreview-5474265880)). Elle porte sur les trois points ci-dessus :
 
 1. liaison UART point à point, avec trames COBS et CRC-32 ;
 2. deux bases de temps distinctes, et une heure civile TCXO réglée par un technicien ;

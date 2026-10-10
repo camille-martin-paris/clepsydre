@@ -2,7 +2,7 @@
 
 | Champ | Valeur |
 | --- | --- |
-| Statut | **Acceptée** le 2026-10-10 par Camille Martin, décision explicite exécutée par Codex. Acceptation consignée dans [reviews.md](../../software_development_file/reviews.md) |
+| Statut | **Acceptée** le 2026-10-09 par Camille Martin, approbatrice ([approbation](https://github.com/camille-martin-paris/clepsydre/pull/84#pullrequestreview-5466991305), révision `9b038d1`). Statut consigné le 2026-10-10 dans [reviews.md](../../software_development_file/reviews.md) |
 | Date | 2026-10-09 |
 | Issue | [#3](https://github.com/camille-martin-paris/clepsydre/issues/3) |
 

@@ -2,7 +2,7 @@
 
 | Champ | Valeur |
 | --- | --- |
-| Statut | **Acceptée** le 2026-10-10 par Camille Martin, décision explicite exécutée par Codex. Acceptation consignée dans [reviews.md](../../software_development_file/reviews.md) |
+| Statut | **Acceptée** le 2026-10-09 par Camille Martin, approbatrice ([approbation](https://github.com/camille-martin-paris/clepsydre/pull/109#pullrequestreview-5474228763), révision `ec6d535`) ; retenue par l'auteur, Ambroise Leclerc ([décision du 2026-10-10](https://github.com/camille-martin-paris/clepsydre/pull/114#issuecomment-6099664713)). Statut consigné le 2026-10-10 dans [reviews.md](../../software_development_file/reviews.md) |
 | Date | 2026-10-09 |
 | Issue | [#15](https://github.com/camille-martin-paris/clepsydre/issues/15) |
 | Épique | [#12](https://github.com/camille-martin-paris/clepsydre/issues/12) |
@@ -54,9 +54,9 @@ Quatre heures à 2 W demandent 8 Wh utiles. Avec une marge pour le vieillissemen
 | B. Lithium-ion NMC | Écartée : meilleure densité d'énergie, mais risque d'emballement thermique plus élevé, que la densité n'impose pas pour 20 Wh |
 | C. Nickel-métal hydrure | Écartée : faible densité, autodécharge élevée, jauge peu fiable |
 
-## Décision proposée
+## Décision retenue
 
-**Cette décision revient d'abord à l'auteur, puis à l'acceptation de l'approbatrice** ; l'ADR reste au statut « proposée » jusque-là.
+**Décision retenue par l'auteur, Ambroise Leclerc**, le 2026-10-10 ([décision](https://github.com/camille-martin-paris/clepsydre/pull/114#issuecomment-6099664713)), et acceptée par Camille Martin ([approbation](https://github.com/camille-martin-paris/clepsydre/pull/109#pullrequestreview-5474228763)).
 
 ### 1. Bascule sans interruption
 
