@@ -2,3 +2,4 @@
 # SPDX-License-Identifier: EUPL-1.2
 
 add_subdirectory(core)
+add_subdirectory(sim)
