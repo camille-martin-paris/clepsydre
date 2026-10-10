@@ -32,6 +32,24 @@ void drift(Expectations& t) {
              "pas de débordement sur dix ans");
 }
 
+void driftBounds(Expectations& t) {
+    // Cas limite de la relecture : 999 ms à 10^10 ppb faisaient déborder le produit
+    // intermédiaire. L'écart est ramené à la borne, et le calcul reste exact.
+    using clepsydre::sim::maxDriftPpb;
+    t.expect(driftOver(999ms, 10'000'000'000) == driftOver(999ms, maxDriftPpb),
+             "écart au-delà de la borne ramené à la borne");
+    t.expect(driftOver(999ms, maxDriftPpb) == 999ms - 1ns, "999 ms à la borne : exact");
+    t.expect(driftOver(999ms, -10'000'000'000) == -(999ms - 1ns), "borne négative");
+    // Durée maximale et écart maximal, dans les deux signes : aucun débordement.
+    constexpr auto longest = std::chrono::nanoseconds::max();
+    t.expect(driftOver(longest, maxDriftPpb) < longest && driftOver(longest, maxDriftPpb) > 0ns,
+             "durée maximale, écart maximal");
+    t.expect(driftOver(-longest, -maxDriftPpb) < longest, "durée et écart négatifs maximaux");
+    const MonotonicClock fast{0ns, 10'000'000'000};
+    t.expect(fast.driftPpb() == maxDriftPpb, "le compteur ramène son écart à la borne");
+    t.expect(fast.read(1s) == 2s - 1us, "presque deux fois trop vite, tronqué à la période");
+}
+
 void monotonic(Expectations& t) {
     const MonotonicClock clock{5s, 50'000};
     t.expect(clock.read(0ns) == 5s, "décalage au temps simulé nul");
@@ -94,6 +112,7 @@ void civilClock(Expectations& t) {
 int main() {
     return Expectations{}.run([](Expectations& t) {
         drift(t);
+        driftBounds(t);
         monotonic(t);
         independentClocks(t);
         civilClock(t);

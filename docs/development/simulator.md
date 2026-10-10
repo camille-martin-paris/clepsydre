@@ -75,7 +75,7 @@ Les grandeurs réelles (volume délivré, pression, positions) sont accessibles 
 Ces modules appliquent l'[ADR 0006](../adr/0006-interfaces-internes-horloge-et-datation.md).
 
 - **Temps simulé** : `TrueTime` est la référence du monde simulé, en nanosecondes entières. Le modèle physique, la liaison et l'ordonnanceur l'utilisent ; un logiciel simulé n'y a jamais accès et ne lit que ses propres horloges.
-- **Compteur monotone** : chaque processeur a le sien, avec son décalage au départ, son écart de fréquence en parties par milliard et sa période de comptage (1 µs par défaut). La valeur est calculée en entiers, sans débordement sur plusieurs années. Les deux compteurs ne se recalent jamais : une horloge fausse d'un côté se voit de l'autre.
+- **Compteur monotone** : chaque processeur a le sien, avec son décalage au départ, son écart de fréquence en parties par milliard et sa période de comptage (1 µs par défaut). L'écart de fréquence est borné à ±(10<sup>9</sup> − 1) parties par milliard (`maxDriftPpb`), de presque arrêté à presque deux fois trop vite ; un écart au-delà est ramené à la borne. Cette borne garantit un calcul en entiers sans débordement, quelle que soit la durée. Les deux compteurs ne se recalent jamais : une horloge fausse d'un côté se voit de l'autre.
 - **Horloge temps réel** : celle du processeur de commande, en UTC à la seconde (SYS-REQ-035), avec sa dérive. Elle peut être mise à l'heure par un technicien, sauter, ou s'arrêter quand sa réserve s'épuise ; elle se fige alors et lève l'indicateur d'arrêt de l'oscillateur.
 - **Liaison série** : deux sens indépendants, qui transportent des octets au format 8N1 (10 bits par octet). Un octet part quand la ligne est libre, occupe la ligne pendant sa durée d'émission, puis arrive après la latence. L'ordre d'émission est conservé. La liaison ignore les trames : leur format (COBS, CRC-32) relève du module de protocole partagé par les deux logiciels et par le simulateur.
 - **Ordonnanceur** : à chaque pas, le temps simulé avance d'un quantum (1 ms par défaut), puis chaque participant est appelé dans l'ordre d'inscription. Cet ordre fixe rend l'ensemble déterministe.
@@ -124,7 +124,7 @@ Les limites suivantes sont connues. L'étape 4 les complétera.
   - pas d'air dans la ligne, prévu à l'étape 3.
 - **Moteur** : il suit toujours la commande. La perte de pas, le couple limité et le calage seront des défauts injectés à l'étape 3.
 - **Capteurs** : capteurs idéaux, à la quantification près, sans bruit ni dérive.
-- **Horloges** : dérive constante, sans dépendance à la température ni gigue. L'horloge temps réel ne devient pas illisible ; ce défaut viendra à l'étape 3.
+- **Horloges** : dérive constante, sans dépendance à la température ni gigue. Un oscillateur ne peut pas aller deux fois trop vite ou plus. L'horloge temps réel ne devient pas illisible ; ce défaut viendra à l'étape 3.
 - **Liaison** : ligne parfaite, sans perte, altération, doublon, retard ni réordonnancement ; ces défauts viendront à l'étape 3. File d'émission sans limite de taille.
 - **Ordonnancement** : un processeur simulé ne réagit qu'aux frontières des quanta ; son temps d'exécution n'est pas modélisé.
 - **Paramètres** : ordres de grandeur, non mesurés.

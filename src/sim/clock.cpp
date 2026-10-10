@@ -3,6 +3,7 @@
 
 module;
 
+#include <algorithm>
 #include <chrono>
 #include <cstdint>
 
@@ -24,26 +25,34 @@ constexpr std::int64_t billion = 1'000'000'000;
     return step * quotient;
 }
 
+[[nodiscard]] std::int64_t boundedDrift(std::int64_t driftPpb) noexcept {
+    return std::clamp(driftPpb, -maxDriftPpb, maxDriftPpb);
+}
+
 } // namespace
 
 std::chrono::nanoseconds driftOver(std::chrono::nanoseconds elapsed,
                                    std::int64_t driftPpb) noexcept {
-    // Secondes entières et reste séparés : le produit reste loin des limites de 64 bits.
+    // Avec t = s·10^9 + r, |r| < 10^9, et |d| < 10^9 :
+    // - |s·d| < |s|·10^9 <= |t| : pas de débordement ;
+    // - |r·d| < 10^18 < 2^63 : pas de débordement ;
+    // - la somme est bornée par |s|·10^9 + |r| = |t| : pas de débordement.
+    const std::int64_t drift = boundedDrift(driftPpb);
     const std::int64_t ticks = elapsed.count();
-    return std::chrono::nanoseconds{((ticks / billion) * driftPpb) +
-                                    ((ticks % billion) * driftPpb / billion)};
+    return std::chrono::nanoseconds{((ticks / billion) * drift) +
+                                    ((ticks % billion) * drift / billion)};
 }
 
 MonotonicClock::MonotonicClock(std::chrono::nanoseconds offset, std::int64_t driftPpb,
                                std::chrono::nanoseconds tick) noexcept
-    : offset_{offset}, driftPpb_{driftPpb}, tick_{tick} {}
+    : offset_{offset}, driftPpb_{boundedDrift(driftPpb)}, tick_{tick} {}
 
 std::chrono::nanoseconds MonotonicClock::read(TrueTime now) const noexcept {
     return floorTo(offset_ + now + driftOver(now, driftPpb_), tick_);
 }
 
 CivilClock::CivilClock(TrueTime now, CivilTime initial, std::int64_t driftPpb) noexcept
-    : anchor_{now}, anchorValue_{initial}, driftPpb_{driftPpb} {}
+    : anchor_{now}, anchorValue_{initial}, driftPpb_{boundedDrift(driftPpb)} {}
 
 CivilReading CivilClock::read(TrueTime now) const noexcept {
     return {.time = std::chrono::floor<std::chrono::seconds>(valueAt(now)),

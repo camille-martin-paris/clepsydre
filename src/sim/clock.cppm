@@ -21,8 +21,14 @@ using TrueTime = std::chrono::nanoseconds;
 // Heure civile en UTC, à la résolution de 1 s (SYS-REQ-035).
 using CivilTime = std::chrono::sys_seconds;
 
+// Borne de l'écart de fréquence, en parties par milliard : un oscillateur simulé va de presque
+// arrêté à presque deux fois trop vite. Elle garantit le calcul de la dérive sans débordement,
+// quelle que soit la durée. Les horloges ramènent à cette borne tout écart qui la dépasse.
+inline constexpr std::int64_t maxDriftPpb = 999'999'999;
+
 // Écart accumulé sur elapsed par un oscillateur dont la fréquence s'écarte de driftPpb parties
-// par milliard ; calculé en entiers, sans débordement sur plusieurs années.
+// par milliard, driftPpb étant d'abord ramené dans [-maxDriftPpb, maxDriftPpb] ; calculé en
+// entiers, sans débordement pour toute durée représentable.
 [[nodiscard]] std::chrono::nanoseconds driftOver(std::chrono::nanoseconds elapsed,
                                                  std::int64_t driftPpb) noexcept;
 
@@ -30,8 +36,9 @@ using CivilTime = std::chrono::sys_seconds;
 // (SW-REQ-018). Il n'est jamais réglé.
 class MonotonicClock {
 public:
-    // offset : valeur du compteur au temps simulé nul ; driftPpb : écart de fréquence, supérieur
-    // à -10^9 pour que le compteur avance ; tick : période du compteur.
+    // offset : valeur du compteur au temps simulé nul ; driftPpb : écart de fréquence, ramené
+    // dans [-maxDriftPpb, maxDriftPpb], de sorte que le compteur avance toujours ; tick : période
+    // du compteur.
     MonotonicClock(std::chrono::nanoseconds offset, std::int64_t driftPpb,
                    std::chrono::nanoseconds tick = std::chrono::microseconds{1}) noexcept;
 
@@ -55,7 +62,8 @@ struct CivilReading {
 // Horloge temps réel du processeur de commande, sauvegardée par sa propre réserve.
 class CivilClock {
 public:
-    // L'horloge indique initial au temps simulé now.
+    // L'horloge indique initial au temps simulé now ; driftPpb est ramené dans
+    // [-maxDriftPpb, maxDriftPpb].
     CivilClock(TrueTime now, CivilTime initial, std::int64_t driftPpb) noexcept;
 
     [[nodiscard]] CivilReading read(TrueTime now) const noexcept;
