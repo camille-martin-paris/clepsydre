@@ -807,3 +807,157 @@ method = "test"
 level = "bench"
 requirements = ["SYS-REQ-047"]
 status = "planned"
+
+[[verification]]
+id = "VER-114"
+method = "test"
+level = "system"
+requirements = ["SYS-REQ-049"]
+status = "planned"
+
+[[verification]]
+id = "VER-115"
+method = "test"
+level = "bench"
+requirements = ["SYS-REQ-049"]
+status = "planned"
+
+[[verification]]
+id = "VER-116"
+method = "analysis"
+level = "bench"
+requirements = ["SYS-REQ-050"]
+status = "planned"
+
+[[verification]]
+id = "VER-117"
+method = "test"
+level = "bench"
+requirements = ["SYS-REQ-050"]
+status = "planned"
+
+[[verification]]
+id = "VER-118"
+method = "test"
+level = "system"
+requirements = ["SYS-REQ-051"]
+status = "planned"
+
+[[verification]]
+id = "VER-119"
+method = "analysis"
+level = "system"
+requirements = ["SYS-REQ-051"]
+status = "planned"
+
+[[verification]]
+id = "VER-120"
+method = "test"
+level = "bench"
+requirements = ["SYS-REQ-051"]
+status = "planned"
+
+[[verification]]
+id = "VER-121"
+method = "test"
+level = "system"
+requirements = ["SYS-REQ-052"]
+status = "planned"
+
+[[verification]]
+id = "VER-122"
+method = "test"
+level = "bench"
+requirements = ["SYS-REQ-052"]
+status = "planned"
+
+[[verification]]
+id = "VER-123"
+method = "test"
+level = "system"
+requirements = ["SYS-REQ-053"]
+status = "planned"
+
+[[verification]]
+id = "VER-124"
+method = "analysis"
+level = "system"
+requirements = ["SYS-REQ-053"]
+status = "planned"
+
+[[verification]]
+id = "VER-125"
+method = "test"
+level = "bench"
+requirements = ["SYS-REQ-053"]
+status = "planned"
+
+[[verification]]
+id = "VER-126"
+method = "test"
+level = "system"
+requirements = ["SYS-REQ-054"]
+status = "planned"
+
+[[verification]]
+id = "VER-127"
+method = "test"
+level = "bench"
+requirements = ["SYS-REQ-054"]
+status = "planned"
+
+[[verification]]
+id = "VER-128"
+method = "inspection"
+level = "bench"
+requirements = ["HW-REQ-003"]
+status = "planned"
+
+[[verification]]
+id = "VER-129"
+method = "test"
+level = "bench"
+requirements = ["HW-REQ-003"]
+status = "planned"
+
+[[verification]]
+id = "VER-130"
+method = "inspection"
+level = "bench"
+requirements = ["HW-REQ-004"]
+status = "planned"
+
+[[verification]]
+id = "VER-131"
+method = "inspection"
+level = "unit"
+requirements = ["SW-REQ-019"]
+status = "planned"
+
+[[verification]]
+id = "VER-132"
+method = "test"
+level = "integration"
+requirements = ["SW-REQ-019"]
+status = "planned"
+
+[[verification]]
+id = "VER-133"
+method = "test"
+level = "unit"
+requirements = ["SW-REQ-020"]
+status = "planned"
+
+[[verification]]
+id = "VER-134"
+method = "test"
+level = "integration"
+requirements = ["SW-REQ-021"]
+status = "planned"
+
+[[verification]]
+id = "VER-135"
+method = "test"
+level = "system"
+requirements = ["SYS-REQ-016"]
+status = "planned"

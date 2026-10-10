@@ -114,15 +114,29 @@ status = "draft"
 [[requirement]]
 id = "SYS-REQ-015"
 title = "Bascule d'alimentation"
-text = "La perte de l'alimentation secteur ne doit pas interrompre ni modifier la perfusion en cours tant que la batterie n'est pas épuisée ; la bascule doit être signalée."
-source = "Mesure CTRL-013 (RISK-010) ; UN-11"
+text = "La perte de l'alimentation secteur ne doit pas interrompre ni modifier la perfusion en cours tant que la batterie n'est pas épuisée. La bascule entre le secteur et la batterie doit être assurée par le matériel, sans intervention logicielle ; elle ne doit réinitialiser aucun processeur ni arrêter le pousseur en mouvement, et doit être signalée et journalisée."
+source = "Mesure CTRL-013 (RISK-010) ; UN-11 ; ADR 0004"
 status = "draft"
 
 [[requirement]]
 id = "SYS-REQ-016"
 title = "Alarmes d'alimentation"
-text = "La pompe doit déclencher une alarme d'autonomie faible au moins 30 min avant l'épuisement, puis une alarme de priorité haute d'autonomie épuisée au moins 5 min avant l'arrêt de la perfusion."
-source = "Mesure CTRL-013 (RISK-010) ; UN-11 ; IEC 60601-2-24"
+text = "La pompe doit déclencher une alarme d'autonomie faible lorsque l'autonomie estimée selon SYS-REQ-049 atteint 30 min, puis une alarme de priorité haute d'autonomie épuisée lorsqu'elle atteint 5 min ; la perfusion se poursuit pendant ce préavis. L'arrêt doit intervenir à l'épuisement, atteint lorsque l'autonomie estimée est nulle ou lorsque la tension de la batterie franchit un seuil d'arrêt indépendant de la jauge, placé au-dessus du seuil de coupure du circuit de protection. Si ce seuil de tension est franchi avant la fin du préavis, l'arrêt doit intervenir sans attendre, précédé de l'alarme haute si elle n'était pas déjà déclenchée. L'arrêt doit être commandé : état sûr, journalisation de l'arrêt, puis mise hors tension. Avec une jauge conforme à SYS-REQ-049, les deux alarmes doivent précéder l'arrêt d'au moins 30 min et 5 min."
+source = "Mesure CTRL-013 (RISK-010) ; UN-11 ; IEC 60601-2-24 ; ADR 0004"
+status = "draft"
+
+[[requirement]]
+id = "SYS-REQ-049"
+title = "Estimation de l'autonomie"
+text = "L'autonomie restante affichée et celle qui déclenche les alarmes de SYS-REQ-016 doivent être estimées par comptage coulométrique, recalé à pleine charge, à partir de la capacité restante minorée de l'incertitude de la jauge et de la consommation majorée ; elles ne doivent jamais dépasser l'autonomie réelle. La capacité mesurée à chaque recalage doit être journalisée, et une batterie dont la capacité est inférieure à 80 % de sa capacité nominale doit être signalée en maintenance."
+source = "Mesure CTRL-013 (RISK-010, RISK-013) ; UN-11 ; ADR 0004"
+status = "draft"
+
+[[requirement]]
+id = "SYS-REQ-050"
+title = "Coupure imminente et réserve de maintien"
+text = "Un superviseur de tension matériel doit signaler à chaque processeur la perte simultanée du secteur et de la batterie avant que la tension ne descende sous leur seuil de fonctionnement. Une réserve de maintien doit alors permettre de retirer l'autorisation moteur, de refuser toute nouvelle écriture, d'achever l'écriture en cours la plus longue du journal ou de l'état de perfusion avec une marge d'un facteur 2, puis de journaliser la coupure si la réserve le permet. L'intégrité des données persistantes ne doit pas dépendre de cette réserve (SW-REQ-017)."
+source = "Mesure CTRL-015 (RISK-011) ; ADR 0004"
 status = "draft"
 
 [[requirement]]
@@ -147,10 +161,17 @@ source = "Mesure CTRL-015 (RISK-011) ; UN-16"
 status = "draft"
 
 [[requirement]]
+id = "SYS-REQ-052"
+title = "Témoin d'ancrage du journal"
+text = "Le canal de sécurité doit être le témoin d'ancrage du journal d'audit : il doit recevoir chaque événement dans son encodage canonique, recalculer lui-même le chaînage de chaque flux à partir de son propre dernier condensat, et ne faire avancer l'ancrage que d'un événement à la fois, dans l'ordre des séquences ; un trou, un doublon de contenu différent ou une séquence décroissante doit être refusé et signalé. Il ne doit accepter le retrait d'un préfixe que pour la rotation du journal, sous la position ancrée et au-delà de la durée de rétention minimale, en conservant le condensat du préfixe retiré. À chaque démarrage et au moins une fois par heure, la chaîne du témoin doit être comparée à celle du support ; tout désaccord doit déclencher une alarme technique."
+source = "Mesure CTRL-015 (RISK-011) ; UN-16 ; ADR 0005"
+status = "draft"
+
+[[requirement]]
 id = "SYS-REQ-020"
 title = "Alarme de repli"
-text = "Pendant une perfusion, une alarme technique sonore doit retentir même si le processeur de commande ou le processeur de sécurité est défaillant, ou si aucun processeur n'est alimenté. Elle repose sur un circuit autonome, alimenté par une réserve propre, armé par le canal de sécurité au démarrage de la perfusion et déclenché par la perte de son signal de vie ; elle doit retentir au moins 2 min sur cette réserve."
-source = "Mesure CTRL-016 (RISK-010, RISK-012, RISK-014) ; ADR 0003"
+text = "Pendant une perfusion, une alarme technique sonore doit retentir même si le processeur de commande ou le processeur de sécurité est défaillant, ou si aucun processeur n'est alimenté. Elle repose sur un circuit autonome, alimenté par une pile lithium primaire qui lui est propre, armé par le canal de sécurité au démarrage de la perfusion et déclenché par la perte de son signal de vie ; elle doit retentir au moins 2 min sur cette pile, qui est remplacée en maintenance."
+source = "Mesure CTRL-016 (RISK-010, RISK-012, RISK-014) ; ADR 0003, ADR 0004"
 status = "draft"
 
 [[requirement]]
@@ -248,14 +269,21 @@ status = "draft"
 id = "SYS-REQ-034"
 title = "Contenu du journal"
 text = "La pompe doit journaliser chaque programmation et modification, démarrage, arrêt, bolus, purge, alarme (déclenchement, pause, acquittement, fin), changement d'alimentation, défaillance détectée et modification de configuration, avec sa date, son auteur ou son rôle lorsqu'il est connu, et conserver au moins les 10 000 derniers événements, y compris sans alimentation."
-source = "UN-14, UN-16 ; RISK-011 ; ADR #16"
+source = "UN-14, UN-16 ; RISK-011 ; ADR 0005"
 status = "draft"
 
 [[requirement]]
 id = "SYS-REQ-035"
 title = "Datation"
-text = "Chaque événement doit porter une date avec une résolution de 1 s et un numéro d'ordre strictement croissant ; l'horloge doit dériver de moins de 1 min par mois, et toute mise à l'heure doit être journalisée."
-source = "UN-16 ; RISK-011 ; ADR #17"
+text = "Chaque événement doit porter une date en UTC avec une résolution de 1 s, un numéro d'ordre strictement croissant dans son flux et le temps monotone écoulé depuis le démarrage ; l'horloge doit dériver de moins de 1 min par mois. L'heure ne doit être réglée que par un technicien authentifié, sans synchronisation par réseau, et chaque mise à l'heure doit être journalisée avec l'ancienne et la nouvelle heure."
+source = "Mesure CTRL-030 (RISK-011) ; UN-16 ; ADR 0006"
+status = "draft"
+
+[[requirement]]
+id = "SYS-REQ-054"
+title = "Heure indisponible ou douteuse"
+text = "Si l'heure civile est indisponible (oscillateur arrêté, réserve épuisée, horloge illisible), les événements doivent porter l'indication « heure indisponible », jamais une heure estimée. Toutes les 10 s, l'avance de l'heure civile doit être comparée à celle du temps monotone : un écart de plus de 2 s, ou une heure antérieure au dernier événement journalisé, doit être journalisé comme saut, et les événements suivants doivent porter l'indication « heure douteuse » jusqu'à la prochaine mise à l'heure. Une heure indisponible ou douteuse doit déclencher un signal d'information et une demande de mise à l'heure, sans interrompre ni modifier la perfusion."
+source = "Mesure CTRL-030 (RISK-011) ; RISK-013 ; UN-16 ; ADR 0006"
 status = "draft"
 
 [[requirement]]
@@ -275,8 +303,15 @@ status = "draft"
 [[requirement]]
 id = "SYS-REQ-038"
 title = "Reprise après réinitialisation"
-text = "Après une réinitialisation ou une coupure totale d'alimentation survenue pendant une perfusion, la pompe ne doit pas reprendre la perfusion d'elle-même : elle doit déclencher une alarme de priorité haute. Si l'état de perfusion enregistré est intègre, elle doit proposer la perfusion interrompue avec son débit, son volume à perfuser, le volume déjà délivré et le volume restant ; la confirmation par le soignant ne doit relancer que le volume restant, jamais le volume initial entier. Le volume délivré enregistré ne doit jamais être inférieur au volume effectivement délivré, de sorte que le volume restant proposé ne soit jamais surestimé. Si l'état enregistré est absent ou corrompu, aucune reprise ne doit être proposée : la pompe doit indiquer que le volume déjà délivré est inconnu et exiger une nouvelle programmation complète."
-source = "RISK-010, RISK-012 ; UN-11"
+text = "Après une réinitialisation ou une coupure totale d'alimentation survenue pendant une perfusion, la pompe ne doit pas reprendre la perfusion d'elle-même : elle doit déclencher une alarme de priorité haute. Si l'état de perfusion enregistré est intègre, elle doit proposer la perfusion interrompue avec son débit, son volume à perfuser, le volume déjà délivré et le volume restant ; la confirmation par le soignant ne doit relancer que le volume restant, jamais le volume initial entier. Le volume délivré enregistré est la borne réservée de SYS-REQ-051, et le volume restant proposé est le volume à perfuser diminué de cette borne. Aucune reprise ne doit être proposée si le volume correspondant au déplacement du piston mesuré par le canal de sécurité, majoré de l'incertitude de mesure établie pour ce capteur, dépasse la borne, si la position de départ enregistrée manque, ou si la seringue a pu être déplacée : la borne n'est alors plus une majoration démontrée du volume délivré. Si l'état enregistré est absent ou corrompu, aucune reprise ne doit être proposée : la pompe doit indiquer que le volume déjà délivré est inconnu et exiger une nouvelle programmation complète."
+source = "Mesure CTRL-029 (RISK-001, RISK-012) ; RISK-010 ; UN-11 ; ADR 0004"
+status = "draft"
+
+[[requirement]]
+id = "SYS-REQ-051"
+title = "Réservation du volume avant délivrance"
+text = "Avant d'autoriser la délivrance d'un incrément de volume d'au plus 0,1 mL, le processeur de commande doit écrire durablement la borne réservée, égale au volume délivré augmenté de cet incrément, dans une mémoire non volatile dont l'endurance supporte une réservation par incrément au débit maximal pendant toute la durée de vie de la pompe. La consigne de l'actionneur ne doit jamais faire dépasser la borne réservée : faute de nouvelle réservation confirmée, le pousseur doit s'arrêter à la borne, et l'échec d'une réservation doit placer la pompe en état sûr."
+source = "Mesure CTRL-029 (RISK-001, RISK-012) ; SYS-REQ-038 ; ADR 0004"
 status = "draft"
 
 [[requirement]]
@@ -331,8 +366,15 @@ status = "draft"
 [[requirement]]
 id = "SYS-REQ-046"
 title = "Tests de la coupure et de l'alarme autonome"
-text = "À chaque démarrage, la pompe doit vérifier que chacun des deux canaux peut couper le moteur et que le circuit d'alarme autonome retentit ; tout échec doit la mettre hors service."
-source = "Mesures CTRL-001, CTRL-016 (RISK-012, RISK-014) ; ADR 0003"
+text = "À chaque démarrage, la pompe doit vérifier que chacun des deux canaux peut couper le moteur, que le circuit d'alarme autonome retentit et que la tension en charge de sa pile dépasse son seuil de remplacement ; tout échec doit la mettre hors service."
+source = "Mesures CTRL-001, CTRL-016 (RISK-012, RISK-014) ; ADR 0003, ADR 0004"
+status = "draft"
+
+[[requirement]]
+id = "SYS-REQ-053"
+title = "Liaison entre les processeurs"
+text = "Les deux processeurs doivent communiquer par une liaison point à point dont chaque trame porte un numéro de transport augmenté de 1 à chaque émission et un CRC-32. Chacun doit émettre un signal de vie toutes les 50 ms. L'absence de trame valide pendant 200 ms, un numéro de transport manquant, répété ou décroissant, ou un changement du numéro de démarrage de l'émetteur doit être traité comme une perte de lien, qui place la pompe en état sûr dans le délai de SYS-REQ-002 ; les messages de sécurité ne doivent pas être retransmis. Un désaccord de version du protocole au démarrage doit mettre la pompe hors service."
+source = "Mesure CTRL-031 (RISK-001, RISK-012) ; ADR 0003, ADR 0006"
 status = "draft"
 
 [[requirement]]
@@ -471,8 +513,29 @@ status = "draft"
 [[requirement]]
 id = "SW-REQ-018"
 title = "Temps monotone"
-text = "Les délais de sécurité (confirmation d'alarme, pause, détections) doivent être mesurés sur une base de temps monotone, insensible aux mises à l'heure de l'horloge."
-source = "SYS-REQ-035 ; #49"
+text = "Les délais de sécurité (confirmation d'alarme, pause, détections, signal de vie) doivent être mesurés sur une base de temps monotone, insensible aux mises à l'heure de l'horloge ; chaque processeur doit utiliser son propre compteur matériel, jamais réglé ni partagé avec l'autre processeur."
+source = "SYS-REQ-035, SYS-REQ-053 ; #49 ; ADR 0006"
+status = "draft"
+
+[[requirement]]
+id = "SW-REQ-019"
+title = "Séparation de l'audit et du diagnostic"
+text = "Le logiciel doit séparer les événements d'audit, au vocabulaire fermé, des journaux de diagnostic : aucune trace de diagnostic ne doit être enregistrée ni acceptée comme événement d'audit, toute perte de traces de diagnostic doit être comptée, et le logiciel embarqué ne doit employer pour le diagnostic aucun composant qui alloue de la mémoire dynamiquement."
+source = "SYS-REQ-018, SYS-REQ-034 ; mesure CTRL-015 ; ADR 0005 ; #42"
+status = "draft"
+
+[[requirement]]
+id = "SW-REQ-020"
+title = "Numéro de démarrage persistant"
+text = "Chaque processeur doit incrémenter un compteur de démarrage persistant et l'écrire durablement avant tout événement du démarrage ; les flux d'audit doivent être identifiés par le numéro de série de la pompe, le producteur et ce numéro. Un compteur illisible ou corrompu doit mettre la pompe hors service."
+source = "SYS-REQ-035, SW-REQ-010 ; mesure CTRL-030 ; ADR 0006"
+status = "draft"
+
+[[requirement]]
+id = "SW-REQ-021"
+title = "Identité des événements sur la liaison"
+text = "L'identité d'un événement d'audit transmis entre les processeurs doit être son flux et sa séquence d'audit, indépendante du numéro de transport. Le récepteur ne doit acquitter un événement qu'après sa confirmation durable : écriture durable confirmée dans le journal pour la commande, ancrage durable confirmé pour le témoin ; un accusé de simple réception, s'il existe, ne doit jamais autoriser l'émetteur à libérer sa copie. L'émetteur doit conserver chaque événement jusqu'à cet acquittement et réémettre les événements non acquittés après chaque rétablissement du lien ou redémarrage du récepteur. Le récepteur doit ignorer un doublon de même contenu, refuser et signaler comme altération un contenu différent sous la même identité, et retenir les événements qui suivent un trou jusqu'à la réception de l'événement manquant. Un trou qui persiste après le rétablissement du lien doit être consigné comme frontière du flux et signalé, jamais ignoré."
+source = "SYS-REQ-018, SYS-REQ-052, SYS-REQ-053 ; SW-REQ-008 ; mesure CTRL-030 ; ADR 0006 ; #46"
 status = "draft"
 
 [[requirement]]
@@ -487,4 +550,18 @@ id = "HW-REQ-002"
 title = "Protection contre les liquides"
 text = "Le boîtier doit atteindre l'indice de protection IPX4 et résister, sans dégradation de ses fonctions ni de ses marquages, aux produits de nettoyage et de désinfection listés dans les instructions."
 source = "Mesure CTRL-021 (RISK-018) ; UN-17 ; IEC 60529"
+status = "draft"
+
+[[requirement]]
+id = "HW-REQ-003"
+title = "Batterie"
+text = "La batterie doit être de chimie lithium fer phosphate (LiFePO4), en cellules conformes à l'IEC 62133-2, protégée par un circuit matériel contre la surcharge, la décharge profonde, la surintensité et la température excessive ; sa charge ne doit être autorisée que dans la plage de température de charge des cellules."
+source = "Mesure CTRL-028 (RISK-022) ; ADR 0004 ; IEC 62133-2"
+status = "draft"
+
+[[requirement]]
+id = "HW-REQ-004"
+title = "Bloc secteur externe"
+text = "La pompe doit être alimentée par un bloc secteur externe conforme à l'IEC 60601-1, assurant deux moyens de protection du patient (2 MOPP), et ne recevoir qu'une très basse tension continue ; aucun circuit de la pompe ne doit être relié au secteur."
+source = "Mesure CTRL-020 (RISK-017) ; ADR 0004 ; IEC 60601-1"
 status = "draft"

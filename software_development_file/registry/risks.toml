@@ -135,3 +135,9 @@ id = "RISK-021"
 hazard = "Utilisation clinique d'un prototype non évalué — Un patient est perfusé par un dispositif dont la sécurité n'est pas démontrée"
 harm = "Tout dommage ci-dessus"
 status = "draft"
+
+[[risk]]
+id = "RISK-022"
+hazard = "Énergie thermique : emballement thermique ou incendie de la batterie — La batterie s'échauffe, dégage des fumées ou s'enflamme au chevet du patient"
+harm = "Brûlure, intoxication par les fumées, incendie"
+status = "draft"
