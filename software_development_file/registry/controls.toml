@@ -85,9 +85,9 @@ requirements = ["SYS-REQ-014", "SYS-REQ-028"]
 
 [[control]]
 id = "CTRL-013"
-description = "Batterie avec bascule secteur/batterie sans interruption, alarmes d'autonomie faible et épuisée, alarme de perte d'alimentation"
-risks = ["RISK-010"]
-requirements = ["SYS-REQ-015", "SYS-REQ-016"]
+description = "Batterie avec bascule secteur/batterie matérielle, par diodes idéales et sans intervention logicielle, de délai et de creux de tension bornés ; jauge coulométrique à estimation prudente, contrôlée par la tension de la batterie ; alarmes d'autonomie faible et épuisée, arrêt commandé à l'épuisement"
+risks = ["RISK-010", "RISK-013"]
+requirements = ["SYS-REQ-015", "SYS-REQ-016", "SYS-REQ-049"]
 
 [[control]]
 id = "CTRL-014"
@@ -97,13 +97,13 @@ requirements = ["SYS-REQ-017"]
 
 [[control]]
 id = "CTRL-015"
-description = "Journal d'événements à écriture confirmée sur support durable, avec détection d'altération et de retour arrière"
+description = "Journal d'événements à écriture confirmée sur support durable, qu'une coupure laisse dans son ancienne ou sa nouvelle version intègre, avec une réserve de maintien sur détection de coupure imminente ; chaînage recalculé et ancré par le canal de sécurité, témoin indépendant de la commande ; vérification hors de l'appareil ; journaux de diagnostic séparés, jamais utilisés comme preuve"
 risks = ["RISK-011"]
-requirements = ["SYS-REQ-018", "SYS-REQ-019"]
+requirements = ["SYS-REQ-018", "SYS-REQ-019", "SYS-REQ-050", "SYS-REQ-052", "SW-REQ-019"]
 
 [[control]]
 id = "CTRL-016"
-description = "Alarme technique de repli par un circuit autonome sur réserve propre, armé par le canal de sécurité pendant la perfusion et déclenché par la perte de son signal de vie, sans processeur alimenté ; testée à chaque démarrage"
+description = "Alarme technique de repli par un circuit autonome sur une pile lithium primaire propre, armé par le canal de sécurité pendant la perfusion et déclenché par la perte de son signal de vie, sans processeur alimenté ; circuit et pile testés à chaque démarrage"
 risks = ["RISK-010", "RISK-012", "RISK-014"]
 requirements = ["SYS-REQ-020", "SYS-REQ-046"]
 
@@ -127,9 +127,9 @@ requirements = ["SYS-REQ-024"]
 
 [[control]]
 id = "CTRL-020"
-description = "Conception électrique selon l'IEC 60601-1 : isolement, courants de fuite, alimentation"
+description = "Conception électrique selon l'IEC 60601-1 : alimentation par un bloc secteur externe médical à 2 MOPP, la pompe ne recevant qu'une très basse tension continue ; isolement et courants de fuite"
 risks = ["RISK-017"]
-requirements = ["HW-REQ-001"]
+requirements = ["HW-REQ-001", "HW-REQ-004"]
 
 [[control]]
 id = "CTRL-021"
@@ -172,3 +172,27 @@ id = "CTRL-027"
 description = "Rattrapage des jeux mécaniques avant le démarrage, avec délai au premier écoulement borné et mesuré pour chaque seringue"
 risks = ["RISK-002"]
 requirements = ["SYS-REQ-048"]
+
+[[control]]
+id = "CTRL-028"
+description = "Batterie LiFePO4 en cellules conformes à l'IEC 62133-2, avec circuit de protection matériel (surcharge, décharge profonde, surintensité, température) et charge autorisée seulement dans la plage de température des cellules"
+risks = ["RISK-022"]
+requirements = ["HW-REQ-003"]
+
+[[control]]
+id = "CTRL-029"
+description = "Réservation durable du volume avant délivrance : la consigne ne dépasse jamais une borne écrite en mémoire non volatile par incréments d'au plus 0,1 mL ; à la reprise, volume restant calculé depuis cette borne et contrôlé par la position du piston mesurée par le canal de sécurité"
+risks = ["RISK-001", "RISK-012"]
+requirements = ["SYS-REQ-038", "SYS-REQ-051"]
+
+[[control]]
+id = "CTRL-030"
+description = "Datation et identité des événements : heure UTC sur horloge compensée en température, réglée par un technicien authentifié ; indications « heure indisponible » et « heure douteuse » ; compteur de démarrage persistant écrit avant tout événement ; identité d'audit stable, distincte du transport, avec doublons ignorés, contenus divergents refusés et trous signalés"
+risks = ["RISK-011"]
+requirements = ["SYS-REQ-035", "SYS-REQ-054", "SW-REQ-020", "SW-REQ-021"]
+
+[[control]]
+id = "CTRL-031"
+description = "Liaison surveillée entre les processeurs : trames contrôlées par CRC-32 et numérotées, signal de vie toutes les 50 ms ; perte de lien après 200 ms sans trame valide ou sur anomalie de numérotation, qui place la pompe en état sûr, sans retransmission des messages de sécurité ; version du protocole vérifiée au démarrage"
+risks = ["RISK-001", "RISK-012"]
+requirements = ["SYS-REQ-053"]

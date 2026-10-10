@@ -10,7 +10,7 @@ La source lisible par machine est [`registry/soup.toml`](registry/soup.toml) ; l
 
 | Identifiant | Composant | Version épinglée | Usage | Exigences de fonctionnement et de performance | Anomalies connues (date de revue) |
 | --- | --- | --- | --- | --- | --- |
-| SOUP-001 | [mddlog](https://github.com/ambroise-leclerc/mddlog), EUPL-1.2, projet mddlog (Ambroise Leclerc) | 0.3.0, commit `073761b7a6d5ed29ed87bc37c85967db72386d3c` | Audit et cœur de diagnostic sur le processeur de commande ([ADR 0005](../docs/adr/0005-journalisation-et-evenements-d-audit.md)) ; **retenu sous conditions**, évaluation complète dans [#44](https://github.com/camille-martin-paris/clepsydre/issues/44) | SYS-REQ-018, SYS-REQ-019, SYS-REQ-034, SW-REQ-008, SW-REQ-009 | Aucune anomalie étiquetée bug ouverte ; mddlog #147 (TSan, libc++ 21, chemin non retenu) ; antérieure à 1.0 ; aucune cible embarquée testée ; pas de fournisseur d'ancrage réel livré (2026-10-09) |
+| SOUP-001 | [mddlog](https://github.com/ambroise-leclerc/mddlog), EUPL-1.2, projet mddlog (Ambroise Leclerc) | 0.3.0, commit `073761b7a6d5ed29ed87bc37c85967db72386d3c` | Audit et cœur de diagnostic sur le processeur de commande ([ADR 0005](../docs/adr/0005-journalisation-et-evenements-d-audit.md)) ; **retenu sous conditions**, évaluation complète dans [#44](https://github.com/camille-martin-paris/clepsydre/issues/44) | SYS-REQ-018, SYS-REQ-019, SYS-REQ-034, SYS-REQ-052, SW-REQ-008, SW-REQ-009, SW-REQ-019 | Aucune anomalie étiquetée bug ouverte ; mddlog #147 (TSan, libc++ 21, chemin non retenu) ; antérieure à 1.0 ; aucune cible embarquée testée ; pas de fournisseur d'ancrage réel livré (2026-10-09) |
 
 ## Composants envisagés
 

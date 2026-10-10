@@ -28,5 +28,5 @@ supplier = "Projet mddlog (Ambroise Leclerc), https://github.com/ambroise-lecler
 license = "EUPL-1.2"
 purl = "pkg:github/ambroise-leclerc/mddlog@073761b7a6d5ed29ed87bc37c85967db72386d3c"
 usage = "Événements d'audit (modèle, anneau borné, persistance chaînée, vérification) et cœur de diagnostic sans allocation, sur le processeur de commande ; adaptateurs de diagnostic sur hôte seulement (ADR 0005). Retenu sous conditions : portage sur la cible, évaluation complète (#44)."
-requirements = ["SYS-REQ-018", "SYS-REQ-019", "SYS-REQ-034", "SW-REQ-008", "SW-REQ-009"]
+requirements = ["SYS-REQ-018", "SYS-REQ-019", "SYS-REQ-034", "SYS-REQ-052", "SW-REQ-008", "SW-REQ-009", "SW-REQ-019"]
 known_anomalies = "Revue du 2026-10-09 : aucune anomalie étiquetée bug ouverte ; mddlog #147 ouverte (signalement ThreadSanitizer promise/future avec libc++ 21 sur le SimpleLogger historique, non qualifié, chemin non retenu sur la cible) ; version antérieure à 1.0, API et formats non figés (#121) ; aucune cible embarquée testée ; aucun fournisseur d'ancrage indépendant réel livré."
