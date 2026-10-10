@@ -2,7 +2,7 @@
 
 | Champ | Valeur |
 | --- | --- |
-| Statut | Proposée, soumise à l'acceptation de la mainteneuse |
+| Statut | **Acceptée** le 2026-10-10 par Camille Martin, décision explicite exécutée par Codex. Acceptation consignée dans [reviews.md](../../software_development_file/reviews.md) |
 | Date | 2026-10-09 |
 | Issue | [#3](https://github.com/camille-martin-paris/clepsydre/issues/3) |
 
