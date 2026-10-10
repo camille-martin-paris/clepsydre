@@ -10,7 +10,7 @@ Ce document décrit le modèle physique qui permet de développer et d'éprouver
 | Étape | Contenu | État |
 | --- | --- | --- |
 | 1 | Modèle physique du pousse-seringue : mécanisme, seringue, ligne, capteurs | Ce document |
-| 2 | Liaison simulée entre les processeurs et horloges indépendantes ([ADR 0006](../adr/0006-interfaces-internes-horloge-et-datation.md)) | À venir |
+| 2 | Liaison simulée entre les processeurs et horloges indépendantes ([ADR 0006](../adr/0006-interfaces-internes-horloge-et-datation.md)) | Ce document |
 | 3 | Injection de défauts : occlusion, air, seringue, capteurs, pilote, alimentation, processeurs, messages | À venir |
 | 4 | Démonstration interactive et limites complètes du modèle | À venir |
 
@@ -22,6 +22,9 @@ Le simulateur est la bibliothèque `clepsydre_sim` ([`src/sim/`](../../src/sim))
 | --- | --- |
 | `clepsydre.sim.quantities` | Grandeurs physiques typées, en unités SI et en virgule flottante : longueur, volume, force, pression, débit, raideur, compliance, résistance hydraulique, vitesse moteur |
 | `clepsydre.sim.syringe_pump` | Modèle du pousse-seringue (`SyringePump`), paramètres du mécanisme, de la seringue et de la ligne, et jeux de paramètres d'exemple |
+| `clepsydre.sim.clock` | Temps simulé (`TrueTime`), compteur monotone de chaque processeur (`MonotonicClock`) et horloge temps réel (`CivilClock`) |
+| `clepsydre.sim.serial_link` | Liaison série point à point entre les processeurs (`SerialLink`), un sens par `SerialChannel` |
+| `clepsydre.sim.simulation` | Ordonnanceur à pas fixe (`Simulation`) qui fait avancer le modèle physique, les processeurs et la liaison sur le même temps simulé |
 
 La virgule flottante convient au modèle, qui représente le monde physique. Le logiciel embarqué utilisera ses propres types, en arithmétique entière ou à virgule fixe (SW-REQ-005).
 
@@ -67,13 +70,23 @@ Le joint et le corps forment ensemble une compliance effective C + A²/k. Avec l
 
 Les grandeurs réelles (volume délivré, pression, positions) sont accessibles aux tests. Le logiciel embarqué n'y aura pas accès.
 
+### Liaison, horloges et ordonnancement
+
+Ces modules appliquent l'[ADR 0006](../adr/0006-interfaces-internes-horloge-et-datation.md).
+
+- **Temps simulé** : `TrueTime` est la référence du monde simulé, en nanosecondes entières. Le modèle physique, la liaison et l'ordonnanceur l'utilisent ; un logiciel simulé n'y a jamais accès et ne lit que ses propres horloges.
+- **Compteur monotone** : chaque processeur a le sien, avec son décalage au départ, son écart de fréquence en parties par milliard et sa période de comptage (1 µs par défaut). La valeur est calculée en entiers, sans débordement sur plusieurs années. Les deux compteurs ne se recalent jamais : une horloge fausse d'un côté se voit de l'autre.
+- **Horloge temps réel** : celle du processeur de commande, en UTC à la seconde (SYS-REQ-035), avec sa dérive. Elle peut être mise à l'heure par un technicien, sauter, ou s'arrêter quand sa réserve s'épuise ; elle se fige alors et lève l'indicateur d'arrêt de l'oscillateur.
+- **Liaison série** : deux sens indépendants, qui transportent des octets au format 8N1 (10 bits par octet). Un octet part quand la ligne est libre, occupe la ligne pendant sa durée d'émission, puis arrive après la latence. L'ordre d'émission est conservé. La liaison ignore les trames : leur format (COBS, CRC-32) relève du module de protocole partagé par les deux logiciels et par le simulateur.
+- **Ordonnanceur** : à chaque pas, le temps simulé avance d'un quantum (1 ms par défaut), puis chaque participant est appelé dans l'ordre d'inscription. Cet ordre fixe rend l'ensemble déterministe.
+
 ### Paramètres d'exemple
 
 `exampleMechanism`, `exampleSyringes` (10, 20 et 50 mL) et `exampleLine` donnent des **ordres de grandeur, non mesurés**. Les noms « exemple 10 mL » et suivants ne désignent aucun produit. Les paramètres réels de chaque seringue de la liste vérifiée viendront des bancs (#73, #74).
 
 ## Comportements reproduits
 
-Les tests [`tests/sim_syringe_pump_test.cpp`](../../tests/sim_syringe_pump_test.cpp) vérifient que le modèle reproduit les comportements qu'il prétend reproduire. Ils ne vérifient **aucune exigence de la pompe**.
+Les tests [`sim_syringe_pump_test.cpp`](../../tests/sim_syringe_pump_test.cpp), [`sim_clock_test.cpp`](../../tests/sim_clock_test.cpp), [`sim_serial_link_test.cpp`](../../tests/sim_serial_link_test.cpp) et [`sim_simulation_test.cpp`](../../tests/sim_simulation_test.cpp) vérifient que le modèle reproduit les comportements qu'il prétend reproduire. Ils ne vérifient **aucune exigence de la pompe**.
 
 | Comportement | Résultat avec les paramètres d'exemple |
 | --- | --- |
@@ -86,6 +99,14 @@ Les tests [`tests/sim_syringe_pump_test.cpp`](../../tests/sim_syringe_pump_test.
 | Siphonage : seringue 1 m au-dessus du patient, joint à faible frottement | Piston retenu : moins de 0,1 mL, limité par le jeu et l'élasticité du joint ; piston libéré : écoulement libre de plus de 20 mL en 10 min |
 | Fin de course : volume utile délivré, puis montée de la force | — |
 | Vitesse bornée par le matériel ; capteurs quantifiés ; déterminisme | — |
+| Dérive des horloges calculée sans erreur d'arrondi ni débordement | 23 ppm sur 30 jours : exactement 59,616 s |
+| Compteurs monotones indépendants | ±50 ppm : 60 ms d'écart relatif en 10 min |
+| Horloge temps réel : mise à l'heure, saut, arrêt de l'oscillateur | — |
+| Liaison au débit de la ligne, ordre conservé, ligne occupée | 86,806 µs par octet à 115 200 bit/s |
+| Signaux de vie toutes les 50 ms entre deux processeurs à ±50 ppm, pendant une perfusion de 10 min | Silence le plus long : environ 51 ms, mesuré par chaque processeur sur sa propre horloge |
+| Horloge du processeur de sécurité cinq fois trop lente | La commande mesure un silence d'environ 250 ms, au-delà des 200 ms de la perte de lien |
+
+Dans les deux dernières lignes, les processeurs sont des bouchons de test qui n'émettent que des signaux de vie : les logiciels de la pompe n'existent pas encore.
 
 Ces résultats illustrent le modèle. Ils ne valent pas mesure du dispositif.
 
@@ -103,6 +124,9 @@ Les limites suivantes sont connues. L'étape 4 les complétera.
   - pas d'air dans la ligne, prévu à l'étape 3.
 - **Moteur** : il suit toujours la commande. La perte de pas, le couple limité et le calage seront des défauts injectés à l'étape 3.
 - **Capteurs** : capteurs idéaux, à la quantification près, sans bruit ni dérive.
+- **Horloges** : dérive constante, sans dépendance à la température ni gigue. L'horloge temps réel ne devient pas illisible ; ce défaut viendra à l'étape 3.
+- **Liaison** : ligne parfaite, sans perte, altération, doublon, retard ni réordonnancement ; ces défauts viendront à l'étape 3. File d'émission sans limite de taille.
+- **Ordonnancement** : un processeur simulé ne réagit qu'aux frontières des quanta ; son temps d'exécution n'est pas modélisé.
 - **Paramètres** : ordres de grandeur, non mesurés.
 
 ## Usage comme moyen de vérification
