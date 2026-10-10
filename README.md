@@ -75,6 +75,8 @@ cmake --workflow --preset gcc   # configuration, compilation, édition de liens 
 
 Compilateurs pris en charge, préréglages et outils de qualité : [docs/development/build.md](docs/development/build.md).
 
+Simulateur physique de la pompe, modèle et limites : [docs/development/simulator.md](docs/development/simulator.md).
+
 ## Feuille de route
 
 1. Définir le périmètre de la pompe, les exigences et les critères d'acceptation.
