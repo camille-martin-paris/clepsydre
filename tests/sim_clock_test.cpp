@@ -7,6 +7,8 @@
 #include <chrono>
 #include <expect.hpp>
 #include <format>
+#include <optional>
+#include <stdexcept>
 
 import clepsydre.sim.clock;
 
@@ -20,6 +22,14 @@ using clepsydre::sim::MonotonicClock;
 using clepsydre::test::Expectations;
 
 constexpr std::chrono::days month{30};
+
+// Lecture attendue ; une horloge illisible fait échouer le test par exception.
+clepsydre::sim::CivilReading readable(const std::optional<clepsydre::sim::CivilReading>& reading) {
+    if (!reading) {
+        throw std::runtime_error{"horloge temps réel illisible"};
+    }
+    return *reading;
+}
 
 void drift(Expectations& t) {
     // 23 ppm pendant 30 jours : la dérive tolérée par SYS-REQ-035, à peu près 1 min par mois.
@@ -84,27 +94,37 @@ void independentClocks(Expectations& t) {
 void civilClock(Expectations& t) {
     const CivilTime start = std::chrono::sys_days{std::chrono::year{2026} / 10 / 10} + 12h;
     CivilClock clock{0ns, start, 23'000};
-    t.expect(clock.read(500ms).time == start, "heure à la seconde, tronquée");
-    t.expect(!clock.read(0ns).oscillatorStopped, "oscillateur en marche au départ");
-    t.expect(clock.read(month).time == start + month + 59s, "dérive de 59,616 s en 30 jours");
+    t.expect(readable(clock.read(500ms)).time == start, "heure à la seconde, tronquée");
+    t.expect(!readable(clock.read(0ns)).oscillatorStopped, "oscillateur en marche au départ");
+    t.expect(readable(clock.read(month)).time == start + month + 59s,
+             "dérive de 59,616 s en 30 jours");
 
     // Saut : l'heure change d'un coup, sans que l'oscillateur s'arrête.
-    const auto beforeJump = clock.read(1h).time;
+    const auto beforeJump = readable(clock.read(1h)).time;
     clock.jump(1h, 3600s);
-    t.expect(clock.read(1h).time == beforeJump + 3600s, "saut d'une heure");
-    t.expect(!clock.read(1h).oscillatorStopped, "un saut ne lève pas l'indicateur d'arrêt");
+    t.expect(readable(clock.read(1h)).time == beforeJump + 3600s, "saut d'une heure");
+    t.expect(!readable(clock.read(1h)).oscillatorStopped,
+             "un saut ne lève pas l'indicateur d'arrêt");
 
     // Réserve épuisée : l'heure se fige et l'indicateur se lève.
     clock.stopOscillator(2h);
-    const auto frozen = clock.read(2h).time;
-    t.expect(clock.read(5h).time == frozen, "heure figée après l'arrêt de l'oscillateur");
-    t.expect(clock.read(5h).oscillatorStopped, "indicateur d'arrêt levé");
+    const auto frozen = readable(clock.read(2h)).time;
+    t.expect(readable(clock.read(5h)).time == frozen, "heure figée après l'arrêt de l'oscillateur");
+    t.expect(readable(clock.read(5h)).oscillatorStopped, "indicateur d'arrêt levé");
 
     // Mise à l'heure par un technicien : l'oscillateur repart et l'indicateur est effacé.
     const CivilTime technician = start + 6h;
     clock.set(6h, technician);
-    t.expect(clock.read(6h + 10s).time == technician + 10s, "l'heure repart de la mise à l'heure");
-    t.expect(!clock.read(6h).oscillatorStopped, "indicateur effacé par la mise à l'heure");
+    t.expect(readable(clock.read(6h + 10s)).time == technician + 10s,
+             "l'heure repart de la mise à l'heure");
+    t.expect(!readable(clock.read(6h)).oscillatorStopped,
+             "indicateur effacé par la mise à l'heure");
+
+    // Horloge illisible : aucune valeur, jamais une heure inventée ; l'heure continue d'avancer.
+    clock.setReadable(false);
+    t.expect(!clock.read(7h).has_value(), "horloge illisible : aucune lecture");
+    clock.setReadable(true);
+    t.expect(readable(clock.read(8h)).time == technician + 2h, "l'heure a continué d'avancer");
 }
 
 } // namespace

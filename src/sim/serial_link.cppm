@@ -20,18 +20,36 @@ export import clepsydre.sim.clock;
 
 export namespace clepsydre::sim {
 
+// Canal d'octets à sens unique, vu par l'émetteur et par le récepteur : la ligne seule
+// (SerialChannel) ou la ligne précédée d'un injecteur de défauts.
+class ByteChannel {
+public:
+    virtual ~ByteChannel() = default;
+
+    // Confie des octets à l'émetteur au temps simulé now.
+    virtual void send(TrueTime now, std::span<const std::byte> bytes) = 0;
+    // Octets reçus au plus tard au temps simulé now, retirés du canal.
+    [[nodiscard]] virtual std::vector<std::byte> receive(TrueTime now) = 0;
+
+protected:
+    ByteChannel() = default;
+    ByteChannel(const ByteChannel&) = default;
+    ByteChannel(ByteChannel&&) = default;
+    ByteChannel& operator=(const ByteChannel&) = default;
+    ByteChannel& operator=(ByteChannel&&) = default;
+};
+
 // Un sens de la liaison : les octets sont émis l'un après l'autre au débit de la ligne, puis
 // reçus après la latence, dans l'ordre d'émission.
-class SerialChannel {
+class SerialChannel final : public ByteChannel {
 public:
     // bitsPerSecond : débit de la ligne, au format 8N1 (10 bits par octet) ; latency : délai
     // ajouté à la réception de chaque octet.
     SerialChannel(std::int64_t bitsPerSecond, std::chrono::nanoseconds latency) noexcept;
 
-    // Confie des octets à l'émetteur au temps simulé now ; ils partent dès que la ligne est libre.
-    void send(TrueTime now, std::span<const std::byte> bytes);
-    // Octets reçus au plus tard au temps simulé now, retirés de la ligne.
-    [[nodiscard]] std::vector<std::byte> receive(TrueTime now);
+    // Les octets partent dès que la ligne est libre.
+    void send(TrueTime now, std::span<const std::byte> bytes) override;
+    [[nodiscard]] std::vector<std::byte> receive(TrueTime now) override;
 
     // Durée d'émission d'un octet.
     [[nodiscard]] std::chrono::nanoseconds byteTime() const noexcept { return byteTime_; }

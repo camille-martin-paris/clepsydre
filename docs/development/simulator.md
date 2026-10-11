@@ -11,7 +11,8 @@ Ce document décrit le modèle physique qui permet de développer et d'éprouver
 | --- | --- | --- |
 | 1 | Modèle physique du pousse-seringue : mécanisme, seringue, ligne, capteurs | Ce document |
 | 2 | Liaison simulée entre les processeurs et horloges indépendantes ([ADR 0006](../adr/0006-interfaces-internes-horloge-et-datation.md)) | Ce document |
-| 3 | Injection de défauts : occlusion, air, seringue, capteurs, pilote, alimentation, processeurs, messages | À venir |
+| 3 | Injection de défauts : liaison, horloges et processeurs | Ce document |
+| 3 (suite) | Injection de défauts : capteurs, pilote, seringue, air, alimentation | À venir |
 | 4 | Démonstration interactive et limites complètes du modèle | À venir |
 
 ## Organisation
@@ -25,6 +26,8 @@ Le simulateur est la bibliothèque `clepsydre_sim` ([`src/sim/`](../../src/sim))
 | `clepsydre.sim.clock` | Temps simulé (`TrueTime`), compteur monotone de chaque processeur (`MonotonicClock`) et horloge temps réel (`CivilClock`) |
 | `clepsydre.sim.serial_link` | Liaison série point à point entre les processeurs (`SerialLink`), un sens par `SerialChannel` |
 | `clepsydre.sim.simulation` | Ordonnanceur à pas fixe (`Simulation`) qui fait avancer le modèle physique, les processeurs et la liaison sur le même temps simulé |
+| `clepsydre.sim.link_faults` | Injecteur de défauts de la liaison (`FaultyChannel`) : pertes, doublons, altérations, troncatures, retards et réordonnancements de trames |
+| `clepsydre.sim.processor` | Processeur simulé (`Processor`) qui exécute un logiciel sur son propre compteur, avec ses défauts : blocage, réinitialisation, arrêt de l'oscillateur |
 
 La virgule flottante convient au modèle, qui représente le monde physique. Le logiciel embarqué utilisera ses propres types, en arithmétique entière ou à virgule fixe (SW-REQ-005).
 
@@ -76,9 +79,31 @@ Ces modules appliquent l'[ADR 0006](../adr/0006-interfaces-internes-horloge-et-d
 
 - **Temps simulé** : `TrueTime` est la référence du monde simulé, en nanosecondes entières. Le modèle physique, la liaison et l'ordonnanceur l'utilisent ; un logiciel simulé n'y a jamais accès et ne lit que ses propres horloges.
 - **Compteur monotone** : chaque processeur a le sien, avec son décalage au départ, son écart de fréquence en parties par milliard et sa période de comptage (1 µs par défaut). L'écart de fréquence est borné à ±(10<sup>9</sup> − 1) parties par milliard (`maxDriftPpb`), de presque arrêté à presque deux fois trop vite ; un écart au-delà est ramené à la borne. Cette borne garantit un calcul en entiers sans débordement, quelle que soit la durée. Les deux compteurs ne se recalent jamais : une horloge fausse d'un côté se voit de l'autre.
-- **Horloge temps réel** : celle du processeur de commande, en UTC à la seconde (SYS-REQ-035), avec sa dérive. Elle peut être mise à l'heure par un technicien, sauter, ou s'arrêter quand sa réserve s'épuise ; elle se fige alors et lève l'indicateur d'arrêt de l'oscillateur.
+- **Horloge temps réel** : celle du processeur de commande, en UTC à la seconde (SYS-REQ-035), avec sa dérive. Elle peut être mise à l'heure par un technicien, sauter, ou s'arrêter quand sa réserve s'épuise ; elle se fige alors et lève l'indicateur d'arrêt de l'oscillateur. Elle peut aussi devenir illisible : la lecture ne rend alors aucune valeur, jamais une heure inventée.
 - **Liaison série** : deux sens indépendants, qui transportent des octets au format 8N1 (10 bits par octet). Un octet part quand la ligne est libre, occupe la ligne pendant sa durée d'émission, puis arrive après la latence. L'ordre d'émission est conservé. La liaison ignore les trames : leur format (COBS, CRC-32) relève du module de protocole partagé par les deux logiciels et par le simulateur.
 - **Ordonnanceur** : à chaque pas, le temps simulé avance d'un quantum (1 ms par défaut), puis chaque participant est appelé dans l'ordre d'inscription. Cet ordre fixe rend l'ensemble déterministe.
+
+### Processeurs et injection de défauts
+
+- **Processeur** : il exécute un logiciel, fourni sous forme de deux fonctions, l'une au démarrage, l'autre à chaque pas. Le logiciel ne voit que son compteur monotone, qui repart de zéro à chaque démarrage, son numéro de démarrage, persistant, et la liaison. Il ne voit jamais le temps simulé.
+- **Défauts du processeur** :
+  - blocage : le logiciel cesse de s'exécuter, et le compteur continue d'avancer ;
+  - réinitialisation : le processeur redémarre après une durée choisie, avec un nouveau numéro de démarrage, et les octets reçus pendant l'arrêt sont perdus ;
+  - arrêt de l'oscillateur : le compteur se fige, y compris après un redémarrage.
+- **Défauts de la liaison** : l'injecteur se place devant un sens de la liaison. Il découpe le flux en trames selon le délimiteur de l'ADR 0006 (octet nul de l'encodage COBS), sans en lire le contenu. Chaque règle porte un défaut, une fenêtre d'activité et une probabilité par trame :
+
+  | Défaut | Effet sur la trame |
+  | --- | --- |
+  | Perte | Elle n'est pas émise |
+  | Doublon | Elle est émise deux fois |
+  | Altération | Un bit d'un octet de contenu est inversé |
+  | Troncature | Sa seconde moitié est perdue, le délimiteur est conservé |
+  | Retard | Elle part une durée choisie plus tard ; les trames suivantes peuvent la doubler |
+  | Réordonnancement | Elle part juste après la trame suivante, dans l'ordre de remise à l'injecteur, que celle-ci parte aussitôt ou après son propre retard ; une trame perdue ne compte pas |
+
+  Plusieurs défauts peuvent toucher une même trame. Une perte l'emporte sur tout. L'altération et la troncature modifient le contenu, puis un doublon émet deux fois le contenu obtenu. Une trame à la fois retardée et réordonnée part au plus tôt à son échéance, et après la trame suivante. Les départs se font dans l'ordre de leurs instants ; à instant égal, dans l'ordre de remise.
+
+- **Déterminisme** : les tirages viennent d'un générateur dont la suite est fixée par la norme C++ (`std::mt19937_64`), avec une graine choisie. La même graine injecte les mêmes défauts.
 
 ### Paramètres d'exemple
 
@@ -86,7 +111,7 @@ Ces modules appliquent l'[ADR 0006](../adr/0006-interfaces-internes-horloge-et-d
 
 ## Comportements reproduits
 
-Les tests [`sim_syringe_pump_test.cpp`](../../tests/sim_syringe_pump_test.cpp), [`sim_clock_test.cpp`](../../tests/sim_clock_test.cpp), [`sim_serial_link_test.cpp`](../../tests/sim_serial_link_test.cpp) et [`sim_simulation_test.cpp`](../../tests/sim_simulation_test.cpp) vérifient que le modèle reproduit les comportements qu'il prétend reproduire. Ils ne vérifient **aucune exigence de la pompe**.
+Les tests [`sim_syringe_pump_test.cpp`](../../tests/sim_syringe_pump_test.cpp), [`sim_clock_test.cpp`](../../tests/sim_clock_test.cpp), [`sim_serial_link_test.cpp`](../../tests/sim_serial_link_test.cpp), [`sim_simulation_test.cpp`](../../tests/sim_simulation_test.cpp), [`sim_link_faults_test.cpp`](../../tests/sim_link_faults_test.cpp) et [`sim_processor_test.cpp`](../../tests/sim_processor_test.cpp) vérifient que le modèle reproduit les comportements qu'il prétend reproduire. Ils ne vérifient **aucune exigence de la pompe**.
 
 | Comportement | Résultat avec les paramètres d'exemple |
 | --- | --- |
@@ -105,8 +130,14 @@ Les tests [`sim_syringe_pump_test.cpp`](../../tests/sim_syringe_pump_test.cpp), 
 | Liaison au débit de la ligne, ordre conservé, ligne occupée | 86,806 µs par octet à 115 200 bit/s |
 | Signaux de vie toutes les 50 ms entre deux processeurs à ±50 ppm, pendant une perfusion de 10 min | Silence le plus long : environ 51 ms, mesuré par chaque processeur sur sa propre horloge |
 | Horloge du processeur de sécurité cinq fois trop lente | La commande mesure un silence d'environ 250 ms, au-delà des 200 ms de la perte de lien |
+| Chaque défaut de trame, dans sa fenêtre et à sa probabilité ; injecteur sans règle transparent | 10 % de pertes demandées : 9 à 11 % obtenues sur 10 000 trames |
+| Pertes et doublons à 1 % pendant 2 min, retrouvés par le processeur récepteur dans les numéros de trame | 25 pertes et 31 doublons injectés, tous retrouvés |
+| Trames tronquées retrouvées par leur longueur | 58 sur 1 min, toutes retrouvées |
+| Réinitialisation de la sécurité pendant 300 ms | La commande voit changer le numéro de démarrage et mesure un silence d'environ 350 ms |
+| Blocage, ou arrêt de l'oscillateur, de la sécurité | La commande mesure un silence qui grandit sans fin |
+| Horloge temps réel illisible | Aucune valeur lue ; l'heure continue d'avancer |
 
-Dans les deux dernières lignes, les processeurs sont des bouchons de test qui n'émettent que des signaux de vie : les logiciels de la pompe n'existent pas encore.
+Dans les lignes qui mettent deux processeurs en jeu, ce sont des bouchons de test qui n'échangent que des signaux de vie numérotés : les logiciels de la pompe n'existent pas encore. Ces lignes montrent que chaque défaut injecté est observable ; la détection et la réaction relèvent des logiciels et de leurs propres vérifications.
 
 Ces résultats illustrent le modèle. Ils ne valent pas mesure du dispositif.
 
@@ -124,8 +155,9 @@ Les limites suivantes sont connues. L'étape 4 les complétera.
   - pas d'air dans la ligne, prévu à l'étape 3.
 - **Moteur** : il suit toujours la commande. La perte de pas, le couple limité et le calage seront des défauts injectés à l'étape 3.
 - **Capteurs** : capteurs idéaux, à la quantification près, sans bruit ni dérive.
-- **Horloges** : dérive constante, sans dépendance à la température ni gigue. Un oscillateur ne peut pas aller deux fois trop vite ou plus. L'horloge temps réel ne devient pas illisible ; ce défaut viendra à l'étape 3.
-- **Liaison** : ligne parfaite, sans perte, altération, doublon, retard ni réordonnancement ; ces défauts viendront à l'étape 3. File d'émission sans limite de taille.
+- **Horloges** : dérive constante, sans dépendance à la température ni gigue. Un oscillateur ne peut pas aller deux fois trop vite ou plus.
+- **Liaison** : sans injecteur, ligne parfaite. Avec un injecteur, une trame part quand son délimiteur est confié, et une trame retardée est relâchée au plus tard au pas suivant de l'ordonnanceur. File d'émission sans limite de taille.
+- **Processeurs** : le compteur de démarrage ne devient jamais illisible, et un processeur bloqué ne coupe pas encore le moteur ; ces défauts et leurs effets viendront avec le pilote et la suite de l'étape 3.
 - **Ordonnancement** : un processeur simulé ne réagit qu'aux frontières des quanta ; son temps d'exécution n'est pas modélisé.
 - **Paramètres** : ordres de grandeur, non mesurés.
 

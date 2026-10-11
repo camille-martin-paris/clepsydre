@@ -6,6 +6,7 @@ module;
 #include <algorithm>
 #include <chrono>
 #include <cstdint>
+#include <optional>
 
 module clepsydre.sim.clock;
 
@@ -54,9 +55,12 @@ std::chrono::nanoseconds MonotonicClock::read(TrueTime now) const noexcept {
 CivilClock::CivilClock(TrueTime now, CivilTime initial, std::int64_t driftPpb) noexcept
     : anchor_{now}, anchorValue_{initial}, driftPpb_{boundedDrift(driftPpb)} {}
 
-CivilReading CivilClock::read(TrueTime now) const noexcept {
-    return {.time = std::chrono::floor<std::chrono::seconds>(valueAt(now)),
-            .oscillatorStopped = stopped_};
+std::optional<CivilReading> CivilClock::read(TrueTime now) const noexcept {
+    if (!readable_) {
+        return std::nullopt;
+    }
+    return CivilReading{.time = std::chrono::floor<std::chrono::seconds>(valueAt(now)),
+                        .oscillatorStopped = stopped_};
 }
 
 void CivilClock::set(TrueTime now, CivilTime time) noexcept {
