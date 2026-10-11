@@ -2,7 +2,7 @@
 
 | Champ | Valeur |
 | --- | --- |
-| Statut | Révision D soumise à relecture ; la révision C est acceptée avec réserves ([reviews.md](../../software_development_file/reviews.md)) ; mesures proposées restant à vérifier |
+| Statut | Révision D acceptée avec réserves ([reviews.md](../../software_development_file/reviews.md)) ; mesures proposées restant à vérifier |
 | Révision | D |
 | Issue | [#9](https://github.com/camille-martin-paris/clepsydre/issues/9) |
 | Méthode | [Plan de gestion des risques](risk-management-plan.md) ; ISO 14971:2019, ISO/TR 24971:2020 |
