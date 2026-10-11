@@ -68,8 +68,9 @@ void duplicate(Expectations& t) {
     channel.add({.fault = FrameFault::duplicate});
     channel.send(0ns, frame(5, 7));
     const auto received = channel.receive(1s);
-    std::vector<std::byte> expected = frame(5, 7);
-    expected.insert(expected.end(), expected.begin(), expected.end());
+    const std::vector<std::byte> once = frame(5, 7);
+    std::vector<std::byte> expected = once;
+    expected.insert(expected.end(), once.begin(), once.end());
     t.expect(received == expected, "trame émise deux fois");
 }
 
@@ -123,6 +124,69 @@ void reorder(Expectations& t) {
              "deux trames permutées");
 }
 
+// Tags des trames reçues jusqu'à until, dans l'ordre d'arrivée.
+std::vector<std::uint8_t> tags(FaultyChannel& channel, std::chrono::nanoseconds until) {
+    std::vector<std::uint8_t> received;
+    for (const std::byte value : channel.receive(until)) {
+        if (value != FaultyChannel::delimiter &&
+            (received.empty() || received.back() != std::to_integer<std::uint8_t>(value))) {
+            received.push_back(std::to_integer<std::uint8_t>(value));
+        }
+    }
+    return received;
+}
+
+void delayAndReorderSameFrame(Expectations& t) {
+    // A retardée de 100 ms et réordonnée ; B part aussitôt, A à son échéance, après B.
+    SerialChannel line{baud, latency};
+    FaultyChannel channel{line, 1};
+    channel.add({.fault = FrameFault::delay, .from = 0ns, .until = 1ns, .delay = 100ms});
+    channel.add({.fault = FrameFault::reorder, .from = 0ns, .until = 1ns});
+    channel.send(0ns, frame(4, 1));
+    channel.send(10ms, frame(4, 2));
+    t.expect(tags(channel, 99ms) == std::vector<std::uint8_t>{2}, "B part aussitôt");
+    t.expect(tags(channel, 200ms) == std::vector<std::uint8_t>{1}, "A part à son échéance");
+    t.expect(channel.injected(FrameFault::delay) == 1 && channel.injected(FrameFault::reorder) == 1,
+             "les deux défauts sont injectés et appliqués");
+
+    // A retardée de 100 ms et réordonnée, B retardée de 200 ms : A attend B.
+    SerialChannel otherLine{baud, latency};
+    FaultyChannel other{otherLine, 1};
+    other.add({.fault = FrameFault::delay, .from = 0ns, .until = 1ns, .delay = 100ms});
+    other.add({.fault = FrameFault::reorder, .from = 0ns, .until = 1ns});
+    other.add({.fault = FrameFault::delay, .from = 10ms, .until = 10ms + 1ns, .delay = 200ms});
+    other.send(0ns, frame(4, 1));
+    other.send(10ms, frame(4, 2));
+    t.expect(tags(other, 150ms).empty(), "A attend B malgré son échéance");
+    t.expect(tags(other, 300ms) == std::vector<std::uint8_t>({2, 1}), "B puis A");
+}
+
+void reorderBeforeDelayed(Expectations& t) {
+    // Cas de la relecture : A réordonnée, B retardée de 100 ms, C normale. A suit B : C, B, A.
+    SerialChannel line{baud, latency};
+    FaultyChannel channel{line, 1};
+    channel.add({.fault = FrameFault::reorder, .from = 0ns, .until = 1ns});
+    channel.add({.fault = FrameFault::delay, .from = 10ms, .until = 10ms + 1ns, .delay = 100ms});
+    channel.send(0ns, frame(4, 1));
+    channel.send(10ms, frame(4, 2));
+    channel.send(20ms, frame(4, 3));
+    t.expect(tags(channel, 50ms) == std::vector<std::uint8_t>{3}, "C part aussitôt");
+    t.expect(tags(channel, 200ms) == std::vector<std::uint8_t>({2, 1}), "A part juste après B");
+}
+
+void reorderSkipsLostFrame(Expectations& t) {
+    // A réordonnée, B perdue, C normale : A attend la suivante encore, C, puis A.
+    SerialChannel line{baud, latency};
+    FaultyChannel channel{line, 1};
+    channel.add({.fault = FrameFault::reorder, .from = 0ns, .until = 1ns});
+    channel.add({.fault = FrameFault::drop, .from = 10ms, .until = 10ms + 1ns});
+    channel.send(0ns, frame(4, 1));
+    channel.send(10ms, frame(4, 2));
+    t.expect(tags(channel, 15ms).empty(), "A retenue, B perdue");
+    channel.send(20ms, frame(4, 3));
+    t.expect(tags(channel, 100ms) == std::vector<std::uint8_t>({3, 1}), "C puis A");
+}
+
 std::size_t dropsWithSeed(std::uint64_t seed, std::size_t& receivedFrames) {
     SerialChannel line{baud, latency};
     FaultyChannel channel{line, seed};
@@ -157,6 +221,9 @@ int main() {
         truncate(t);
         delay(t);
         reorder(t);
+        delayAndReorderSameFrame(t);
+        reorderBeforeDelayed(t);
+        reorderSkipsLostFrame(t);
         probabilityAndDeterminism(t);
     });
 }

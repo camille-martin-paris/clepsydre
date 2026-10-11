@@ -98,8 +98,10 @@ Ces modules appliquent l'[ADR 0006](../adr/0006-interfaces-internes-horloge-et-d
   | Doublon | Elle est émise deux fois |
   | Altération | Un bit d'un octet de contenu est inversé |
   | Troncature | Sa seconde moitié est perdue, le délimiteur est conservé |
-  | Retard | Elle est retenue pendant une durée choisie ; les trames suivantes peuvent la doubler |
-  | Réordonnancement | Elle part juste après la trame suivante |
+  | Retard | Elle part une durée choisie plus tard ; les trames suivantes peuvent la doubler |
+  | Réordonnancement | Elle part juste après la trame suivante, dans l'ordre de remise à l'injecteur, que celle-ci parte aussitôt ou après son propre retard ; une trame perdue ne compte pas |
+
+  Plusieurs défauts peuvent toucher une même trame. Une perte l'emporte sur tout. L'altération et la troncature modifient le contenu, puis un doublon émet deux fois le contenu obtenu. Une trame à la fois retardée et réordonnée part au plus tôt à son échéance, et après la trame suivante. Les départs se font dans l'ordre de leurs instants ; à instant égal, dans l'ordre de remise.
 
 - **Déterminisme** : les tirages viennent d'un générateur dont la suite est fixée par la norme C++ (`std::mt19937_64`), avec une graine choisie. La même graine injecte les mêmes défauts.
 

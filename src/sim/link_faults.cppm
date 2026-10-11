@@ -28,8 +28,8 @@ enum class FrameFault : std::uint8_t {
     duplicate, // la trame est émise deux fois
     corrupt,   // un bit d'un octet de la trame est inversé
     truncate,  // la seconde moitié de la trame est perdue, délimiteur conservé
-    delay,     // la trame est retenue pendant FrameFaultRule::delay
-    reorder,   // la trame est retenue et part juste après la suivante
+    delay,     // la trame part FrameFaultRule::delay plus tard
+    reorder,   // la trame part juste après la trame suivante
 };
 
 inline constexpr std::size_t frameFaultCount = 6;
@@ -47,6 +47,17 @@ struct FrameFaultRule {
 // Injecteur de défauts placé devant un canal d'octets. Il découpe le flux en trames selon le
 // délimiteur de l'ADR 0006 (encodage COBS : un octet nul termine chaque trame), sans en lire
 // le contenu. Une trame n'est confiée au canal que lorsque son délimiteur l'est.
+//
+// Composition des défauts d'une trame, dans l'ordre des règles : une perte l'emporte sur tout ;
+// altération et troncature modifient le contenu ; un doublon émet le contenu obtenu deux fois.
+// Le retard et le réordonnancement fixent ensuite son départ, au plus tôt :
+// - retard : à son échéance, l'instant de remise augmenté du retard ;
+// - réordonnancement : juste après le départ de la trame suivante, dans l'ordre de remise à
+//   l'injecteur, que celle-ci parte aussitôt ou après son propre retard. Une trame perdue ne
+//   compte pas : la trame retenue attend la suivante encore. Sans trame suivante, elle reste
+//   retenue.
+// Une trame touchée par les deux part au plus tôt à son échéance, et après la suivante.
+// Les départs se font dans l'ordre de leurs instants ; à instant égal, dans l'ordre de remise.
 //
 // Les tirages viennent d'un générateur à graine fixe dont la suite est définie par la norme :
 // deux exécutions avec la même graine injectent les mêmes défauts.
@@ -66,13 +77,20 @@ public:
     [[nodiscard]] std::size_t injected(FrameFault fault) const noexcept;
 
 private:
-    struct Delayed {
-        TrueTime due;
-        std::vector<std::byte> frame;
+    // Trame remise à l'injecteur et pas encore retirée de la file.
+    struct Pending {
+        std::vector<std::byte> bytes;
+        TrueTime due;           // départ au plus tôt, retard compris
+        bool afterNext = false; // réordonnancement : part après la trame suivante
+        bool departed = false;
+        TrueTime departedAt{};
     };
 
     void process(TrueTime now, std::vector<std::byte> frame);
+    // Fait partir les trames prêtes au temps simulé now.
     void release(TrueTime now);
+    // Instant de départ possible de la trame d'indice index, si elle est prête à now.
+    [[nodiscard]] std::optional<TrueTime> readyAt(std::size_t index, TrueTime now) const;
     [[nodiscard]] bool hits(const FrameFaultRule& rule, TrueTime now);
     void corrupt(std::vector<std::byte>& frame);
 
@@ -80,8 +98,7 @@ private:
     std::mt19937_64 random_;
     std::vector<FrameFaultRule> rules_;
     std::vector<std::byte> partial_;
-    std::deque<Delayed> delayed_;
-    std::optional<std::vector<std::byte>> held_;
+    std::deque<Pending> pending_; // dans l'ordre de remise
     std::array<std::size_t, frameFaultCount> injected_{};
 };
 

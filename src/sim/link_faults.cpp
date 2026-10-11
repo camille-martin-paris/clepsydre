@@ -79,29 +79,51 @@ void FaultyChannel::process(TrueTime now, std::vector<std::byte> frame) {
     if (duplicate) {
         bytes.insert(bytes.end(), frame.begin(), frame.end());
     }
-    if (delay) {
-        const Delayed entry{.due = now + *delay, .frame = std::move(bytes)};
-        // File triée par échéance ; à échéance égale, l'ordre d'arrivée est conservé.
-        const auto position = std::ranges::upper_bound(delayed_, entry.due, {}, &Delayed::due);
-        delayed_.insert(position, entry);
-        return;
-    }
-    if (reorder && !held_) {
-        held_ = std::move(bytes);
-        return;
-    }
-    line_->send(now, bytes);
-    if (held_) {
-        line_->send(now, *held_);
-        held_.reset();
-    }
+    pending_.push_back({.bytes = std::move(bytes),
+                        .due = now + delay.value_or(std::chrono::nanoseconds::zero()),
+                        .afterNext = reorder});
+    release(now);
 }
 
 void FaultyChannel::release(TrueTime now) {
-    while (!delayed_.empty() && delayed_.front().due <= now) {
-        line_->send(delayed_.front().due, delayed_.front().frame);
-        delayed_.pop_front();
+    // À chaque tour, la trame prête au plus tôt part ; à instant égal, la première remise.
+    while (true) {
+        std::optional<std::size_t> next;
+        TrueTime nextAt{};
+        for (std::size_t index = 0; index < pending_.size(); ++index) {
+            const auto at = readyAt(index, now);
+            if (at && (!next || *at < nextAt)) {
+                next = index;
+                nextAt = *at;
+            }
+        }
+        if (!next) {
+            break;
+        }
+        Pending& entry = pending_[*next];
+        line_->send(nextAt, entry.bytes);
+        entry.departed = true;
+        entry.departedAt = nextAt;
     }
+    // Une trame partie n'est retirée qu'avec celles qui la précèdent : la trame retenue qui la
+    // précède doit encore voir son départ.
+    while (!pending_.empty() && pending_.front().departed) {
+        pending_.pop_front();
+    }
+}
+
+std::optional<TrueTime> FaultyChannel::readyAt(std::size_t index, TrueTime now) const {
+    const Pending& entry = pending_[index];
+    if (entry.departed || entry.due > now) {
+        return std::nullopt;
+    }
+    if (!entry.afterNext) {
+        return entry.due;
+    }
+    if (index + 1 >= pending_.size() || !pending_[index + 1].departed) {
+        return std::nullopt;
+    }
+    return std::max(entry.due, pending_[index + 1].departedAt);
 }
 
 bool FaultyChannel::hits(const FrameFaultRule& rule, TrueTime now) {
