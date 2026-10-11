@@ -10,6 +10,8 @@
 #include <expect.hpp>
 #include <format>
 #include <numbers>
+#include <optional>
+#include <stdexcept>
 
 import clepsydre.sim.syringe_pump;
 
@@ -26,6 +28,15 @@ using clepsydre::test::Expectations;
 namespace sim = clepsydre::sim;
 
 const SyringeModel& syringe50 = exampleSyringes[2];
+
+// Mesure attendue ; un capteur muet fait échouer le test par exception.
+template <typename Q>
+Q reading(const std::optional<Q>& measured) {
+    if (!measured) {
+        throw std::runtime_error{"capteur sans mesure"};
+    }
+    return *measured;
+}
 
 // Vitesse moteur qui délivre le débit flow en régime établi avec la seringue syringe.
 sim::StepRate rateFor(sim::VolumeFlow flow, const SyringeModel& syringe) {
@@ -192,13 +203,14 @@ void sensors(Expectations& t) {
              "diamètre extérieur mesuré");
     pump.setStepRate(rateFor(sim::millilitresPerHour(25.0), syringe50));
     pump.run(5min);
-    const double force = pump.measuredForce() / exampleMechanism.forceResolution;
-    const double position = pump.measuredPlungerPosition() / exampleMechanism.positionResolution;
+    const double force = reading(pump.measuredForce()) / exampleMechanism.forceResolution;
+    const double position =
+        reading(pump.measuredPlungerPosition()) / exampleMechanism.positionResolution;
     t.expect(std::abs(force - std::round(force)) < 1e-6,
              "force quantifiée à la résolution du capteur");
     t.expect(std::abs(position - std::round(position)) < 1e-6,
              "position quantifiée à la résolution du capteur");
-    t.expect(std::abs((pump.measuredForce() - pump.contactForce()).si()) <=
+    t.expect(std::abs((reading(pump.measuredForce()) - pump.contactForce()).si()) <=
                  exampleMechanism.forceResolution.si(),
              "force mesurée à une résolution près");
 }
@@ -216,10 +228,10 @@ void plungerSensorInOcclusion(Expectations& t) {
     const double plunger = sim::inMillimetres(pump.plungerPosition());
     t.expect(pusher - plunger > 1.0,
              std::format("pousseur et piston divergent ({} mm contre {} mm)", pusher, plunger));
-    t.expect(std::abs((pump.measuredPlungerPosition() - pump.plungerPosition()).si()) <=
+    t.expect(std::abs((reading(pump.measuredPlungerPosition()) - pump.plungerPosition()).si()) <=
                  exampleMechanism.positionResolution.si() / 2.0,
              std::format("la mesure suit le piston à la résolution près ({} mm)",
-                         sim::inMillimetres(pump.measuredPlungerPosition())));
+                         sim::inMillimetres(reading(pump.measuredPlungerPosition()))));
 }
 
 void deterministic(Expectations& t) {

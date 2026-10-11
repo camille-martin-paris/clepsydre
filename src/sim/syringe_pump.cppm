@@ -6,7 +6,9 @@ module;
 #include <array>
 #include <chrono>
 #include <cstdint>
+#include <optional>
 #include <string_view>
+#include <vector>
 
 export module clepsydre.sim.syringe_pump;
 
@@ -47,6 +49,38 @@ struct Line {
     Pressure patientPressure; // pression au point d'injection
     Length syringeHeight;     // hauteur de la seringue au-dessus du point d'injection ; négative en
                               // dessous
+    Volume internalVolume;    // volume intérieur de la ligne, de la seringue au patient
+    Volume
+        airDetectorVolume; // volume de ligne entre la seringue et le détecteur d'air (SYS-REQ-007)
+};
+
+// Défaillance du pilote moteur, en aval de l'autorisation (SYS-REQ-045).
+enum class DriverFault : std::uint8_t {
+    none,
+    lostSteps, // une fraction des pas commandés n'est pas exécutée
+    stall,     // le moteur cale : aucun pas n'est exécuté
+    runaway,   // le moteur tourne à la vitesse maximale, quelle que soit la commande
+};
+
+// Défaillance d'un capteur.
+enum class SensorFaultKind : std::uint8_t {
+    none,
+    stuck,  // la mesure reste figée à sa valeur au moment du défaut
+    offset, // la mesure est décalée de SensorFault::offset
+    lost,   // aucune mesure
+};
+
+template <typename Q>
+struct SensorFault {
+    SensorFaultKind kind = SensorFaultKind::none;
+    Q offset{};
+};
+
+// Position de la seringue dans le berceau (SYS-REQ-006).
+enum class SyringePlacement : std::uint8_t {
+    seated,    // corps tenu dans le berceau
+    misplaced, // corps non tenu : le pousseur entraîne la seringue entière sans délivrer
+    absent,    // aucune seringue
 };
 
 // Paramètres d'exemple : ordres de grandeur, non mesurés. Les valeurs réelles viendront
@@ -92,21 +126,39 @@ inline constexpr Line exampleLine{
     .resistance = hydraulicResistance(kilopascals(5.0), millilitresPerHour(100.0)),
     .patientPressure = kilopascals(1.0),
     .syringeHeight = millimetres(0.0),
+    .internalVolume = millilitres(1.0),
+    .airDetectorVolume = microlitres(100.0),
 };
 
 // Pousse-seringue simulé, à pas de temps fixe et déterministe : deux exécutions avec les
 // mêmes commandes donnent les mêmes résultats.
 //
-// État initial : seringue pleine, piston capturé, pousseur au contact du piston, et jeu de
-// l'écrou entièrement ouvert (cas le plus défavorable pour le démarrage, CTRL-027).
+// État initial : seringue pleine et en place, piston capturé, pousseur au contact du piston,
+// moteur autorisé, aucun défaut, et jeu de l'écrou entièrement ouvert (cas le plus défavorable
+// pour le démarrage, CTRL-027).
 class SyringePump {
 public:
     SyringePump(const Mechanism& mechanism, const SyringeModel& syringe, const Line& line) noexcept;
 
     // Commandes.
     void setStepRate(StepRate rate) noexcept; // signée ; bornée par Mechanism::maxStepRate
+
+    // Validation matérielle du pilote : sans elle, le moteur ne tourne pas (SYS-REQ-045).
+    void setMotorEnabled(bool enabled) noexcept { motorEnabled_ = enabled; }
+
     void setPlungerCaptured(bool captured) noexcept;
     void setLine(const Line& line) noexcept;
+
+    // Défauts.
+    // lostFraction : part des pas perdus, entre 0 et 1, pour DriverFault::lostSteps.
+    void setDriverFault(DriverFault fault, double lostFraction = 0.0) noexcept;
+    void setForceSensorFault(SensorFault<Force> fault) noexcept;
+    void setPositionSensorFault(SensorFault<Length> fault) noexcept;
+    void setDiameterSensorFault(SensorFault<Length> fault) noexcept;
+    // Remettre une seringue absente la place au contact du pousseur, sans compression.
+    void setSyringePlacement(SyringePlacement placement) noexcept;
+    // Bulle d'air entrant dans la ligne à la sortie de la seringue.
+    void injectAir(Volume bubble);
 
     // Avance la simulation de dt ; un pas de 1 ms au plus est recommandé.
     void step(std::chrono::nanoseconds dt) noexcept;
@@ -114,21 +166,39 @@ public:
     void run(std::chrono::nanoseconds duration,
              std::chrono::nanoseconds dt = std::chrono::milliseconds{1}) noexcept;
 
-    // Mesures accessibles au logiciel, quantifiées à la résolution des capteurs.
-    [[nodiscard]] std::int64_t motorSteps() const noexcept { return motorSteps_; }
+    // Mesures accessibles au logiciel, quantifiées à la résolution des capteurs ; aucune valeur
+    // si le capteur est perdu.
+    // Pas commandés, comptés par le processeur de commande ; le moteur peut en exécuter d'autres.
+    [[nodiscard]] std::int64_t motorSteps() const noexcept { return commandedSteps_; }
 
-    [[nodiscard]] Force measuredForce() const noexcept;
-    // Position du piston, et non du pousseur : le joint les sépare (ADR 0003, SYS-REQ-001).
-    [[nodiscard]] Length measuredPlungerPosition() const noexcept;
+    [[nodiscard]] std::optional<Force> measuredForce() const noexcept;
+    // Position du piston par rapport au bâti, et non du pousseur : le joint les sépare (ADR 0003,
+    // SYS-REQ-001). Elle suit aussi une seringue mal tenue que le pousseur entraîne.
+    [[nodiscard]] std::optional<Length> measuredPlungerPosition() const noexcept;
+    // Diamètre extérieur ; aucune valeur sans seringue.
+    [[nodiscard]] std::optional<Length> measuredSyringeDiameter() const noexcept;
 
-    [[nodiscard]] Length measuredSyringeDiameter() const noexcept { return syringe_.outerDiameter; }
+    [[nodiscard]] bool plungerCaptured() const noexcept {
+        return plungerCaptured_ && placement_ != SyringePlacement::absent;
+    }
 
-    [[nodiscard]] bool plungerCaptured() const noexcept { return plungerCaptured_; }
+    [[nodiscard]] bool syringeSeated() const noexcept {
+        return placement_ == SyringePlacement::seated;
+    }
+
+    // Une bulle se trouve devant le détecteur d'air.
+    [[nodiscard]] bool airDetected() const noexcept;
 
     // Grandeurs réelles du modèle, pour les vérifications ; le logiciel n'y a pas accès.
     [[nodiscard]] std::chrono::nanoseconds elapsed() const noexcept { return elapsed_; }
 
     [[nodiscard]] StepRate stepRate() const noexcept { return stepRate_; }
+
+    // Pas réellement exécutés par le moteur.
+    [[nodiscard]] std::int64_t rotorSteps() const noexcept { return rotorSteps_; }
+
+    // Le moteur a tourné pendant le dernier pas.
+    [[nodiscard]] bool motorRunning() const noexcept { return motorRunning_; }
 
     [[nodiscard]] Length nutPosition() const noexcept;
 
@@ -139,12 +209,23 @@ public:
     [[nodiscard]] Force contactForce() const noexcept;
     [[nodiscard]] Pressure pressure() const noexcept;
 
+    // Volume sorti de la seringue vers la ligne.
     [[nodiscard]] Volume deliveredVolume() const noexcept { return delivered_; }
+
+    // Air arrivé au patient.
+    [[nodiscard]] Volume airDelivered() const noexcept;
 
     [[nodiscard]] Volume remainingVolume() const noexcept;
     [[nodiscard]] bool plungerAtEnd() const noexcept;
 
 private:
+    struct Bubble {
+        Volume enteredAt; // volume sorti de la seringue à l'entrée de la bulle dans la ligne
+        Volume volume;
+    };
+
+    [[nodiscard]] double rotorRate() const noexcept;
+    [[nodiscard]] Length pusherInBarrel() const noexcept;
     void movePusher() noexcept;
     void movePlunger() noexcept;
     void dischargeLine(double dtSeconds) noexcept;
@@ -159,10 +240,25 @@ private:
     Line line_;
 
     StepRate stepRate_;
-    double stepPhase_ = 0.0;
-    std::int64_t motorSteps_ = 0;
-    Length pusherPosition_;
-    Length plungerPosition_; // déplacement depuis la seringue pleine
+    double commandPhase_ = 0.0;
+    double rotorPhase_ = 0.0;
+    std::int64_t commandedSteps_ = 0;
+    std::int64_t rotorSteps_ = 0;
+    bool motorEnabled_ = true;
+    bool motorRunning_ = false;
+    DriverFault driverFault_ = DriverFault::none;
+    double lostFraction_ = 0.0;
+    SensorFault<Force> forceFault_;
+    SensorFault<Length> positionFault_;
+    SensorFault<Length> diameterFault_;
+    Force stuckForce_;
+    Length stuckPosition_;
+    Length stuckDiameter_;
+    SyringePlacement placement_ = SyringePlacement::seated;
+    std::vector<Bubble> bubbles_;
+    Length pusherPosition_;  // par rapport au bâti
+    Length barrelOffset_;    // déplacement du corps de la seringue par rapport au bâti
+    Length plungerPosition_; // déplacement depuis la seringue pleine, par rapport au corps
     Volume delivered_;       // volume sorti de la seringue vers le patient
     Pressure initialPressure_;
     bool plungerCaptured_ = true;

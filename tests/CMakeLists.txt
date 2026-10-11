@@ -11,3 +11,5 @@ clepsydre_add_test(sim_serial_link_test SOURCES sim_serial_link_test.cpp LIBRARI
 clepsydre_add_test(sim_simulation_test SOURCES sim_simulation_test.cpp LIBRARIES clepsydre::sim)
 clepsydre_add_test(sim_link_faults_test SOURCES sim_link_faults_test.cpp LIBRARIES clepsydre::sim)
 clepsydre_add_test(sim_processor_test SOURCES sim_processor_test.cpp LIBRARIES clepsydre::sim)
+clepsydre_add_test(sim_pump_faults_test SOURCES sim_pump_faults_test.cpp LIBRARIES clepsydre::sim)
+clepsydre_add_test(sim_power_test SOURCES sim_power_test.cpp LIBRARIES clepsydre::sim)
