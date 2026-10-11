@@ -1,0 +1,28 @@
+# SPDX-FileCopyrightText: 2026 Contributeurs du projet Clepsydre
+# SPDX-License-Identifier: EUPL-1.2
+#
+# Scénario de démonstration du simulateur : clepsydre-sim examples/sim/<fichier>.txt
+# Les vérifications portent sur le modèle, avec ses paramètres d'exemple non mesurés ;
+# elles ne vérifient aucune exigence de la pompe.
+
+# Perte du secteur, puis de la batterie (ADR 0004). Sur batterie, la perfusion continue
+# (SYS-REQ-015). Perte totale : coupure imminente pendant la réserve de maintien, puis arrêt.
+# Au retour du secteur, la commande du moteur reste à zéro (SYS-REQ-038).
+debit 25
+avance 10min
+secteur non
+avance 1min
+verifie sur-batterie = oui
+verifie moteur = oui
+verifie courant > 300
+batterie non
+avance 20ms
+verifie coupure-imminente = oui
+avance 1s
+verifie alimente = non
+verifie moteur = non
+secteur oui
+avance 1min
+verifie alimente = oui
+verifie moteur = non
+etat
