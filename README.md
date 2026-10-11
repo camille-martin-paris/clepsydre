@@ -18,7 +18,9 @@ Clepsydre vise à développer une pompe à perfusion dont le logiciel, les plans
 
 Le dépôt est à son stade initial : il contient la documentation de cadrage et le [dossier de développement logiciel](software_development_file/). Le logiciel de commande, les fichiers matériels et les procédures de vérification restent à développer.
 
-La simulation constitue une première étape pour explorer les comportements de la pompe et préparer les essais. L'intégration de [mddlog](https://github.com/ambroise-leclerc/mddlog), bibliothèque de journalisation en C++23, est une piste pour les diagnostics et les événements d'audit ; elle n'est pas encore réalisée.
+Le [simulateur physique de la pompe](docs/development/simulator.md) est en cours de développement ([#21](https://github.com/camille-martin-paris/clepsydre/issues/21)) : il modélise déjà le pousse-seringue, la liaison entre les processeurs et leurs horloges indépendantes. Il sert à explorer les comportements de la pompe et à préparer les essais, qu'il ne remplace pas.
+
+[mddlog](https://github.com/ambroise-leclerc/mddlog), bibliothèque de journalisation en C++23, est retenue sous conditions pour les événements d'audit et les diagnostics ([ADR 0005](docs/adr/0005-journalisation-et-evenements-d-audit.md)). Son évaluation comme composant tiers et son intégration restent à faire ([#44](https://github.com/camille-martin-paris/clepsydre/issues/44)).
 
 ## Périmètre visé
 
