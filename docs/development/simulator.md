@@ -73,7 +73,7 @@ Le joint et le corps forment ensemble une compliance effective C + A²/k. Avec l
 | Capture du piston | Piston capturé ou libéré | SYS-REQ-006 |
 | Berceau | Seringue en place, mal placée ou absente | SYS-REQ-006 |
 | Détecteur d'air | Bulle devant le détecteur, placé sur la ligne à `airDetectorVolume` de la seringue | SYS-REQ-007 |
-| Alimentation | Présence du secteur, tension et courant de la batterie, coupure imminente | SYS-REQ-015, SYS-REQ-049, SYS-REQ-050 |
+| Alimentation | Présence du secteur, tension de la batterie, courant moyen de la batterie sur le dernier pas (positif en décharge, négatif en charge), coupure imminente | SYS-REQ-015, SYS-REQ-049, SYS-REQ-050 ; la réserve de maintien court dès la perte des deux sources, datée au début du pas si elles étaient déjà perdues, ou à l'instant de la coupure par la protection de la batterie |
 
 Les grandeurs réelles (volume délivré, pression, positions) sont accessibles aux tests. Le logiciel embarqué n'y aura pas accès.
 

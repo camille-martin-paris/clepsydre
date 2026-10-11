@@ -65,7 +65,8 @@ public:
     // Tension de la batterie ; aucune valeur si elle est déconnectée.
     [[nodiscard]] std::optional<Voltage> measuredBatteryVoltage() const noexcept;
 
-    // Courant débité par la batterie, pour le comptage coulométrique (SYS-REQ-049).
+    // Courant moyen de la batterie sur le dernier pas, pour le comptage coulométrique
+    // (SYS-REQ-049) : positif en décharge, négatif en charge, nul batterie pleine.
     [[nodiscard]] Current measuredBatteryCurrent() const noexcept { return batteryCurrent_; }
 
     // Superviseur de tension : les deux sources sont perdues, la réserve de maintien alimente
@@ -85,6 +86,8 @@ public:
 
 private:
     [[nodiscard]] Voltage batteryVoltage() const noexcept;
+    // Charge sous laquelle le circuit de protection déconnecte la batterie.
+    [[nodiscard]] Charge cutoffCharge() const noexcept;
     [[nodiscard]] bool batteryAvailable() const noexcept;
     [[nodiscard]] bool sourceAvailable() const noexcept;
 

@@ -64,7 +64,7 @@ void mainsAndBattery(Expectations& t) {
     power.step(1ms, true);
     t.expect(power.powered() && power.onBattery() && !power.powerFailImminent(),
              "bascule sur batterie sans interruption");
-    t.expect(std::abs(sim::inMilliamperes(power.measuredBatteryCurrent()) - 330.0) < 1e-9,
+    t.expect(std::abs(sim::inMilliamperes(power.measuredBatteryCurrent()) - 330.0) < 1e-6,
              "courant mesuré : repos et moteur");
     const sim::Charge before = power.remainingCharge();
     power.step(1h, true);
@@ -74,6 +74,27 @@ void mainsAndBattery(Expectations& t) {
     t.expect(voltage && *voltage < examplePower.battery.full &&
                  *voltage > examplePower.battery.empty,
              "tension mesurée entre vide et plein");
+}
+
+void chargeCurrent(Expectations& t) {
+    // Courant de recharge : négatif, puis nul batterie pleine ; son intégrale suit la charge.
+    PowerSupply power{examplePower, 0.5};
+    const sim::Charge start = power.remainingCharge();
+    power.step(1h, false);
+    t.expect(std::abs(sim::inMilliamperes(power.measuredBatteryCurrent()) + 500.0) < 1e-6,
+             std::format("courant de recharge de -500 mA ({} mA)",
+                         sim::inMilliamperes(power.measuredBatteryCurrent())));
+    t.expect(std::abs(sim::inMilliampereHours(power.remainingCharge() - start) - 500.0) < 1e-6,
+             "500 mAh ajoutés");
+    // Pleine charge atteinte en cours de pas : le courant moyen reste cohérent avec la charge.
+    const sim::Charge before = power.remainingCharge();
+    power.step(2h, false);
+    const double added = sim::inMilliampereHours(power.remainingCharge() - before);
+    const double counted = -sim::inMilliamperes(power.measuredBatteryCurrent()) * 2.0;
+    t.expect(std::abs(added - counted) < 1e-6 && std::abs(added - 500.0) < 1e-6,
+             std::format("charge ajoutée {} mAh, comptée {} mAh", added, counted));
+    power.step(1h, false);
+    t.expect(power.measuredBatteryCurrent() == sim::Current{}, "batterie pleine : courant nul");
 }
 
 void autonomyAndAging(Expectations& t) {
@@ -101,6 +122,34 @@ void totalLossAndHoldUp(Expectations& t) {
     power.setMains(true);
     power.step(1ms, false);
     t.expect(power.powered(), "le retour du secteur la rallume");
+
+    // Sources déjà perdues au début d'un pas plus long que la réserve : la réserve commence au
+    // début du pas, et la pompe est éteinte à sa fin.
+    PowerSupply cut{examplePower};
+    cut.setMains(false);
+    cut.setBatteryConnected(false);
+    cut.step(100ms, false);
+    t.expect(!cut.powered(), "pas de 100 ms : réserve de 50 ms épuisée");
+
+    // Protection de la batterie en cours de pas : la décharge s'arrête au seuil, et la perte est
+    // datée à l'instant de la coupure.
+    PowerSupply depleting{examplePower};
+    depleting.setMains(false);
+    depleting.step(1h, true);
+    const auto& battery = examplePower.battery;
+    const double cutoffState =
+        (battery.protectionCutoff - battery.empty) / (battery.full - battery.empty);
+    const double toCutoff = (depleting.stateOfCharge() - cutoffState) *
+                            sim::inMilliampereHours(battery.capacity) / 330.0 * 3600.0; // s
+    const auto untilCutoff = std::chrono::duration_cast<std::chrono::nanoseconds>(
+        std::chrono::duration<double>{toCutoff});
+    depleting.step(untilCutoff + 30ms, true);
+    t.expect(depleting.powered() && depleting.powerFailImminent(),
+             "30 ms après la coupure : réserve de maintien");
+    t.expect(std::abs(depleting.stateOfCharge() - cutoffState) < 1e-12,
+             "décharge arrêtée au seuil de protection");
+    depleting.step(30ms, true);
+    t.expect(!depleting.powered(), "60 ms après la coupure : pompe éteinte");
 }
 
 // Logiciel de commande réduit à l'essentiel : au démarrage, il arrête le moteur, sans jamais
@@ -185,6 +234,7 @@ void powerCycleInWorld(Expectations& t) {
 int main() {
     return Expectations{}.run([](Expectations& t) {
         mainsAndBattery(t);
+        chargeCurrent(t);
         autonomyAndAging(t);
         totalLossAndHoldUp(t);
         powerCycleInWorld(t);
