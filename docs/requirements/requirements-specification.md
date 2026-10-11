@@ -2,7 +2,7 @@
 
 | Champ | Valeur |
 | --- | --- |
-| Statut | Révision C, soumise à relecture ; la révision B est acceptée avec réserves ([reviews.md](../../software_development_file/reviews.md)) ; toutes les exigences sont au statut `draft` |
+| Statut | Révision C acceptée avec réserves ([reviews.md](../../software_development_file/reviews.md)) ; toutes les exigences sont au statut `draft` |
 | Révision | C |
 | Issue | [#10](https://github.com/camille-martin-paris/clepsydre/issues/10) |
 | Registre | [`requirements.toml`](../../software_development_file/registry/requirements.toml), [`verifications.toml`](../../software_development_file/registry/verifications.toml) |
