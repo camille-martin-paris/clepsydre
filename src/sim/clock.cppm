@@ -5,6 +5,7 @@ module;
 
 #include <chrono>
 #include <cstdint>
+#include <optional>
 
 export module clepsydre.sim.clock;
 
@@ -66,7 +67,8 @@ public:
     // [-maxDriftPpb, maxDriftPpb].
     CivilClock(TrueTime now, CivilTime initial, std::int64_t driftPpb) noexcept;
 
-    [[nodiscard]] CivilReading read(TrueTime now) const noexcept;
+    // Lecture ; aucune valeur si l'horloge est illisible.
+    [[nodiscard]] std::optional<CivilReading> read(TrueTime now) const noexcept;
 
     // Mise à l'heure par un technicien : l'oscillateur repart et l'indicateur d'arrêt est effacé.
     void set(TrueTime now, CivilTime time) noexcept;
@@ -76,6 +78,10 @@ public:
     // Réserve épuisée : l'heure se fige et l'indicateur d'arrêt se lève.
     void stopOscillator(TrueTime now) noexcept;
 
+    // Défaut de communication avec l'horloge : elle devient illisible, sans que l'heure cesse
+    // d'avancer.
+    void setReadable(bool readable) noexcept { readable_ = readable; }
+
 private:
     [[nodiscard]] std::chrono::sys_time<std::chrono::nanoseconds>
     valueAt(TrueTime now) const noexcept;
@@ -84,6 +90,7 @@ private:
     std::chrono::sys_time<std::chrono::nanoseconds> anchorValue_;
     std::int64_t driftPpb_;
     bool stopped_ = false;
+    bool readable_ = true;
 };
 
 } // namespace clepsydre::sim

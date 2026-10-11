@@ -7,6 +7,8 @@ add_library(clepsydre::sim ALIAS clepsydre_sim)
 target_sources(clepsydre_sim
     PUBLIC FILE_SET CXX_MODULES FILES
         quantities.cppm syringe_pump.cppm clock.cppm serial_link.cppm simulation.cppm
-    PRIVATE syringe_pump.cpp clock.cpp serial_link.cpp simulation.cpp)
+        link_faults.cppm processor.cppm
+    PRIVATE
+        syringe_pump.cpp clock.cpp serial_link.cpp simulation.cpp link_faults.cpp processor.cpp)
 target_link_libraries(clepsydre_sim PRIVATE clepsydre_warnings)
 clepsydre_register_objects(clepsydre_sim)
