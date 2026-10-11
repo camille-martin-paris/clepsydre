@@ -13,7 +13,7 @@ Ce document décrit le modèle physique qui permet de développer et d'éprouver
 | 2 | Liaison simulée entre les processeurs et horloges indépendantes ([ADR 0006](../adr/0006-interfaces-internes-horloge-et-datation.md)) | Ce document |
 | 3 | Injection de défauts : liaison, horloges et processeurs | Ce document |
 | 3 (suite) | Injection de défauts : pilote, capteurs, seringue, air, alimentation | Ce document |
-| 4 | Démonstration interactive et limites complètes du modèle | À venir |
+| 4 | Démonstration interactive et limites complètes du modèle | Ce document |
 
 ## Organisation
 
@@ -29,6 +29,8 @@ Le simulateur est la bibliothèque `clepsydre_sim` ([`src/sim/`](../../src/sim))
 | `clepsydre.sim.link_faults` | Injecteur de défauts de la liaison (`FaultyChannel`) : pertes, doublons, altérations, troncatures, retards et réordonnancements de trames |
 | `clepsydre.sim.processor` | Processeur simulé (`Processor`) qui exécute un logiciel sur son propre compteur, avec ses défauts : blocage, réinitialisation, arrêt de l'oscillateur, mise hors tension |
 | `clepsydre.sim.power` | Alimentation (`PowerSupply`) : secteur, batterie, bascule matérielle, superviseur de tension et réserve de maintien (ADR 0004) |
+
+La démonstration interactive est la bibliothèque `clepsydre_sim_console` (module `clepsydre.sim.console`) et l'exécutable `clepsydre-sim` ([`src/sim_console/`](../../src/sim_console)) ; voir [Démonstration](#démonstration).
 
 La virgule flottante convient au modèle, qui représente le monde physique. Le logiciel embarqué utilisera ses propres types, en arithmétique entière ou à virgule fixe (SW-REQ-005).
 
@@ -167,27 +169,66 @@ Dans les lignes qui mettent des processeurs en jeu, ce sont des bouchons de test
 
 Ces résultats illustrent le modèle. Ils ne valent pas mesure du dispositif.
 
+## Démonstration
+
+`clepsydre-sim` pilote le pousse-seringue et son alimentation par des commandes texte, injecte les défauts physiques et matériels, et affiche côte à côte les grandeurs réelles et ce que mesurent les capteurs. Il s'exécute sur l'hôte :
+
+```sh
+cmake --build --preset gcc
+build/gcc/src/sim_console/clepsydre-sim                              # commandes au clavier
+build/gcc/src/sim_console/clepsydre-sim examples/sim/occlusion-bolus.txt   # scénario
+```
+
+« aide » liste les commandes ; « verifie liste » liste les grandeurs vérifiables. En mode scénario, chaque ligne est recopiée, et l'exécution s'arrête à la première erreur (code de sortie 2) ou à la première vérification échouée (code 1).
+
+La console tient le rôle de l'opérateur : il n'y a pas encore de logiciel de pompe. Elle reproduit seulement deux câblages matériels : la validation du moteur exige l'alimentation, et une perte totale d'alimentation remet la commande du moteur à zéro, comme le logiciel de commande devra le faire à son redémarrage (SYS-REQ-038). Les défauts de la liaison et des processeurs n'y figurent pas : ils n'ont d'effet qu'à travers des logiciels, qui viendront en M1.
+
+| Scénario ([`examples/sim/`](../../examples/sim)) | Ce qu'il montre |
+| --- | --- |
+| `occlusion-bolus.txt` | Montée de la force en occlusion à 25 mL/h ; bolus limité à 0,15 mL par un recul de 2 s |
+| `siphonage.txt` | Seringue 1 m au-dessus du patient : retenue par la vis si le piston est capturé, écoulement libre s'il est libéré |
+| `pilote-emballe.txt` | Pilote emballé : 2,8 mL en 10 s ; arrêt par le retrait de la validation |
+| `coupure-alimentation.txt` | Bascule sur batterie sans interruption ; perte totale, coupure imminente puis arrêt ; pas de reprise au retour du secteur |
+| `air.txt` | Bulle de 60 µL vue par le détecteur, puis délivrée au patient |
+| `seringue-mal-placee.txt` | Seringue entraînée par le pousseur sans délivrer ; seul le berceau le révèle |
+
+Chaque scénario porte ses propres vérifications. CTest les exécute comme tests de fumée, en CI, pour que la démonstration ne se dégrade pas sans qu'on le voie. Ces vérifications portent sur le modèle et ses paramètres d'exemple, jamais sur la pompe.
+
 ## Limites du modèle
 
-Les limites suivantes sont connues. L'étape 4 les complétera.
+Le tableau recense les limites connues, élément par élément. Pour chacune, il indique comment elle peut fausser une vérification menée avec le simulateur, et comment elle sera levée. Une vérification qui dépend d'une limite non levée ne vaut que pour le modèle.
 
-- **Mécanique** :
-  - piston sans masse et pousseur rigide ;
-  - frottement de Coulomb seulement, sans dépendance à la vitesse, à la température ni au temps de repos ;
-  - joint élastique linéaire.
-- **Hydraulique** :
-  - compliance et résistance constantes, liquide incompressible assimilé à de l'eau ;
-  - pas d'inertie du liquide ;
-  - une bulle d'air n'ajoute pas de compliance : elle ne ralentit pas la montée de la force en occlusion. Elle avance avec le volume sorti de la seringue, sans compression ni dissolution.
-- **Moteur** : sans défaut, il suit la commande ; les défauts du pilote sont des régimes imposés, sans couple limité. Un moteur calé par une charge excessive n'est pas modélisé.
-- **Capteurs** : capteurs idéaux, à la quantification près, sans bruit ni dérive ; un défaut est un régime imposé (figé, décalé, perdu). Le berceau et le détecteur d'air n'ont pas de défaut propre.
-- **Seringue** : la seringue mal placée suit exactement le pousseur ; une seringue remise reprend l'état qu'elle avait.
-- **Alimentation** : tension de la batterie affine en fonction de l'état de charge, sans résistance interne, sans effet de la température ; consommation constante par régime ; le moteur ne dépend pas de la tension.
-- **Horloges** : dérive constante, sans dépendance à la température ni gigue. Un oscillateur ne peut pas aller deux fois trop vite ou plus.
-- **Liaison** : sans injecteur, ligne parfaite. Avec un injecteur, une trame part quand son délimiteur est confié, et une trame retardée est relâchée au plus tard au pas suivant de l'ordonnanceur. File d'émission sans limite de taille.
-- **Processeurs** : le compteur de démarrage ne devient jamais illisible. Le signal dynamique d'autorisation n'est pas modélisé : c'est l'assemblage qui retire la validation quand un processeur n'est pas en marche.
-- **Ordonnancement** : un processeur simulé ne réagit qu'aux frontières des quanta ; son temps d'exécution n'est pas modélisé.
-- **Paramètres** : ordres de grandeur, non mesurés.
+| Élément | Limite | Effet possible sur une vérification | Levée prévue |
+| --- | --- | --- | --- |
+| Mécanisme | Pousseur et vis rigides ; jeu constant ; pas de couple limité ni de perte de pas spontanée | Délai de démarrage et volume d'occlusion sous-estimés ; un calage par surcharge n'apparaît pas | Mécanisme retenu et banc de précision ([#52](https://github.com/camille-martin-paris/clepsydre/issues/52), [#73](https://github.com/camille-martin-paris/clepsydre/issues/73)) |
+| Piston et joint | Piston sans masse ; joint élastique linéaire ; frottement de Coulomb sans dépendance à la vitesse, à la température ni au temps de repos | Collé-glissé, retard au démarrage et seuil de siphonage approximatifs ; écarts selon les seringues réelles | Caractérisation de chaque seringue de la liste vérifiée sur banc ([#73](https://github.com/camille-martin-paris/clepsydre/issues/73), [#74](https://github.com/camille-martin-paris/clepsydre/issues/74)) |
+| Hydraulique | Compliance et résistance constantes ; liquide incompressible assimilé à de l'eau ; pas d'inertie ; pas de viscosité dépendant du perfusat | Montée de pression en occlusion et bolus approximatifs, surtout aux débits extrêmes et avec des cathéters fins | Banc d'occlusion selon l'IEC 60601-2-24 ([#74](https://github.com/camille-martin-paris/clepsydre/issues/74)) |
+| Air | La bulle n'ajoute pas de compliance ; elle avance sans compression ni dissolution ; pas de micro-bulles ni de dégazage | Délai de détection d'occlusion avec de l'air sous-estimé ; volume d'air cumulé idéalisé | Détecteur retenu et essais ([#58](https://github.com/camille-martin-paris/clepsydre/issues/58)) |
+| Capteurs | Idéaux, à la quantification près : sans bruit, dérive, hystérésis ni temps de réponse ; les défauts sont des régimes imposés ; berceau et détecteur d'air sans défaut propre | Seuils de détection trop optimistes ; fausses alarmes absentes | Capteurs retenus, étalonnage et incertitude ([#58](https://github.com/camille-martin-paris/clepsydre/issues/58)) ; défauts du berceau et du détecteur à ajouter avec eux |
+| Seringue | Mal placée, elle suit exactement le pousseur ; remise, elle reprend son état | Cas intermédiaires (corps à demi tenu, ailettes mal engagées) absents | Interface consommable ([#53](https://github.com/camille-martin-paris/clepsydre/issues/53)) |
+| Pilote moteur | Défauts imposés (pertes, calage, emballement) ; signal dynamique d'autorisation non modélisé : l'assemblage retire la validation | Délai de coupure par le circuit de validation non représenté | Carte de commande et superviseur matériel ([#57](https://github.com/camille-martin-paris/clepsydre/issues/57), [#59](https://github.com/camille-martin-paris/clepsydre/issues/59)) |
+| Alimentation | Tension affine en fonction de la charge, sans résistance interne ni température ; consommation constante par régime ; le moteur ne dépend pas de la tension ; réserve de maintien de durée fixe | Autonomie et instant de coupure approximatifs ; chute de tension sous charge absente | Batterie retenue et campagne de coupures ([#63](https://github.com/camille-martin-paris/clepsydre/issues/63), [#64](https://github.com/camille-martin-paris/clepsydre/issues/64), [#75](https://github.com/camille-martin-paris/clepsydre/issues/75)) |
+| Horloges | Dérive constante, sans température ni gigue ; oscillateur borné à moins de deux fois la fréquence nominale | Défauts d'horloge extrêmes non représentables | Composants retenus ([#59](https://github.com/camille-martin-paris/clepsydre/issues/59)) ; autre représentation si un tel défaut devient nécessaire |
+| Liaison | Sans injecteur, ligne parfaite ; défauts au niveau des trames, sans erreurs de bit au fil de l'eau ; file d'émission illimitée | Saturation de la liaison et erreurs de cadrage absentes | Module de protocole partagé (ADR 0006) et essais d'intégration |
+| Processeurs et ordonnancement | Réaction aux seules frontières des quanta (1 ms) ; temps d'exécution, interruptions et ordonnancement réel non modélisés ; compteur de démarrage jamais illisible | Respect des délais (SYS-REQ-002, SYS-REQ-053) non démontrable par le simulateur | Analyse temporelle (VER-124) et mesures sur la cible |
+| Paramètres | Ordres de grandeur, non mesurés | Toutes les valeurs numériques sont illustratives | Bancs ([#73](https://github.com/camille-martin-paris/clepsydre/issues/73), [#74](https://github.com/camille-martin-paris/clepsydre/issues/74), [#75](https://github.com/camille-martin-paris/clepsydre/issues/75)) |
+
+### Ce que le simulateur permet de conclure, et ce qu'il ne permet pas
+
+Le simulateur permet :
+
+- d'exercer la logique des logiciels face à des situations reproductibles, y compris celles qu'un banc rend rares ou dangereuses : défauts du pilote, des capteurs, de l'alimentation, des processeurs et de la liaison ;
+- de vérifier qu'un défaut est détecté et que la réaction attendue est commandée, au niveau « système logiciel » ;
+- de rejouer exactement un scénario, ce qui en fait un outil de non-régression.
+
+Il ne permet pas de conclure :
+
+- sur une **performance physique** : précision de débit, délai d'alarme d'occlusion, bolus, volume d'air, autonomie ;
+- sur l'**efficacité d'une mesure matérielle** : validation du pilote, alarme autonome, bascule d'alimentation, superviseur de tension ;
+- sur le **respect des délais sur la cible** ;
+- sur la **sécurité électrique**, la **compatibilité électromagnétique** ou l'**aptitude à l'utilisation**.
+
+Ces conclusions relèvent des essais sur banc et de la vérification système ([stratégie de vérification](../../software_development_file/verification-strategy.md#niveau-attendu-par-type-dexigence)).
 
 ## Usage comme moyen de vérification
 

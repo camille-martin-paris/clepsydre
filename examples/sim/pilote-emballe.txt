@@ -1,0 +1,20 @@
+# SPDX-FileCopyrightText: 2026 Contributeurs du projet Clepsydre
+# SPDX-License-Identifier: EUPL-1.2
+#
+# Scénario de démonstration du simulateur : clepsydre-sim examples/sim/<fichier>.txt
+# Les vérifications portent sur le modèle, avec ses paramètres d'exemple non mesurés ;
+# elles ne vérifient aucune exigence de la pompe.
+
+# Pilote moteur emballé pendant une perfusion à 10 mL/h : le moteur tourne à la vitesse
+# maximale, les pas commandés ne le montrent pas, le capteur de position du piston le voit.
+# Le retrait de la validation matérielle arrête le moteur (SYS-REQ-045).
+debit 10
+avance 30min
+repere
+pilote emballement
+avance 10s
+verifie volume-depuis-repere > 2
+etat
+validation non
+avance 1s
+verifie moteur = non

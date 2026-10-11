@@ -1,0 +1,20 @@
+# SPDX-FileCopyrightText: 2026 Contributeurs du projet Clepsydre
+# SPDX-License-Identifier: EUPL-1.2
+#
+# Scénario de démonstration du simulateur : clepsydre-sim examples/sim/<fichier>.txt
+# Les vérifications portent sur le modèle, avec ses paramètres d'exemple non mesurés ;
+# elles ne vérifient aucune exigence de la pompe.
+
+# Bulle de 60 µL à 10 mL/h : elle passe devant le détecteur d'air, placé à 100 µL de la
+# seringue (SYS-REQ-007), puis atteint le patient après 1 mL de ligne (RISK-004).
+debit 10
+avance 30min
+air 60
+avance 40s
+verifie air-detecte = oui
+verifie air = 0
+avance 30s
+verifie air-detecte = non
+avance 6min
+verifie air >= 59.99
+etat

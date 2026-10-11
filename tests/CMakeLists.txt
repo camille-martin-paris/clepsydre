@@ -13,3 +13,12 @@ clepsydre_add_test(sim_link_faults_test SOURCES sim_link_faults_test.cpp LIBRARI
 clepsydre_add_test(sim_processor_test SOURCES sim_processor_test.cpp LIBRARIES clepsydre::sim)
 clepsydre_add_test(sim_pump_faults_test SOURCES sim_pump_faults_test.cpp LIBRARIES clepsydre::sim)
 clepsydre_add_test(sim_power_test SOURCES sim_power_test.cpp LIBRARIES clepsydre::sim)
+clepsydre_add_test(sim_console_test SOURCES sim_console_test.cpp LIBRARIES clepsydre::sim_console)
+
+# Scénarios de démonstration du simulateur, exécutés comme tests de fumée : chacun porte ses
+# propres vérifications.
+file(GLOB _clepsydre_sim_scenarios CONFIGURE_DEPENDS "${PROJECT_SOURCE_DIR}/examples/sim/*.txt")
+foreach(_scenario IN LISTS _clepsydre_sim_scenarios)
+    get_filename_component(_name "${_scenario}" NAME_WE)
+    add_test(NAME sim_scenario_${_name} COMMAND clepsydre-sim "${_scenario}")
+endforeach()
