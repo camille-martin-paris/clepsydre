@@ -28,6 +28,7 @@ void Processor::step(TrueTime now) {
         boot();
         break;
     case State::hung:
+    case State::off:
         return;
     case State::running:
         break;
@@ -58,6 +59,16 @@ void Processor::hang() noexcept {
 void Processor::reset(std::chrono::nanoseconds downtime) noexcept {
     state_ = State::resetting;
     resumeAt_ = now_ + downtime;
+}
+
+void Processor::powerOff() noexcept {
+    state_ = State::off;
+}
+
+void Processor::powerOn(std::chrono::nanoseconds bootTime) noexcept {
+    if (state_ == State::off) {
+        reset(bootTime);
+    }
 }
 
 void Processor::freezeClock() noexcept {

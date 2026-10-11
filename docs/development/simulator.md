@@ -12,7 +12,7 @@ Ce document décrit le modèle physique qui permet de développer et d'éprouver
 | 1 | Modèle physique du pousse-seringue : mécanisme, seringue, ligne, capteurs | Ce document |
 | 2 | Liaison simulée entre les processeurs et horloges indépendantes ([ADR 0006](../adr/0006-interfaces-internes-horloge-et-datation.md)) | Ce document |
 | 3 | Injection de défauts : liaison, horloges et processeurs | Ce document |
-| 3 (suite) | Injection de défauts : capteurs, pilote, seringue, air, alimentation | À venir |
+| 3 (suite) | Injection de défauts : pilote, capteurs, seringue, air, alimentation | Ce document |
 | 4 | Démonstration interactive et limites complètes du modèle | À venir |
 
 ## Organisation
@@ -27,7 +27,8 @@ Le simulateur est la bibliothèque `clepsydre_sim` ([`src/sim/`](../../src/sim))
 | `clepsydre.sim.serial_link` | Liaison série point à point entre les processeurs (`SerialLink`), un sens par `SerialChannel` |
 | `clepsydre.sim.simulation` | Ordonnanceur à pas fixe (`Simulation`) qui fait avancer le modèle physique, les processeurs et la liaison sur le même temps simulé |
 | `clepsydre.sim.link_faults` | Injecteur de défauts de la liaison (`FaultyChannel`) : pertes, doublons, altérations, troncatures, retards et réordonnancements de trames |
-| `clepsydre.sim.processor` | Processeur simulé (`Processor`) qui exécute un logiciel sur son propre compteur, avec ses défauts : blocage, réinitialisation, arrêt de l'oscillateur |
+| `clepsydre.sim.processor` | Processeur simulé (`Processor`) qui exécute un logiciel sur son propre compteur, avec ses défauts : blocage, réinitialisation, arrêt de l'oscillateur, mise hors tension |
+| `clepsydre.sim.power` | Alimentation (`PowerSupply`) : secteur, batterie, bascule matérielle, superviseur de tension et réserve de maintien (ADR 0004) |
 
 La virgule flottante convient au modèle, qui représente le monde physique. Le logiciel embarqué utilisera ses propres types, en arithmétique entière ou à virgule fixe (SW-REQ-005).
 
@@ -65,13 +66,29 @@ Le joint et le corps forment ensemble une compliance effective C + A²/k. Avec l
 
 | Capteur | Grandeur | Remarque |
 | --- | --- | --- |
-| Compteur de pas | Pas exécutés par le moteur | Vu par le processeur de commande |
+| Compteur de pas | Pas commandés | Vu par le processeur de commande ; le moteur peut en exécuter d'autres si le pilote est défaillant |
 | Force du pousseur | Force de contact entre le pousseur et le piston | Quantifiée à `forceResolution` ; sert à la détection d'occlusion (CTRL-007) |
-| Position du piston | Déplacement du piston depuis la seringue pleine | Quantifiée à `positionResolution` ; capteur linéaire propre au canal de sécurité, distinct du comptage de pas (ADR 0003, SYS-REQ-001). Il mesure le piston et non le pousseur : en occlusion, la compression du joint fait avancer le pousseur sans déplacer le piston |
-| Diamètre de la seringue | Diamètre extérieur du corps | Identification de la seringue (SYS-REQ-047) |
+| Position du piston | Position du piston par rapport au bâti | Quantifiée à `positionResolution` ; capteur linéaire propre au canal de sécurité, distinct du comptage de pas (ADR 0003, SYS-REQ-001). Il mesure le piston et non le pousseur : en occlusion, la compression du joint fait avancer le pousseur sans déplacer le piston |
+| Diamètre de la seringue | Diamètre extérieur du corps | Identification de la seringue (SYS-REQ-047) ; aucune valeur sans seringue |
 | Capture du piston | Piston capturé ou libéré | SYS-REQ-006 |
+| Berceau | Seringue en place, mal placée ou absente | SYS-REQ-006 |
+| Détecteur d'air | Bulle devant le détecteur, placé sur la ligne à `airDetectorVolume` de la seringue | SYS-REQ-007 |
+| Alimentation | Présence du secteur, tension et courant de la batterie, coupure imminente | SYS-REQ-015, SYS-REQ-049, SYS-REQ-050 |
 
 Les grandeurs réelles (volume délivré, pression, positions) sont accessibles aux tests. Le logiciel embarqué n'y aura pas accès.
+
+### Défauts physiques et matériels
+
+| Élément | Défauts | Effet |
+| --- | --- | --- |
+| Validation du pilote | Retrait de la validation | Le moteur ne tourne pas, même si le pilote est emballé ; les pas commandés continuent d'être comptés (SYS-REQ-045) |
+| Pilote moteur | Pas perdus, calage, emballement | Une fraction des pas n'est pas exécutée ; aucun pas n'est exécuté ; le moteur tourne à la vitesse maximale quelle que soit la commande |
+| Capteurs de force, de position du piston et de diamètre | Figé, décalé, perdu | La mesure reste à sa valeur au moment du défaut, est décalée d'une valeur choisie, ou n'est plus rendue |
+| Seringue | Mal placée, absente | Corps non tenu : le pousseur entraîne la seringue entière, le capteur de position voit le piston avancer, mais rien n'est délivré. Absente : ni force, ni mesure, ni délivrance ; remise, elle est placée au contact du pousseur |
+| Ligne | Bulle d'air | La bulle avance avec le liquide sorti de la seringue, passe devant le détecteur, puis atteint le patient après le volume intérieur de la ligne |
+| Alimentation | Perte du secteur, batterie déconnectée, vieillissement | Bascule matérielle sur batterie sans interruption ; perte totale signalée par le superviseur, puis extinction après la réserve de maintien ; capacité réelle réduite |
+
+**Assemblage.** Le modèle physique, l'alimentation et les processeurs sont des pièces distinctes. L'assemblage qui les relie, dans les tests, reproduit le câblage matériel : la validation du pilote exige l'alimentation et la marche des deux processeurs, et une perte totale éteint les processeurs.
 
 ### Liaison, horloges et ordonnancement
 
@@ -111,7 +128,7 @@ Ces modules appliquent l'[ADR 0006](../adr/0006-interfaces-internes-horloge-et-d
 
 ## Comportements reproduits
 
-Les tests [`sim_syringe_pump_test.cpp`](../../tests/sim_syringe_pump_test.cpp), [`sim_clock_test.cpp`](../../tests/sim_clock_test.cpp), [`sim_serial_link_test.cpp`](../../tests/sim_serial_link_test.cpp), [`sim_simulation_test.cpp`](../../tests/sim_simulation_test.cpp), [`sim_link_faults_test.cpp`](../../tests/sim_link_faults_test.cpp) et [`sim_processor_test.cpp`](../../tests/sim_processor_test.cpp) vérifient que le modèle reproduit les comportements qu'il prétend reproduire. Ils ne vérifient **aucune exigence de la pompe**.
+Les tests [`sim_syringe_pump_test.cpp`](../../tests/sim_syringe_pump_test.cpp), [`sim_clock_test.cpp`](../../tests/sim_clock_test.cpp), [`sim_serial_link_test.cpp`](../../tests/sim_serial_link_test.cpp), [`sim_simulation_test.cpp`](../../tests/sim_simulation_test.cpp), [`sim_link_faults_test.cpp`](../../tests/sim_link_faults_test.cpp), [`sim_processor_test.cpp`](../../tests/sim_processor_test.cpp), [`sim_pump_faults_test.cpp`](../../tests/sim_pump_faults_test.cpp) et [`sim_power_test.cpp`](../../tests/sim_power_test.cpp) vérifient que le modèle reproduit les comportements qu'il prétend reproduire. Ils ne vérifient **aucune exigence de la pompe**.
 
 | Comportement | Résultat avec les paramètres d'exemple |
 | --- | --- |
@@ -136,8 +153,17 @@ Les tests [`sim_syringe_pump_test.cpp`](../../tests/sim_syringe_pump_test.cpp), 
 | Réinitialisation de la sécurité pendant 300 ms | La commande voit changer le numéro de démarrage et mesure un silence d'environ 350 ms |
 | Blocage, ou arrêt de l'oscillateur, de la sécurité | La commande mesure un silence qui grandit sans fin |
 | Horloge temps réel illisible | Aucune valeur lue ; l'heure continue d'avancer |
+| Pilote emballé pendant 10 s, commande à 10 mL/h | Environ 2,8 mL délivrés pour 0,03 mL commandés ; le capteur de position du piston suit le volume poussé, pas les pas commandés ; le retrait de la validation arrête le moteur |
+| Un pas sur deux perdu | Débit réduit de moitié : 5 mL/h pour 10 mL/h |
+| Moteur calé pendant 10 min | Le piston n'avance plus que de la détente du joint, environ 5 µm, contre 3 mm attendus |
+| Capteur de force figé, puis occlusion | La force réelle monte, la mesure non |
+| Seringue mal placée, 5 min à 100 mL/h | Le capteur de position voit le piston avancer d'environ 8,3 mL ; moins de 0,1 µL délivré ; le berceau signale la seringue mal placée |
+| Bulle de 60 µL | Vue par le détecteur à 100 µL de la seringue, puis entièrement délivrée au patient après 1 mL de ligne |
+| Batterie neuve, moteur en marche (330 mA) | Environ 5 h 21 min d'autonomie avec les paramètres d'exemple ; moitié moins à capacité réduite de moitié |
+| Perte du secteur | Ni processeur réinitialisé, ni moteur arrêté |
+| Perte totale | Coupure imminente signalée pendant la réserve de maintien de 50 ms, puis processeurs et moteur arrêtés ; au retour du secteur, les processeurs redémarrent et le bouchon du logiciel de commande ne relance pas le moteur |
 
-Dans les lignes qui mettent deux processeurs en jeu, ce sont des bouchons de test qui n'échangent que des signaux de vie numérotés : les logiciels de la pompe n'existent pas encore. Ces lignes montrent que chaque défaut injecté est observable ; la détection et la réaction relèvent des logiciels et de leurs propres vérifications.
+Dans les lignes qui mettent des processeurs en jeu, ce sont des bouchons de test qui n'échangent que des signaux de vie numérotés : les logiciels de la pompe n'existent pas encore. Ces lignes montrent que chaque défaut injecté est observable ; la détection et la réaction relèvent des logiciels et de leurs propres vérifications.
 
 Ces résultats illustrent le modèle. Ils ne valent pas mesure du dispositif.
 
@@ -152,12 +178,14 @@ Les limites suivantes sont connues. L'étape 4 les complétera.
 - **Hydraulique** :
   - compliance et résistance constantes, liquide incompressible assimilé à de l'eau ;
   - pas d'inertie du liquide ;
-  - pas d'air dans la ligne, prévu à l'étape 3.
-- **Moteur** : il suit toujours la commande. La perte de pas, le couple limité et le calage seront des défauts injectés à l'étape 3.
-- **Capteurs** : capteurs idéaux, à la quantification près, sans bruit ni dérive.
+  - une bulle d'air n'ajoute pas de compliance : elle ne ralentit pas la montée de la force en occlusion. Elle avance avec le volume sorti de la seringue, sans compression ni dissolution.
+- **Moteur** : sans défaut, il suit la commande ; les défauts du pilote sont des régimes imposés, sans couple limité. Un moteur calé par une charge excessive n'est pas modélisé.
+- **Capteurs** : capteurs idéaux, à la quantification près, sans bruit ni dérive ; un défaut est un régime imposé (figé, décalé, perdu). Le berceau et le détecteur d'air n'ont pas de défaut propre.
+- **Seringue** : la seringue mal placée suit exactement le pousseur ; une seringue remise reprend l'état qu'elle avait.
+- **Alimentation** : tension de la batterie affine en fonction de l'état de charge, sans résistance interne, sans effet de la température ; consommation constante par régime ; le moteur ne dépend pas de la tension.
 - **Horloges** : dérive constante, sans dépendance à la température ni gigue. Un oscillateur ne peut pas aller deux fois trop vite ou plus.
 - **Liaison** : sans injecteur, ligne parfaite. Avec un injecteur, une trame part quand son délimiteur est confié, et une trame retardée est relâchée au plus tard au pas suivant de l'ordonnanceur. File d'émission sans limite de taille.
-- **Processeurs** : le compteur de démarrage ne devient jamais illisible, et un processeur bloqué ne coupe pas encore le moteur ; ces défauts et leurs effets viendront avec le pilote et la suite de l'étape 3.
+- **Processeurs** : le compteur de démarrage ne devient jamais illisible. Le signal dynamique d'autorisation n'est pas modélisé : c'est l'assemblage qui retire la validation quand un processeur n'est pas en marche.
 - **Ordonnancement** : un processeur simulé ne réagit qu'aux frontières des quanta ; son temps d'exécution n'est pas modélisé.
 - **Paramètres** : ordres de grandeur, non mesurés.
 

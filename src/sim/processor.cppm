@@ -35,6 +35,7 @@ public:
         running,   // le logiciel s'exécute
         hung,      // le logiciel ne s'exécute plus, jusqu'à une réinitialisation
         resetting, // réinitialisation en cours, puis démarrage
+        off,       // hors tension
     };
 
     Processor(const MonotonicClock& clock, ByteChannel& tx, ByteChannel& rx, Firmware firmware);
@@ -60,6 +61,9 @@ public:
     void reset(std::chrono::nanoseconds downtime) noexcept;
     // Arrêt de l'oscillateur : le compteur monotone se fige, y compris après un redémarrage.
     void freezeClock() noexcept;
+    // Mise hors tension, puis remise sous tension : le processeur démarre après bootTime.
+    void powerOff() noexcept;
+    void powerOn(std::chrono::nanoseconds bootTime = std::chrono::nanoseconds::zero()) noexcept;
 
     [[nodiscard]] State state() const noexcept { return state_; }
 

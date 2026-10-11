@@ -76,6 +76,9 @@ struct StiffnessTag;
 struct ComplianceTag;
 struct ResistanceTag;
 struct StepRateTag;
+struct VoltageTag;
+struct CurrentTag;
+struct ChargeTag;
 
 using Length = Quantity<LengthTag>;         // m
 using Volume = Quantity<VolumeTag>;         // m³
@@ -86,6 +89,9 @@ using Stiffness = Quantity<StiffnessTag>;   // N/m
 using Compliance = Quantity<ComplianceTag>; // m³/Pa
 using Resistance = Quantity<ResistanceTag>; // Pa·s/m³
 using StepRate = Quantity<StepRateTag>;     // pas moteur par seconde
+using Voltage = Quantity<VoltageTag>;       // V
+using Current = Quantity<CurrentTag>;       // A
+using Charge = Quantity<ChargeTag>;         // C
 
 [[nodiscard]] constexpr Length millimetres(double value) noexcept {
     return Length::fromSi(value * 1e-3);
@@ -127,6 +133,18 @@ using StepRate = Quantity<StepRateTag>;     // pas moteur par seconde
     return StepRate::fromSi(value);
 }
 
+[[nodiscard]] constexpr Voltage volts(double value) noexcept {
+    return Voltage::fromSi(value);
+}
+
+[[nodiscard]] constexpr Current milliamperes(double value) noexcept {
+    return Current::fromSi(value * 1e-3);
+}
+
+[[nodiscard]] constexpr Charge milliampereHours(double value) noexcept {
+    return Charge::fromSi(value * 1e-3 * 3600.0);
+}
+
 // Résistance hydraulique d'une ligne qui laisse passer le débit flow sous la chute de pression
 // drop.
 [[nodiscard]] constexpr Resistance hydraulicResistance(Pressure drop, VolumeFlow flow) noexcept {
@@ -155,6 +173,18 @@ using StepRate = Quantity<StepRateTag>;     // pas moteur par seconde
 
 [[nodiscard]] constexpr double inMillilitresPerHour(VolumeFlow value) noexcept {
     return value.si() * 3600.0 * 1e6;
+}
+
+[[nodiscard]] constexpr double inVolts(Voltage value) noexcept {
+    return value.si();
+}
+
+[[nodiscard]] constexpr double inMilliamperes(Current value) noexcept {
+    return value.si() * 1e3;
+}
+
+[[nodiscard]] constexpr double inMilliampereHours(Charge value) noexcept {
+    return value.si() / 3600.0 * 1e3;
 }
 
 } // namespace clepsydre::sim
