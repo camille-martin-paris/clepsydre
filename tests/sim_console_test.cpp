@@ -6,8 +6,13 @@
 // fumée.
 
 #include <expect.hpp>
+#include <ios>
+#include <memory>
 #include <sstream>
+#include <stdexcept>
+#include <streambuf>
 #include <string>
+#include <utility>
 
 import clepsydre.sim.console;
 
@@ -36,6 +41,41 @@ void exitCodes(Expectations& t) {
     t.expect(script("verifie volume > 1\n", output) == 1, "vérification échouée : code 1");
     t.expect(output.find("ÉCHEC : volume vaut 0") != std::string::npos, "échec expliqué");
     t.expect(script("quitter\ninconnue\n", output) == 0, "quitter arrête le script");
+}
+
+// Tampon qui fournit text puis échoue, comme un fichier dont la lecture est interrompue.
+class FailingBuffer : public std::streambuf {
+public:
+    explicit FailingBuffer(std::string text) : text_{std::move(text)} {
+        setg(text_.data(), text_.data(), std::to_address(text_.end()));
+    }
+
+protected:
+    int_type underflow() override { throw std::runtime_error{"lecture interrompue"}; }
+
+private:
+    std::string text_;
+};
+
+void readErrors(Expectations& t) {
+    std::ostringstream out;
+    {
+        Console console{out};
+        std::istringstream in{"debit 10\n"};
+        in.setstate(std::ios::badbit);
+        t.expect(console.run(in, false) == 2, "flux en erreur dès le début : code 2");
+        t.expect(out.str().find("Erreur de lecture après la ligne 0.") != std::string::npos,
+                 "erreur de lecture signalée");
+    }
+    out.str("");
+    {
+        Console console{out};
+        FailingBuffer buffer{"debit 10\navance 1s\n"};
+        std::istream in{&buffer};
+        t.expect(console.run(in, false) == 2, "lecture interrompue après des commandes : code 2");
+        t.expect(out.str().find("Erreur de lecture après la ligne 2.") != std::string::npos,
+                 "ligne de l'interruption signalée");
+    }
 }
 
 void syntax(Expectations& t) {
@@ -68,6 +108,8 @@ void resetAndSensors(Expectations& t) {
              "capteur de position perdu");
     t.expect(console.execute("verifie piston-mesure >= 0") == Console::Outcome::failed,
              "aucune comparaison ne tient sans mesure");
+    t.expect(console.execute("verifie piston-mesure ~ 0") == Console::Outcome::error,
+             "opérateur inconnu refusé même sans mesure");
     out.str("");
     t.expect(console.execute("etat") == Console::Outcome::ok, "état affiché");
     t.expect(out.str().find("mesuré — par rapport au bâti") != std::string::npos,
@@ -82,6 +124,7 @@ void resetAndSensors(Expectations& t) {
 int main() {
     return Expectations{}.run([](Expectations& t) {
         exitCodes(t);
+        readErrors(t);
         syntax(t);
         resetAndSensors(t);
     });

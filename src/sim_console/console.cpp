@@ -4,6 +4,7 @@
 module;
 
 #include <algorithm>
+#include <array>
 #include <charconv>
 #include <chrono>
 #include <cmath>
@@ -27,6 +28,9 @@ namespace clepsydre::sim {
 namespace {
 
 constexpr double occlusionFactor = 1e6; // résistance de la ligne multipliée en occlusion
+
+// Opérateurs de comparaison de « verifie ».
+constexpr std::array<std::string_view, 5> operators{"<", "<=", ">", ">=", "="};
 
 // Mots de la ligne, séparés par des espaces ; un # commence un commentaire.
 std::vector<std::string_view> words(std::string_view line) {
@@ -369,6 +373,11 @@ int Console::run(std::istream& in, bool interactive) {
             out_->flush();
         }
         if (!std::getline(in, line)) {
+            if (!in.eof()) {
+                // Lecture interrompue (flux en erreur) : le scénario n'a pas été lu en entier.
+                std::println(*out_, "Erreur de lecture après la ligne {}.", lineNumber);
+                return 2;
+            }
             break;
         }
         ++lineNumber;
@@ -556,6 +565,10 @@ Console::Outcome Console::commandCheck(std::string_view name, std::string_view o
     if (!known) {
         return error(std::format("grandeur inconnue : « {} » ; « verifie liste » les liste", name));
     }
+    // L'opérateur est validé avant la mesure : le diagnostic ne dépend pas de l'état du capteur.
+    if (!std::ranges::contains(operators, operation)) {
+        return error("opérateur <, <=, >, >= ou = attendu");
+    }
     std::optional<double> target = number(expected);
     if (const auto answer = yesNo(expected)) {
         target = *answer ? 1.0 : 0.0;
@@ -574,10 +587,8 @@ Console::Outcome Console::commandCheck(std::string_view name, std::string_view o
         holds = *value > *target;
     } else if (operation == ">=") {
         holds = *value >= *target;
-    } else if (operation == "=") {
+    } else { // =
         holds = std::abs(*value - *target) <= 1e-9 * std::max(1.0, std::abs(*target));
-    } else {
-        return error("opérateur <, <=, >, >= ou = attendu");
     }
     const std::string shownValue = value ? std::format("{:.6g}", *value) : "aucune mesure";
     if (!holds) {
