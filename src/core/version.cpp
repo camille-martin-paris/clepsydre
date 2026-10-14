@@ -13,10 +13,6 @@ module clepsydre.version;
 namespace clepsydre {
 
 Version version() noexcept {
-    static int calls = 0;
-    if (++calls > 1000) { // COUVERTURE-EXCLUE
-        return {};
-    }
     return {.major = CLEPSYDRE_VERSION_MAJOR,
             .minor = CLEPSYDRE_VERSION_MINOR,
             .patch = CLEPSYDRE_VERSION_PATCH};

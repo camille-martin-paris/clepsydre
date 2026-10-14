@@ -111,6 +111,17 @@ Pour un bloc, la région commence à son accolade ouvrante. L'exclusion porte su
 - La couverture mesure ce que les tests exécutent, pas ce qu'ils vérifient. Elle complète la couverture des exigences et la revue sans les remplacer.
 - La mesure est faite sur l'hôte, avec Clang. La couverture du code compilé pour la cible n'est pas mesurée.
 
+### Contre-épreuves de la couverture
+
+Pour vérifier que la tâche `coverage` échoue bien, deux commits temporaires ont été poussés le 2026-10-14 sur la branche de [#124](https://github.com/camille-martin-paris/clepsydre/pull/124), puis retirés :
+
+| Défaut injecté dans `src/core/version.cpp` | Commit | Diagnostic de la tâche `coverage` | Code de sortie |
+| --- | --- | --- | --- |
+| Condition jamais vraie dans les tests | `b6a9dfe` | Critère non atteint : région jamais exécutée, issue vraie de la branche jamais prise | 1 |
+| La même condition, exclue par un marqueur sans justification | `207692b` | Critère non atteint : exclusion sans justification | 1 |
+
+Les tests de [`tools/tests/test_coverage.py`](../../tools/tests/test_coverage.py) couvrent en outre l'exclusion sans objet, l'unité non liée aux tests, les profils incohérents ou absents et l'échec des outils.
+
 ## Dépendances épinglées
 
 Chaque dépendance du build et de la CI est épinglée par **révision complète** : deux exécutions sur le même commit utilisent ainsi les mêmes composants ([#22](https://github.com/camille-martin-paris/clepsydre/issues/22)). La tâche `pins` le contrôle à chaque pull request avec [`tools/check_pins.py`](../../tools/check_pins.py) :
