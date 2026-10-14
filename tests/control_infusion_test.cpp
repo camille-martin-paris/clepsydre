@@ -458,10 +458,28 @@ void bounds(Expectations& t) {
             setpointBound(mode, program, drug()) == uLh(0),
             std::format("mode {} : toute consigne non nulle hors bornes", static_cast<int>(mode)));
     }
+    // Remarque de relecture de #129 : chaque borne est plafonnée par une limite indépendante de la
+    // consigne.
     Program corrupted = program;
     corrupted.rate = uLh(300'000);
-    t.expect(setpointBound(ActuatorMode::Infusion, corrupted, drug()) == pumpMaxRate,
+    corrupted.kvoRate = uLh(9'000);
+    t.expect(setpointBound(ActuatorMode::Infusion, corrupted, drug()) == uLh(50'000),
+             "perfusion : borne plafonnée par la limite dure du médicament");
+    t.expect(setpointBound(ActuatorMode::Kvo, corrupted, drug()) == uLh(3'000),
+             "maintien de veine : borne plafonnée par la bibliothèque, pas par sa consigne");
+    DrugLimits incoherent = drug();
+    incoherent.hardMaxRate = uLh(300'000);
+    incoherent.kvoRate = uLh(9'000);
+    t.expect(setpointBound(ActuatorMode::Infusion, corrupted, incoherent) == pumpMaxRate,
              "borne plafonnée par le débit maximal de la pompe");
+    t.expect(setpointBound(ActuatorMode::Kvo, corrupted, incoherent) == maxKvoRate,
+             "maintien de veine : borne plafonnée à 5 mL/h");
+    Program slow = program;
+    slow.rate = uLh(700);
+    t.expect(setpointBound(ActuatorMode::Kvo, slow, drug()) == uLh(700),
+             "maintien de veine : borne plafonnée par le débit programmé");
+    t.expect(setpointBound(ActuatorMode::Kvo, program, stopAtEnd()) == uLh(0),
+             "arrêt en fin de perfusion : aucune consigne de maintien de veine");
 }
 
 // Programmation construite sans validation, pour les tests du décompte.
@@ -602,6 +620,47 @@ void delivery(Expectations& t) {
         t.expect(d.advance(ActuatorMode::Bolus, 1s) == Event::DangerDetected &&
                      d.infused() == uL(0),
                  "bolus non validé au-delà du débit du médicament : état sûr");
+        Delivery aboveHard{program(60'000, 20'000, EndOfInfusion::Kvo), drug()};
+        t.expect(aboveHard.advance(ActuatorMode::Infusion, 1s) == Event::DangerDetected &&
+                     aboveHard.infused() == uL(0),
+                 "débit altéré au-delà de la limite dure : état sûr");
+    }
+    {
+        // Remarque de relecture de #129 : 0,1 mL à 1 mL/h, maintien de veine retenu à 1 mL/h puis
+        // altéré à 6 mL/h avant la construction du décompte.
+        Program p = accepted(t, validateProgram(continuous(1'000, 100), drug(), syringe50()),
+                             "0,1 mL à 1 mL/h");
+        t.expect(p.kvoRate == uLh(1'000), "maintien de veine retenu : 1 mL/h");
+        p.kvoRate = uLh(6'000);
+        Delivery d{p, drug()};
+        std::optional<Event> event;
+        for (int i = 0; i < 6; ++i) {
+            event = d.advance(ActuatorMode::Infusion, 60s);
+        }
+        t.expect(event == Event::VolumeReachedKvo, "volume atteint en 6 min");
+        t.expect(d.advance(ActuatorMode::Kvo, 60s) == Event::DangerDetected &&
+                     d.kvoDelivered() == uL(0),
+                 "maintien de veine altéré au-delà du débit programmé : état sûr, rien décompté");
+
+        const auto kvoAfterEnd = [&](Program altered, const DrugLimits& limits,
+                                     const std::string& what) {
+            Delivery delivery{altered, limits};
+            t.expect(delivery.advance(ActuatorMode::Kvo, 60s) == Event::DangerDetected &&
+                         delivery.kvoDelivered() == uL(0),
+                     what);
+        };
+        DrugLimits incoherent = drug();
+        incoherent.kvoRate = uLh(9'000);
+        Program aboveFive = program(10'000, 20'000, EndOfInfusion::Kvo);
+        aboveFive.kvoRate = uLh(6'000);
+        kvoAfterEnd(aboveFive, incoherent, "maintien de veine altéré au-delà de 5 mL/h : état sûr");
+        Program aboveLibrary = program(10'000, 20'000, EndOfInfusion::Kvo);
+        aboveLibrary.kvoRate = uLh(4'000);
+        kvoAfterEnd(aboveLibrary, drug(),
+                    "maintien de veine altéré au-delà de la bibliothèque : état sûr");
+        const Program afterStop = program(10'000, 20'000, EndOfInfusion::Kvo);
+        kvoAfterEnd(afterStop, stopAtEnd(),
+                    "maintien de veine alors que la bibliothèque prévoit l'arrêt : état sûr");
     }
 }
 

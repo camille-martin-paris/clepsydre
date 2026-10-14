@@ -161,8 +161,9 @@ struct Bolus {
                                                           const DrugLimits& limits,
                                                           const Syringe& syringe) noexcept;
 
-// SW-REQ-006 : borne de consigne du mode actif, plafonnée par le débit maximal de la pompe. Nulle
-// hors des modes de perfusion ; la borne de la purge viendra avec son unité.
+// SW-REQ-006 : borne de consigne du mode actif, plafonnée par le débit maximal de la pompe et par
+// les limites du médicament, jamais déduite de la seule consigne. Nulle hors des modes de
+// perfusion ; la borne de la purge viendra avec son unité.
 [[nodiscard]] Rate setpointBound(ActuatorMode mode, const Program& program,
                                  const DrugLimits& limits) noexcept;
 
