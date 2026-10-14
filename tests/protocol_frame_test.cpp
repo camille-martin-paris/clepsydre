@@ -75,6 +75,17 @@ std::vector<std::byte> decodedFrame(int version, int sender, int type, int lengt
     return frame;
 }
 
+// Enveloppe quelconque : version, corps, CRC-32C juste.
+std::vector<std::byte> envelope(int version, std::size_t bodySize) {
+    std::vector<std::byte> frame = bytes({version});
+    frame.resize(1 + bodySize, std::byte{0x5A});
+    const std::uint32_t crc = crc32c(frame);
+    for (int shift = 0; shift < 32; shift += 8) {
+        frame.push_back(std::byte{static_cast<std::uint8_t>(crc >> shift)});
+    }
+    return frame;
+}
+
 std::vector<std::byte> encoded(const std::vector<std::byte>& decoded) {
     std::vector<std::byte> stream(cobsMaxEncodedSize(decoded.size()) + 1);
     stream.resize(cobsEncode(decoded, stream));
@@ -158,10 +169,13 @@ void rejections(Expectations& t) {
     const std::vector<std::byte> payload = bytes({0x11, 0x22});
     t.expect(rejected(receive(receiver, bytes({0x00})), FrameError::TooShort),
              "délimiteurs consécutifs : trame trop courte");
-    std::vector<std::byte> shortFrame = decodedFrame(1, 1, 1, 0, {});
-    shortFrame.pop_back();
-    t.expect(rejected(receive(receiver, encoded(shortFrame)), FrameError::TooShort),
-             "trame tronquée : trop courte");
+    t.expect(
+        rejected(receive(receiver, encoded(bytes({0x01, 0x02, 0x03, 0x04}))), FrameError::TooShort),
+        "plus courte que l'enveloppe");
+    std::vector<std::byte> truncated = decodedFrame(1, 1, 1, 0, {});
+    truncated.pop_back();
+    t.expect(rejected(receive(receiver, encoded(truncated)), FrameError::BadCrc),
+             "trame tronquée : CRC faux");
     t.expect(rejected(receive(receiver, bytes({0x05, 0x11, 0x00})), FrameError::InvalidCobs),
              "encodage COBS invalide");
 
@@ -191,17 +205,39 @@ void rejections(Expectations& t) {
              "le récepteur reste utilisable après les rejets");
 }
 
+// Remarque de relecture de #126 : une trame intègre d'une autre version est reconnue comme telle
+// quelle que soit sa taille dans l'enveloppe, y compris hors des bornes de la version 1.
+void otherVersions(Expectations& t) {
+    FrameReceiver receiver;
+    for (const std::size_t body : {std::size_t{0}, std::size_t{5}, maxFrameSize, std::size_t{1000},
+                                   envelopeMaxSize - envelopeMinSize}) {
+        t.expect(
+            rejected(receive(receiver, encoded(envelope(2, body))), FrameError::VersionMismatch),
+            "autre version, corps de " + std::to_string(body) + " octets");
+    }
+    t.expect(rejected(receive(receiver, encoded(envelope(0xFF, 0))), FrameError::VersionMismatch),
+             "version 255, enveloppe minimale");
+    t.expect(rejected(receive(receiver, encoded(envelope(1, 0))), FrameError::TooShort),
+             "version 1 sans en-tête complet");
+    t.expect(rejected(receive(receiver, encoded(envelope(1, maxFrameSize - envelopeMinSize + 1))),
+                      FrameError::TooLong),
+             "version 1 plus longue que sa borne");
+    t.expect(rejected(receive(receiver, encoded(envelope(1, maxFrameSize - envelopeMinSize))),
+                      FrameError::LengthMismatch),
+             "version 1 de taille maximale : en-tête lu");
+}
+
 void bounds(Expectations& t) {
     FrameReceiver receiver;
     // Plus d'octets que la plus longue trame encodée : rejet au délimiteur, puis reprise.
-    std::vector<std::byte> flood(maxEncodedFrameSize + 10, std::byte{0x42});
+    std::vector<std::byte> flood(maxEncodedEnvelopeSize + 10, std::byte{0x42});
     flood.push_back(std::byte{0});
     t.expect(rejected(receive(receiver, flood), FrameError::TooLong), "flot trop long rejeté");
     const std::vector<Received> next = receive(receiver, encoded(decodedFrame(1, 1, 1, 0, {})));
     t.expect(next.size() == 1 && next.front().has_value(), "reprise après un flot trop long");
 
-    // Exactement la capacité du récepteur, mais décodée au-delà d'une trame : refus du décodage.
-    std::vector<std::byte> full(maxEncodedFrameSize - 1, std::byte{0x01});
+    // Exactement la capacité du récepteur, mais décodée au-delà de l'enveloppe : refus du décodage.
+    std::vector<std::byte> full(maxEncodedEnvelopeSize - 1, std::byte{0x01});
     full.push_back(std::byte{0});
     t.expect(rejected(receive(receiver, full), FrameError::InvalidCobs),
              "trame décodée trop longue refusée");
@@ -217,9 +253,9 @@ void bounds(Expectations& t) {
     const std::vector<Received> after = receive(late, frame);
     t.expect(after.size() == 1 && after.front().has_value(), "trame suivante reconnue");
 
-    const std::vector<std::byte> tooLong(maxFrameSize + 1, std::byte{0x01});
+    const std::vector<std::byte> tooLong(envelopeMaxSize + 1, std::byte{0x01});
     t.expect(!parseFrame(tooLong).has_value() && parseFrame(tooLong).error() == FrameError::TooLong,
-             "parseFrame : trame décodée trop longue");
+             "parseFrame : plus longue que l'enveloppe");
 }
 
 } // namespace
@@ -230,6 +266,7 @@ int main() {
         roundTrips(t);
         everyType(t);
         rejections(t);
+        otherVersions(t);
         bounds(t);
     });
 }

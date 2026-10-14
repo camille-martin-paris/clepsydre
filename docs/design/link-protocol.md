@@ -45,13 +45,21 @@ Une trame décodée compte au plus **254 octets** :
 | 8 | Ancrage |
 | 9 | Test |
 
-Sur la ligne, la trame décodée est encodée en **COBS**, puis suivie d'un **octet nul**, le délimiteur. L'encodage ne contient aucun octet nul : un délimiteur marque donc toujours la fin d'une trame. La trame encodée, délimiteur compris, compte au plus **257 octets**.
+Sur la ligne, la trame décodée est encodée en **COBS**, puis suivie d'un **octet nul**, le délimiteur. L'encodage ne contient aucun octet nul : un délimiteur marque donc toujours la fin d'une trame. Une trame de version 1 encodée, délimiteur compris, compte au plus **257 octets** ; une enveloppe, au plus 1 030 octets.
 
 Les entiers sont en petit-boutiste, l'ordre natif des microcontrôleurs envisagés. Le format est fixé octet par octet, sans dépendre de la disposition des structures en mémoire : la sérialisation est écrite champ par champ.
 
 ### Enveloppe invariante
 
-Toute version future du protocole conservera la même **enveloppe** : COBS et délimiteur, version au premier octet, CRC-32C sur les quatre derniers octets. Un récepteur reconnaît ainsi une trame intègre d'une autre version sans en interpréter le reste, et la signale comme telle. La couche de surveillance en tire la mise hors service prévue par SYS-REQ-053.
+Toute version du protocole, présente ou future, respecte la même **enveloppe** :
+- COBS et délimiteur nul ;
+- version au premier octet ;
+- CRC-32C sur les quatre derniers octets ;
+- trame décodée de **5 octets** (version et CRC) **à 1 024 octets**.
+
+Un récepteur reconnaît ainsi une trame intègre de n'importe quelle version sans en interpréter le reste, et la signale comme telle. La couche de surveillance en tire la mise hors service prévue par SYS-REQ-053.
+
+Les bornes de la version 1 (en-tête complet, 254 octets au plus) ne s'appliquent **qu'après** le contrôle du CRC et de la version. Une trame intègre d'une autre version, plus courte ou plus longue qu'une trame de version 1, est donc bien signalée comme autre version. L'enveloppe laisse à une version future la place d'allonger ses trames, par exemple pour les événements d'audit (#41), jusqu'à 1 024 octets. Au-delà de 655 octets, la distance de Hamming garantie par le CRC-32C n'est plus que de 4 ; une telle version devra le prendre en compte.
 
 La version n'est lue **qu'après** le contrôle du CRC. Une altération du premier octet est ainsi rejetée comme trame altérée, ce qui entraîne une perte de lien et l'état sûr. Elle ne peut pas passer pour une autre version, ce qui mettrait la pompe hors service à tort.
 
@@ -90,25 +98,25 @@ Les octets reçus avant le premier délimiteur, à la mise en route ou après un
 
 | Motif | Cause |
 | --- | --- |
-| `TooLong` | Plus de 256 octets reçus avant le délimiteur ; les octets en trop ne sont pas conservés. Également : trame décodée de plus de 254 octets passée à `parseFrame`. |
-| `InvalidCobs` | Pas un encodage COBS valide, ou décodage de plus de 254 octets |
-| `TooShort` | Moins de 16 octets décodés : trame tronquée, ou deux délimiteurs consécutifs |
-| `BadCrc` | CRC faux : trame altérée |
-| `VersionMismatch` | Trame intègre d'une autre version du protocole |
+| `TooLong` | Enveloppe : plus de 1 029 octets reçus avant le délimiteur (les octets en trop ne sont pas conservés), ou trame décodée de plus de 1 024 octets passée à `parseFrame`. Version 1 : trame intègre de plus de 254 octets. |
+| `InvalidCobs` | Pas un encodage COBS valide, ou décodage de plus de 1 024 octets |
+| `TooShort` | Enveloppe : moins de 5 octets décodés, par exemple deux délimiteurs consécutifs. Version 1 : trame intègre de moins de 16 octets. |
+| `BadCrc` | CRC faux : trame altérée ou tronquée |
+| `VersionMismatch` | Trame intègre d'une autre version du protocole, quelle que soit sa taille dans l'enveloppe |
 | `LengthMismatch` | Champ de longueur différent de la taille de la charge utile reçue |
 | `UnknownSender` | Émetteur autre que `1` ou `2` |
 | `UnknownType` | Type hors de `1` à `9` |
 
-Les contrôles se font dans cet ordre. Chaque rejet est remonté à la couche de surveillance, qui le traite comme une perte de lien, sauf `VersionMismatch`, qui conduit à la mise hors service (SYS-REQ-053).
+Les contrôles se font dans cet ordre : enveloppe (taille, CRC, version), puis version 1 (taille, longueur, émetteur, type). Chaque rejet est remonté à la couche de surveillance, qui le traite comme une perte de lien, sauf `VersionMismatch`, qui conduit à la mise hors service (SYS-REQ-053).
 
 Une trame intègre et bien formée peut encore être hors séquence : doublon, réordonnancement, trame retardée. Ce contrôle relève de la surveillance, par le numéro de transport.
 
 ## Ressources et traitement des défauts
 
 - **Mémoire** : aucune allocation dynamique ; toutes les tailles sont bornées à la compilation.
-  - `FrameReceiver` occupe environ 270 octets, dont son tampon de 256 octets.
+  - `FrameReceiver` occupe environ 1 040 octets, dont son tampon de 1 029 octets, dimensionné pour l'enveloppe.
   - `EncodedFrame` occupe environ 270 octets.
-  - Le décodage d'une trame utilise 254 octets de pile.
+  - Le décodage d'une trame utilise 1 024 octets de pile.
   - `Payload` occupe environ 250 octets.
 - **Exceptions** : toutes les fonctions sont `noexcept` et ne lèvent pas d'exception. Les erreurs sont des valeurs (`std::optional`, `std::expected`).
 - **Préconditions** : elles sont rendues impossibles à enfreindre par construction plutôt que vérifiées à l'exécution. Une charge utile ne peut dépasser 238 octets, puisque `Payload::from` refuse au-delà. L'encodage tient toujours dans `EncodedFrame`, ce que vérifie un `static_assert`. `parseFrame` refuse une trame décodée trop longue.
@@ -122,7 +130,7 @@ Tests unitaires : `tests/protocol_crc32_test.cpp`, `tests/protocol_cobs_test.cpp
 
 | Critère (IEC 62304 §5.5.4, [stratégie de vérification](../../software_development_file/verification-strategy.md#critères-de-vérification-des-unités-classe-c)) | Couverture par les tests |
 | --- | --- |
-| Conditions aux limites | Charge utile vide et maximale (238 octets) ; refus à 239 ; blocs COBS pleins, presque pleins et suivis d'un octet ; tampons exacts et trop petits d'un octet ; flot plus long que la plus longue trame ; entiers à `0xFFFFFFFF` |
+| Conditions aux limites | Charge utile vide et maximale (238 octets) ; refus à 239 ; blocs COBS pleins, presque pleins et suivis d'un octet ; tampons exacts et trop petits d'un octet ; flot plus long que la plus longue enveloppe ; trames intègres d'une autre version de 5 à 1 024 octets, y compris hors des bornes de la version 1 ; trame de version 1 trop courte et trop longue d'un octet ; entiers à `0xFFFFFFFF` |
 | Flux de données | Format de la trame vérifié octet par octet ; aller-retour par l'encodage et la réception pour trois trames successives ; chaque type de `1` à `9` |
 | Traitement des défauts | Chaque motif de rejet provoqué au moins une fois, émetteur et type inconnus de chaque côté de la plage valide ; reprise de la réception après un rejet, un flot trop long et un début de flux incomplet |
 | Séquences d'événements | Trames successives dans un même flux ; octets avant le premier délimiteur |

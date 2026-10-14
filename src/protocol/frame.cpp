@@ -111,10 +111,11 @@ std::span<const std::byte> EncodedFrame::bytes() const noexcept {
 }
 
 std::expected<Frame, FrameError> parseFrame(std::span<const std::byte> decoded) noexcept {
-    if (decoded.size() < headerSize + crcSize) {
+    // Enveloppe, commune à toutes les versions.
+    if (decoded.size() < envelopeMinSize) {
         return std::unexpected{FrameError::TooShort};
     }
-    if (decoded.size() > maxFrameSize) {
+    if (decoded.size() > envelopeMaxSize) {
         return std::unexpected{FrameError::TooLong};
     }
     const std::size_t covered = decoded.size() - crcSize;
@@ -124,6 +125,13 @@ std::expected<Frame, FrameError> parseFrame(std::span<const std::byte> decoded) 
     // La version n'est lue qu'après le CRC : une altération ne passe pas pour une autre version.
     if (std::to_integer<std::uint8_t>(decoded[versionOffset]) != protocolVersion) {
         return std::unexpected{FrameError::VersionMismatch};
+    }
+    // Version 1.
+    if (decoded.size() < headerSize + crcSize) {
+        return std::unexpected{FrameError::TooShort};
+    }
+    if (decoded.size() > maxFrameSize) {
+        return std::unexpected{FrameError::TooLong};
     }
     const std::span<const std::byte> payload = decoded.subspan(headerSize, covered - headerSize);
     if (std::to_integer<std::size_t>(decoded[lengthOffset]) != payload.size()) {
@@ -163,7 +171,7 @@ std::optional<std::expected<Frame, FrameError>> FrameReceiver::push(std::byte by
     if (overflow) {
         return std::unexpected{FrameError::TooLong};
     }
-    std::array<std::byte, maxFrameSize> decoded{};
+    std::array<std::byte, envelopeMaxSize> decoded{};
     const std::optional<std::size_t> size = cobsDecode(encoded, decoded);
     if (!size) {
         return std::unexpected{FrameError::InvalidCobs};

@@ -24,17 +24,25 @@ import clepsydre.protocol.cobs;
 
 export namespace clepsydre::protocol {
 
-// Version du protocole. Le premier octet de toute trame, quelle que soit la version, est sa
-// version : un récepteur reconnaît ainsi une trame d'une autre version sans en lire la suite.
-constexpr std::uint8_t protocolVersion = 1;
-
-constexpr std::size_t headerSize = 12;
+// Enveloppe commune à toutes les versions du protocole, qui ne changera jamais : COBS et
+// délimiteur nul, version au premier octet, CRC-32C sur les quatre derniers, et une trame décodée
+// de envelopeMinSize à envelopeMaxSize octets. Un récepteur reconnaît ainsi une trame intègre de
+// n'importe quelle version sans en lire la suite.
 constexpr std::size_t crcSize = 4;
+constexpr std::size_t envelopeMinSize = 1 + crcSize;
+constexpr std::size_t envelopeMaxSize = 1024;
+// Encodage COBS de la plus longue enveloppe, suivi du délimiteur.
+constexpr std::size_t maxEncodedEnvelopeSize = cobsMaxEncodedSize(envelopeMaxSize) + 1;
+
+// Version 1 du protocole, seule version émise.
+constexpr std::uint8_t protocolVersion = 1;
+constexpr std::size_t headerSize = 12;
 // Trame décodée au plus de 254 octets : son encodage COBS tient en un bloc plein et un code.
 constexpr std::size_t maxFrameSize = 254;
 constexpr std::size_t maxPayloadSize = maxFrameSize - headerSize - crcSize;
 // Encodage COBS de la plus longue trame, suivi du délimiteur.
 constexpr std::size_t maxEncodedFrameSize = cobsMaxEncodedSize(maxFrameSize) + 1;
+static_assert(maxFrameSize <= envelopeMaxSize);
 
 enum class Sender : std::uint8_t {
     Control = 1, // processeur de commande
@@ -109,9 +117,9 @@ private:
 
 // Motif de rejet d'une suite d'octets reçue entre deux délimiteurs.
 enum class FrameError : std::uint8_t {
-    TooLong,     // trame encodée ou décodée plus longue que le maximum
+    TooLong,     // plus longue que l'enveloppe, ou trame de version 1 plus longue que maxFrameSize
     InvalidCobs, // pas un encodage COBS valide, ou trame décodée trop longue
-    TooShort,    // moins d'octets qu'un en-tête et un CRC (trame tronquée, délimiteurs consécutifs)
+    TooShort,    // plus courte que l'enveloppe, ou trame de version 1 sans en-tête complet
     BadCrc,      // CRC faux : trame altérée
     VersionMismatch, // trame d'une autre version du protocole
     LengthMismatch,  // longueur de l'en-tête différente de la charge utile reçue
@@ -128,7 +136,7 @@ public:
     [[nodiscard]] std::optional<std::expected<Frame, FrameError>> push(std::byte byte) noexcept;
 
 private:
-    std::array<std::byte, maxEncodedFrameSize - 1> buffer_{};
+    std::array<std::byte, maxEncodedEnvelopeSize - 1> buffer_{};
     std::size_t size_ = 0;
     bool overflow_ = false;
 };
