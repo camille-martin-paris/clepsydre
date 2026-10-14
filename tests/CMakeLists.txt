@@ -7,6 +7,7 @@ target_include_directories(clepsydre_test_support INTERFACE support)
 clepsydre_add_test(version_test SOURCES version_test.cpp LIBRARIES clepsydre::core)
 clepsydre_add_test(control_state_machine_test SOURCES control_state_machine_test.cpp
     LIBRARIES clepsydre::control)
+clepsydre_add_test(control_infusion_test SOURCES control_infusion_test.cpp LIBRARIES clepsydre::control)
 clepsydre_add_test(protocol_crc32_test SOURCES protocol_crc32_test.cpp LIBRARIES clepsydre::protocol)
 clepsydre_add_test(protocol_cobs_test SOURCES protocol_cobs_test.cpp LIBRARIES clepsydre::protocol)
 clepsydre_add_test(protocol_frame_test SOURCES protocol_frame_test.cpp LIBRARIES clepsydre::protocol)
