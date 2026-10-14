@@ -304,6 +304,17 @@ class MainTest(unittest.TestCase):
         self.assertEqual(code, 2)
         self.assertIn("fichier objet absent", stderr)
 
+    def test_report_written_when_measure_is_impossible(self):
+        # Remarque de relecture de #124 : sans rapport, l'envoi de l'artefact échouait à son tour et
+        # masquait la vraie erreur.
+        output = self.root / "rapport.md"
+        code, _, _ = self.run_main(self.tool("llvm-cov", "exit 3"), "--revision", "abc", "-o", str(output))
+        self.assertEqual(code, 2)
+        report = output.read_text(encoding="utf-8")
+        self.assertIn("Révision : `abc`", report)
+        self.assertIn("**Mesure impossible**", report)
+        self.assertIn("a échoué (code 3)", report)
+
     def test_missing_objects_manifest(self):
         (self.build / "coverage/objects.txt").unlink()
         code, _, stderr = self.run_main(self.llvm_cov(1))

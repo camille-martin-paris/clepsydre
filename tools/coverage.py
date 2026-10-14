@@ -28,7 +28,8 @@ contrôle échoue si un marqueur n'a pas de justification, ou s'il n'exclut rien
 
 Usage : coverage.py --build-dir DIR [--source-dir DIR] [--llvm-cov EXE]
                     [--llvm-profdata EXE] [-o RAPPORT.md]
-Code de retour : 0 si le critère est atteint, 1 sinon, 2 si la mesure est impossible.
+Code de retour : 0 si le critère est atteint, 1 sinon, 2 si la mesure est impossible ; le
+rapport (-o) est écrit dans les trois cas.
 """
 
 import argparse
@@ -234,6 +235,14 @@ def render(result: Result, revision: str | None) -> str:
 NO_COVERAGE_DATA = "no coverage data found"
 
 
+def render_impossible(error: MeasureError, revision: str | None) -> str:
+    lines = ["## Couverture du code de classe C", ""]
+    if revision:
+        lines += [f"Révision : `{revision}`", ""]
+    lines += ["**Mesure impossible** : le critère n'a pas pu être évalué.", "", "```text", str(error), "```"]
+    return "\n".join(lines) + "\n"
+
+
 def run(command: list[str], *, allow_no_data: bool = False) -> str | None:
     """Exécute un outil LLVM ; None si allow_no_data et que l'objet n'a pas de données de couverture."""
     # Sans DEBUGINFOD_URLS, llvm-cov n'interroge pas le réseau : sur un poste où la variable est
@@ -317,6 +326,9 @@ def main(argv: list[str]) -> int:
         coverage = measure(args.build_dir.resolve(), source_dir, args.llvm_cov, args.llvm_profdata)
     except MeasureError as error:
         print(f"Mesure impossible : {error}", file=sys.stderr)
+        # Le rapport documente aussi l'échec de la mesure : la CI le publie et l'archive.
+        if args.output:
+            args.output.write_text(render_impossible(error, args.revision), encoding="utf-8")
         return 2
     sources = class_c_sources(source_dir)
     result = evaluate(coverage, sources, find_exclusions(source_dir, sources))
