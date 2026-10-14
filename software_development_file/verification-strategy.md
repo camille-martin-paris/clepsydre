@@ -3,7 +3,7 @@
 | Champ | Valeur |
 | --- | --- |
 | Statut | Version initiale, soumise à relecture |
-| Révision | A |
+| Révision | B |
 | Issue | [#72](https://github.com/camille-martin-paris/clepsydre/issues/72) |
 | Références | IEC 62304:2006+A1:2015 §5.1.6, §5.5 à §5.7, §7.3 ; ISO 14971:2019 §7.2 |
 
@@ -84,7 +84,7 @@ Pour chaque unité logicielle, la revue et les tests unitaires couvrent, lorsqu'
 | --- | --- | --- |
 | Exigences | Chaque exigence a au moins une vérification prévue ; aucune exigence `approved` sans vérification | [`tools/check_registry.py`](../tools/check_registry.py), en CI, refuse déjà une exigence `approved` sans vérification ; le contrôle d'une vérification prévue pour chaque exigence vient avec [#11](https://github.com/camille-martin-paris/clepsydre/issues/11) |
 | Mesures de maîtrise | Chaque mesure a au moins une exigence, et chaque exigence de mesure au moins une vérification de **mise en œuvre** ; l'**efficacité** de la mesure est démontrée par une vérification au niveau système | Registre, matrice de traçabilité ([#11](https://github.com/camille-martin-paris/clepsydre/issues/11)) |
-| Structurelle (code de classe C) | 100 % des instructions et des branches exécutées par les tests unitaires et d'intégration ; toute exception est justifiée dans la pull request (code défensif inatteignable, par exemple) | Instrumentation de couverture en CI ([#99](https://github.com/camille-martin-paris/clepsydre/issues/99)), bloquante, à mettre en place avant la fusion du premier code de classe C du jalon M1 |
+| Structurelle (code de classe C) | 100 % des instructions et des branches exécutées par les tests unitaires et d'intégration ; toute exception est justifiée dans le code et dans la pull request (code défensif inatteignable, par exemple), et approuvée par le relecteur | Tâche CI `coverage`, bloquante ([#99](https://github.com/camille-martin-paris/clepsydre/issues/99)) : couverture du code source de Clang, les instructions étant mesurées par régions et chaque branche par ses deux issues ; méthode, périmètre, exclusions et limites dans [`build.md`](../docs/development/build.md#couverture) |
 | Défauts | Chaque condition d'alarme et chaque transition vers l'état sûr est provoquée au moins une fois par injection de défaut | Scénarios du simulateur et du banc |
 
 La couverture structurelle mesure ce que les tests exécutent, pas ce qu'ils vérifient ; elle ne remplace ni la couverture des exigences ni la revue.
@@ -125,3 +125,4 @@ Cette stratégie est réexaminée lors de la mise en place du simulateur (M1), d
 | Révision | Date | Auteur | Modification |
 | --- | --- | --- | --- |
 | A | 2026-10-09 | Ambroise Leclerc | Création, soumise à relecture |
+| B | 2026-10-14 | Ambroise Leclerc | Couverture structurelle : mesure en CI par la tâche `coverage` ([#99](https://github.com/camille-martin-paris/clepsydre/issues/99)) |

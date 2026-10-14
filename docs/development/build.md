@@ -11,6 +11,7 @@ Ce document décrit la chaîne de build du logiciel : langage, compilateurs pris
 | GCC | 16.1 ; **16.2 refusé** | Plancher de mddlog : GCC 15 ne relit pas le module `std` de libstdc++ à travers un second niveau de BMI ; GCC 16.2 a corrompu les BMI de mddlog. GCC 14 provoque en outre une erreur interne sur nos modules avec `-fsanitize=address,undefined` (CI du 2026-10-09). |
 | Clang | 20 | Plancher de mddlog ; clang-tidy 18 ne charge pas les modules du projet (« module not found », CI du 2026-10-09). Fournir `clang-scan-deps` de la même version. |
 | clang-tidy | Même version majeure que Clang | Analyse statique ; doit lire les modules compilés par ce Clang. La configuration contrôle la version du binaire retenu et refuse une version majeure différente. |
+| llvm-cov, llvm-profdata | Même version majeure que Clang | Mesure de la couverture ([Couverture](#couverture)) ; paquet `llvm-<version>` sous Ubuntu |
 | clang-format | 21.1.8 exactement | Formatage selon [`.clang-format`](../../.clang-format) ; deux versions différentes peuvent formater différemment |
 
 Ces planchers sont alignés sur ceux de mddlog afin qu'une intégration éventuelle n'oblige pas à les relever ; ils seront réexaminés par l'ADR [#16](https://github.com/camille-martin-paris/clepsydre/issues/16).
@@ -58,6 +59,7 @@ Les préréglages appellent `g++` et `clang++`. Pour un compilateur suffixé par
 | `gcc-release` | GCC | RelWithDebInfo | |
 | `gcc-asan`, `clang-asan` | GCC, Clang | Debug | AddressSanitizer et UndefinedBehaviorSanitizer |
 | `gcc-tsan`, `clang-tsan` | GCC, Clang | Debug | ThreadSanitizer |
+| `clang-coverage` | Clang | Debug | Instrumentation de couverture ([Couverture](#couverture)) |
 
 ## Qualité
 
@@ -74,6 +76,40 @@ Les préréglages appellent `g++` et `clang++`. Pour un compilateur suffixé par
 ## Tests
 
 Les tests sont des exécutables enregistrés dans CTest par `clepsydre_add_test` (voir [`tests/CMakeLists.txt`](../../tests/CMakeLists.txt)). Un test réussit s'il effectue au moins une vérification et qu'aucune n'échoue. Le support minimal [`tests/support/expect.hpp`](../../tests/support/expect.hpp) évite toute dépendance externe ; aucun cadriciel de test n'est retenu à ce jour. Un cadriciel ajouté serait une dépendance épinglée selon [Dépendances épinglées](#dépendances-épinglées) ; il n'est pas embarqué et n'est donc pas un SOUP.
+
+## Couverture
+
+Le code de classe C doit être exécuté à 100 % par les tests, instructions et branches ([stratégie de vérification](../../software_development_file/verification-strategy.md#couverture), [#99](https://github.com/camille-martin-paris/clepsydre/issues/99)). La tâche CI `coverage` le contrôle à chaque pull request et échoue si le critère n'est pas atteint. Localement :
+
+```bash
+cmake --preset clang-coverage -DCMAKE_CXX_COMPILER=clang++-20
+cmake --build --preset clang-coverage
+ctest --preset clang-coverage
+python3 tools/coverage.py --build-dir build/clang-coverage --llvm-cov llvm-cov-20 --llvm-profdata llvm-profdata-20
+```
+
+**Méthode** : couverture du code source de Clang (`-fprofile-instr-generate -fcoverage-mapping`), mesurée par [`tools/coverage.py`](../../tools/coverage.py).
+- **Instructions** : chaque *région* de code, une suite d'instructions qui s'exécutent ensemble, doit être exécutée au moins une fois. La région est plus fine que la ligne : deux instructions d'une même ligne séparées par une condition sont deux régions.
+- **Branches** : chaque condition du source (`if`, boucles, `?:`, `&&`, `||`) doit être évaluée vraie et fausse au moins une fois. Seules les branches du source sont comptées. Les chemins que le compilateur ajoute, pour les exceptions ou les destructeurs par exemple, ne le sont pas : ils n'ont pas de condition dans le source.
+- **Profils** : chaque exécutable de test enregistre ses profils dans son propre répertoire, `coverage/<cible>/`, et il est mesuré avec ses seuls profils. Les résultats des exécutables sont ensuite réunis par emplacement dans le source : une région est couverte si au moins un exécutable l'exécute. Deux exécutables peuvent définir des fonctions de même nom et de corps différents (les lambdas de `main`, par exemple). Un profil commun en écarterait les données ; le script refuse donc tout profil incohérent avec son exécutable. Le test CTest `coverage_clean` efface les profils avant chaque exécution des tests, pour qu'une mesure ne réunisse jamais deux exécutions.
+- **Mesure impossible** : profil absent ou incohérent, outil en échec, ou build non instrumenté. Le script renvoie alors le code 2, distinct d'un échec du critère (code 1).
+
+**Périmètre** : tout le code de `src/` est de classe C, sauf les répertoires non embarqués `src/sim/` et `src/sim_console/` ([classification](../../software_development_file/safety-classification.md#éléments-logiciels)). Un nouveau répertoire de `src/` est donc mesuré par défaut. Le code de test et les outils sont exclus. Une unité d'implémentation (`.cpp`) de classe C qu'aucun exécutable de test ne lie fait échouer la mesure : son code ne serait jamais exécuté. La mesure porte aujourd'hui sur tous les tests CTest. Quand viendront les essais du logiciel complet face au simulateur, qui relèvent du niveau système, ils seront écartés de la mesure : la couverture structurelle est obtenue par les tests unitaires et d'intégration.
+
+**Exclusions** : une région ou une branche qui ne peut pas être exécutée (code défensif inatteignable, par exemple) est exclue par un commentaire sur la ligne où elle commence :
+
+```cpp
+if (index >= size) { // COUVERTURE-EXCLUE : index borné par la boucle appelante
+```
+
+Pour un bloc, la région commence à son accolade ouvrante. L'exclusion porte sur toutes les régions et les branches qui commencent sur cette ligne. La justification est obligatoire ; elle est reprise dans la pull request et approuvée par le relecteur. La mesure échoue si un marqueur n'a pas de justification, ou s'il n'exclut rien : un marqueur devenu inutile doit être retiré. Le rapport liste toutes les exclusions avec leur justification.
+
+**Rapport** : un tableau par fichier (régions, issues de branches, exclusions), la liste de ce qui n'est pas couvert, les anomalies et les exclusions. Il est publié dans le résumé de l'exécution et comme artefact `rapport-de-couverture`. La preuve d'archive reste le rapport de vérification de la version ([#77](https://github.com/camille-martin-paris/clepsydre/issues/77)).
+
+**Limites** :
+- Une fonction `inline` libre qu'aucun test n'appelle, ou un template qu'aucun test n'instancie, n'a pas de données de couverture : elle n'apparaît pas dans la mesure, au lieu d'y figurer comme non couverte. Une fonction membre d'une classe utilisée par les tests apparaît bien, même si elle n'est jamais appelée. La revue de code vérifie donc que chaque fonction de ce genre est appelée par un test.
+- La couverture mesure ce que les tests exécutent, pas ce qu'ils vérifient. Elle complète la couverture des exigences et la revue sans les remplacer.
+- La mesure est faite sur l'hôte, avec Clang. La couverture du code compilé pour la cible n'est pas mesurée.
 
 ## Dépendances épinglées
 
@@ -134,13 +170,14 @@ Le workflow [`.github/workflows/ci.yml`](../../.github/workflows/ci.yml) s'exéc
 | Tâche | Contenu | Phases publiées séparément |
 | --- | --- | --- |
 | `build (<compilateur>, <variante>)` | GCC 16.1 et Clang 20 (planchers), chacun en `debug`, `asan-ubsan` et `tsan` : six combinaisons, dans les images épinglées | Configuration, compilation, édition de liens, tests ; un tableau de résultats par tâche dans le résumé de l'exécution |
+| `coverage` | Clang 20 et llvm-cov 20 (image `ubuntu:26.04`), build instrumenté, tests, puis [`tools/coverage.py`](../../tools/coverage.py) : 100 % des régions et des branches du code de classe C, bloquant ([Couverture](#couverture)) | Configuration, compilation, tests, couverture ; rapport dans le résumé et comme artefact |
 | `format` | clang-format 21.1.8 sur tous les fichiers C++ suivis par Git | — |
 | `clang-tidy` | Clang 20 et clang-tidy 20 (image `ubuntu:26.04`), toute remarque bloquante | Configuration, analyse |
 | `licences` | `reuse lint` (reuse 6.2.0) | — |
 | `pins` | [`tools/check_pins.py`](../../tools/check_pins.py) : chaque dépendance du build et de la CI est épinglée par révision complète | — |
 | `registry` ([`registry.yml`](../../.github/workflows/registry.yml)) | Tests des outils du dépôt, cohérence du registre de traçabilité, matrice de traçabilité publiée dans le résumé et comme artefact, SBOM de la révision publiée comme artefact | Tests, vérification, matrice, SBOM |
 
-Chaque dépendance est épinglée ([Dépendances épinglées](#dépendances-épinglées)). Chaque tâche `build` et `clang-tidy` consigne en outre, dans le résumé de l'exécution, la version de CMake et la liste complète des paquets installés avec leur version.
+Chaque dépendance est épinglée ([Dépendances épinglées](#dépendances-épinglées)). Chaque tâche `build`, `coverage` et `clang-tidy` consigne en outre, dans le résumé de l'exécution, la version de CMake et la liste complète des paquets installés avec leur version.
 
 Réglages d'exécution des sanitizers en CI : `halt_on_error=1` pour les trois, détection des fuites mémoire avec AddressSanitizer. Par précaution, les conteneurs sont lancés sans filtre seccomp : ThreadSanitizer peut désactiver l'ASLR par `personality()`, appel que le profil seccomp par défaut de Docker restreint. La nécessité de ce réglage n'a pas été démontrée.
 

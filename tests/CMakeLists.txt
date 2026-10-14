@@ -21,4 +21,5 @@ file(GLOB _clepsydre_sim_scenarios CONFIGURE_DEPENDS "${PROJECT_SOURCE_DIR}/exam
 foreach(_scenario IN LISTS _clepsydre_sim_scenarios)
     get_filename_component(_name "${_scenario}" NAME_WE)
     add_test(NAME sim_scenario_${_name} COMMAND clepsydre-sim "${_scenario}")
+    clepsydre_coverage_test(sim_scenario_${_name} clepsydre-sim)
 endforeach()
