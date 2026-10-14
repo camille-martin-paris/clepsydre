@@ -1,4 +1,4 @@
-# Protocole de la liaison entre les processeurs : trames
+# Protocole de la liaison entre les processeurs
 
 | Champ | Valeur |
 | --- | --- |
@@ -6,7 +6,7 @@
 | Issue | [#125](https://github.com/camille-martin-paris/clepsydre/issues/125) |
 | Décision d'architecture | [ADR 0006](../adr/0006-interfaces-internes-horloge-et-datation.md#1-liaison-entre-les-processeurs) |
 | Exigence | SYS-REQ-053 |
-| Code | [`src/protocol/`](../../src/protocol/) : modules `clepsydre.protocol.crc32`, `clepsydre.protocol.cobs` et `clepsydre.protocol.frame` |
+| Code | [`src/protocol/`](../../src/protocol/) : modules `clepsydre.protocol.crc32`, `clepsydre.protocol.cobs`, `clepsydre.protocol.frame` et `clepsydre.protocol.link` |
 | Classe de sécurité | C ([classification](../../software_development_file/safety-classification.md)) |
 
 > [!CAUTION]
@@ -14,9 +14,11 @@
 
 ## Objet
 
-Ce document décrit la conception détaillée de la **couche trame** du protocole de la liaison entre le processeur de commande et le processeur de sécurité (IEC 62304 §5.4). Cette couche forme les trames à émettre et reconnaît les trames reçues dans le flux d'octets. Elle est définie une seule fois et partagée par les deux logiciels et par le simulateur (ADR 0006, « Définition unique »).
+Ce document décrit la conception détaillée du protocole de la liaison entre le processeur de commande et le processeur de sécurité (IEC 62304 §5.4). Le protocole est défini une seule fois et partagé par les deux logiciels et par le simulateur (ADR 0006, « Définition unique »). Il compte deux couches :
+- la **couche trame** forme les trames à émettre et reconnaît les trames reçues dans le flux d'octets (modules `crc32`, `cobs` et `frame`) ;
+- la **couche de surveillance** numérote les trames émises, cadence le signal de vie et détecte la perte de lien à la réception (module `link`, [Surveillance du lien](#surveillance-du-lien)).
 
-Elle ne surveille pas le lien : le délai sans trame valide, les numéros de transport et de démarrage, le désaccord de version et le signal de vie relèvent de la couche de surveillance, deuxième partie de #125. Elle ne définit pas non plus les charges utiles, sauf leur taille maximale.
+Les charges utiles ne sont pas définies ici, sauf celle du signal de vie et la taille maximale. Les autres viendront avec les fonctions qui les produisent.
 
 ## Format d'une trame
 
@@ -107,9 +109,59 @@ Les octets reçus avant le premier délimiteur, à la mise en route ou après un
 | `UnknownSender` | Émetteur autre que `1` ou `2` |
 | `UnknownType` | Type hors de `1` à `9` |
 
-Les contrôles se font dans cet ordre : enveloppe (taille, CRC, version), puis version 1 (taille, longueur, émetteur, type). Chaque rejet est remonté à la couche de surveillance, qui le traite comme une perte de lien, sauf `VersionMismatch`, qui conduit à la mise hors service (SYS-REQ-053).
+Les contrôles se font dans cet ordre : enveloppe (taille, CRC, version), puis version 1 (taille, longueur, émetteur, type). Chaque rejet est remonté à la couche de surveillance. Lien établi, elle le traite comme une perte de lien ; `VersionMismatch` conduit à la mise hors service dans tous les cas (SYS-REQ-053).
 
 Une trame intègre et bien formée peut encore être hors séquence : doublon, réordonnancement, trame retardée. Ce contrôle relève de la surveillance, par le numéro de transport.
+
+## Surveillance du lien
+
+### Émission
+
+`LinkTransmitter` numérote chaque trame émise : 0 pour la première trame après le démarrage, puis +1 à chaque trame, quel que soit son type, modulo 2³². À 20 trames par seconde, le numéro ne revient à 0 qu'après plus de six ans de fonctionnement continu ; le passage par 0 est néanmoins traité.
+
+Le **signal de vie** est dû 50 ms après le précédent (`heartbeatPeriod`), ou dès le démarrage. Le logiciel interroge `heartbeatDue` à chaque cycle. L'émission d'une autre trame ne remplace pas le signal de vie.
+
+Charge utile du signal de vie, 6 octets :
+
+| Position | Taille | Champ |
+| --- | --- | --- |
+| 0 | 1 | État de l'émetteur, dont les valeurs seront définies par la machine à états (#24) |
+| 1 | 1 | `1` si l'émetteur a reçu une trame de l'autre processeur depuis son démarrage, sinon `0` |
+| 2 | 4 | Dernier numéro de transport reçu de l'autre processeur, petit-boutiste ; `0` sans réception |
+
+Le décodage refuse toute autre taille, un indicateur autre que 0 ou 1, et un numéro non nul sans réception. Le dernier numéro reçu est transmis comme le prévoit l'ADR 0006 ; son usage, par exemple pour vérifier que l'autre processeur reçoit bien, relève des logiciels.
+
+### Réception
+
+`LinkMonitor` surveille les trames de l'autre processeur sur le temps monotone du processeur récepteur (SW-REQ-018). Il reçoit chaque résultat de la couche trame (`onReceived`) et doit être interrogé à chaque cycle, même sans réception (`poll`). `onReceived` contrôle d'abord le délai : une trame qui arrive après un silence ne masque pas la perte.
+
+| État | Signification | Sortie |
+| --- | --- | --- |
+| `Waiting` | Aucune trame valide depuis la mise en route | Première trame valide de l'autre processeur : `Up`. 200 ms sans elle : `Lost` (`Timeout`) |
+| `Up` | Lien établi | Toute anomalie : `Lost` (tableau suivant) |
+| `Lost` | Perte de lien | Première trame valide de l'autre processeur : `Up` (rétablissement) |
+| `OutOfService` | Désaccord de version | Aucune : l'état est définitif |
+
+Lien établi, chaque trame est contrôlée dans cet ordre :
+
+| Cause (`LinkFault`) | Condition |
+| --- | --- |
+| `Timeout` | Aucune trame valide depuis 200 ms (`linkTimeout`) |
+| `Rejected` | Trame rejetée par la couche trame ; le motif est conservé (`rejection()`) |
+| `WrongSender` | Trame valide dont l'émetteur n'est pas l'autre processeur |
+| `BootChanged` | Numéro de démarrage différent de celui de l'établissement |
+| `TransportRepeated` | Même numéro de transport que la trame précédente : doublon |
+| `TransportBackward` | Numéro en arrière : écart de 2³¹ ou plus, modulo 2³² |
+| `TransportGap` | Numéro en avance de plus de 1 : trame manquante |
+| `VersionMismatch` | Trame intègre d'une autre version, dans tout état : `OutOfService` |
+
+Avant l'établissement et après une perte, les trames rejetées et celles d'un autre émetteur sont ignorées. À la mise en route, le récepteur peut en effet recevoir une fin de trame. Le **rétablissement** se fait sur la première trame valide de l'autre processeur, dont les numéros servent de référence. C'est ce qui permet la réémission des événements d'audit « après chaque rétablissement du lien » (ADR 0006). Le rétablissement ne relance rien de lui-même : la perte a mis la pompe en état sûr, et une nouvelle programmation est nécessaire (ADR 0003). Le compteur `losses()` permet au logiciel de constater une perte même si le lien s'est rétabli entre deux consultations.
+
+**Délai de détection.**
+- Une trame perdue, en double, altérée ou hors séquence est détectée à la réception de la trame suivante, au plus une période de signal de vie plus tard.
+- Un silence est détecté 200 ms après la dernière trame valide, à la granularité de l'appel de `poll` près.
+
+La perte de lien est donc constatée en 250 ms au plus après le défaut, ce qui laisse la marge prévue par l'ADR 0006 pour l'état sûr en 1 s (SYS-REQ-002).
 
 ## Ressources et traitement des défauts
 
@@ -118,6 +170,7 @@ Une trame intègre et bien formée peut encore être hors séquence : doublon, r
   - `EncodedFrame` occupe environ 270 octets.
   - Le décodage d'une trame utilise 1 024 octets de pile.
   - `Payload` occupe environ 250 octets.
+  - `LinkTransmitter` et `LinkMonitor` occupent quelques dizaines d'octets chacun.
 - **Exceptions** : toutes les fonctions sont `noexcept` et ne lèvent pas d'exception. Les erreurs sont des valeurs (`std::optional`, `std::expected`).
 - **Préconditions** : elles sont rendues impossibles à enfreindre par construction plutôt que vérifiées à l'exécution. Une charge utile ne peut dépasser 238 octets, puisque `Payload::from` refuse au-delà. L'encodage tient toujours dans `EncodedFrame`, ce que vérifie un `static_assert`. `parseFrame` refuse une trame décodée trop longue.
 - **Temps d'exécution** : linéaire en nombre d'octets, sans boucle non bornée.
@@ -126,7 +179,7 @@ Ces règles anticipent celles du code de sécurité, que CONTRIBUTING.md renvoie
 
 ## Vérification
 
-Tests unitaires : `tests/protocol_crc32_test.cpp`, `tests/protocol_cobs_test.cpp` et `tests/protocol_frame_test.cpp`.
+Tests unitaires : `tests/protocol_crc32_test.cpp`, `tests/protocol_cobs_test.cpp`, `tests/protocol_frame_test.cpp` et `tests/protocol_link_test.cpp`. Essais d'intégration avec la liaison et les processeurs simulés : `tests/protocol_link_sim_test.cpp`.
 
 | Critère (IEC 62304 §5.5.4, [stratégie de vérification](../../software_development_file/verification-strategy.md#critères-de-vérification-des-unités-classe-c)) | Couverture par les tests |
 | --- | --- |
@@ -139,10 +192,34 @@ Tests unitaires : `tests/protocol_crc32_test.cpp`, `tests/protocol_cobs_test.cpp
 | Couverture structurelle | 100 % des régions et des branches, sans exclusion (tâche CI `coverage`) |
 | Exactitude du CRC | Valeur de contrôle du catalogue et vecteurs de la RFC 3720, annexe B.4 |
 
-Les essais de la liaison simulée, avec ses défauts (perte, doublon, altération, troncature, retard, réordonnancement), viendront avec la couche de surveillance.
+Les tests de `protocol_link_test` couvrent :
+- le format et le refus des signaux de vie mal formés ;
+- la numérotation et la cadence à l'émission ;
+- chaque transition du moniteur, chaque cause de perte, y compris de part et d'autre de la demi-plage et au passage par 0 ;
+- le rétablissement, la perte constatée à la réception qui suit un silence, et la mise hors service depuis chaque état.
+
+Les essais d'intégration (`protocol_link_sim_test`) relient deux processeurs simulés. La commande émet ses signaux de vie à travers l'injecteur de défauts de la liaison simulée, et la sécurité les surveille. Chaque défaut doit être détecté en 250 ms au plus, avec la cause attendue :
+
+| Défaut injecté | Cause attendue | Après le défaut |
+| --- | --- | --- |
+| Aucun, pendant 10 s | Aucune perte | Lien établi |
+| Trame perdue | `TransportGap` | Lien rétabli |
+| Trame en double | `TransportRepeated` | Lien rétabli |
+| Trame altérée | `Rejected` | Lien rétabli |
+| Trame tronquée | `Rejected` | Lien rétabli |
+| Trame retardée de 300 ms | `TransportGap` | Lien rétabli |
+| Trame réordonnée | `TransportGap` | Lien rétabli |
+| Commande bloquée | `Timeout` | Lien perdu |
+| Commande redémarrée | `BootChanged` | Lien rétabli avec le nouveau numéro de démarrage |
+| Oscillateur de la commande arrêté | `Timeout` | Lien perdu |
+| Commande hors tension | `Timeout` | Lien perdu |
+
+Ces essais vérifient la mise en œuvre de la mesure de la liaison (CTRL-031). Ils ne constituent pas VER-123, qui vérifiera au niveau du système logiciel l'état sûr atteint par les deux logiciels complets.
 
 ## Limites
 
 - Le CRC détecte toute altération de 5 bits au plus et toute rafale de 32 bits au plus. Une altération plus étendue peut passer, avec une probabilité de l'ordre de 2⁻³² par trame altérée. La couche de surveillance ajoute le contrôle du numéro de transport.
 - La liaison est interne à la carte : le protocole n'authentifie ni ne chiffre les trames. Le modèle de menaces (#67) dira si cela suffit.
+- Le moniteur mesure le délai sur le compteur monotone de son propre processeur. Si cet oscillateur s'arrête, le moniteur ne constate plus de délai dépassé. L'autre processeur, lui, constate l'arrêt des signaux de vie, comme le montre l'essai de l'oscillateur arrêté ; le chien de garde externe complète la protection (ADR 0003).
+- Le rétablissement se fait sur une seule trame valide. Une liaison instable alterne donc pertes et rétablissements ; chaque perte est comptée et met la pompe en état sûr. Une éventuelle politique de mise hors service sur pertes répétées relève des logiciels.
 - Le temps d'exécution n'est pas mesuré sur la cible. L'analyse temporelle (VER-124) le reprendra avec le microcontrôleur retenu.
