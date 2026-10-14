@@ -35,8 +35,8 @@ def export(filename, regions=(), branches=(), filenames=None):
     }]}
 
 
-def measured(*exports):
-    result = coverage.Coverage()
+def measured(*exports, compiled=("src/core/a.cpp",)):
+    result = coverage.Coverage(compiled=set(compiled))
     for item in exports:
         result.add_export(item, SOURCE)
     return result
@@ -65,7 +65,6 @@ class AggregationTest(unittest.TestCase):
     def test_regions_are_merged_by_location(self):
         result = measured(export("src/core/a.cpp", [region(3, 1, 0)]), export("src/core/a.cpp", [region(3, 1, 4)]))
         self.assertEqual(result.regions, {("src/core/a.cpp", 3, 1, 3, 11): 4})
-        self.assertEqual(result.files, {"src/core/a.cpp"})
 
     def test_only_code_regions_of_class_c_are_kept(self):
         result = measured(
@@ -73,14 +72,13 @@ class AggregationTest(unittest.TestCase):
             export("src/sim/b.cpp", [region(1, 1, 0)]),
             export("tests/c.cpp", [region(1, 1, 0)]))
         self.assertEqual(result.regions, {})
-        self.assertEqual(result.files, {"src/core/a.cpp"})
 
     def test_files_outside_the_source_tree_are_ignored(self):
         outside = {"data": [{"files": [{"filename": "/usr/include/c++/vector"}],
                              "functions": [{"filenames": ["/usr/include/c++/vector"],
                                             "regions": [region(1, 1, 0)], "branches": [branch(1, 1, 0, 0)]}]}]}
         result = measured(outside)
-        self.assertEqual((result.regions, result.branches, result.files), ({}, {}, set()))
+        self.assertEqual((result.regions, result.branches), ({}, {}))
 
     def test_region_file_is_taken_from_its_file_id(self):
         # Région d'une macro définie dans un autre fichier : fileId 1.
@@ -139,10 +137,25 @@ class EvaluateTest(unittest.TestCase):
         self.assertFalse(result.passed)
         self.assertIn("exclusion sans objet", result.problems[0])
 
-    def test_unmeasured_implementation_unit_fails(self):
-        result = coverage.evaluate(measured(export("src/core/a.cpp", [region(1, 1, 1)])),
-                                   ["src/core/a.cpp", "src/core/b.cpp", "src/core/b.cppm"], [])
-        self.assertEqual(result.problems, ["src/core/b.cpp : absent de la mesure (lié à aucun exécutable de test)"])
+    def test_uncompiled_unit_fails(self):
+        result = coverage.evaluate(measured(export("src/core/a.cpp", [region(1, 1, 1)]),
+                                            compiled=["src/core/a.cpp", "src/core/a.cppm"]),
+                                   ["src/core/a.cpp", "src/core/a.cppm", "src/core/b.cpp", "src/core/b.cppm",
+                                    "src/core/c.hpp"], [])
+        self.assertEqual([problem.split(" : ")[0] for problem in result.problems],
+                         ["src/core/b.cpp", "src/core/b.cppm"], "un en-tête n'a pas de fichier objet")
+        self.assertIn("aucun fichier objet", result.problems[0])
+
+    def test_unlinked_module_function_fails(self):
+        # Cas relevé à la relecture de #124 : fonction non inline d'un module qu'aucun test ne lie.
+        # L'objet du module, mesuré avec un profil vide, apporte ses régions et branches à zéro.
+        tested = export("src/core/a.cpp", [region(1, 1, 1)])
+        untested_object = export("src/core/b.cppm", [region(6, 28, 0), region(10, 5, 0)], [branch(7, 9, 0, 0)])
+        result = coverage.evaluate(measured(tested, untested_object, compiled=["src/core/a.cpp", "src/core/b.cppm"]),
+                                   ["src/core/a.cpp", "src/core/b.cppm"], [])
+        self.assertFalse(result.passed)
+        file = result.files["src/core/b.cppm"]
+        self.assertEqual((file.regions_covered, file.regions, file.branches_covered, file.branches), (0, 2, 0, 2))
 
     def test_empty_scope_fails(self):
         result = coverage.evaluate(coverage.Coverage(), [], [])
@@ -197,12 +210,32 @@ class MainTest(unittest.TestCase):
         self.source = self.root / "source"
         (self.source / "src/core").mkdir(parents=True)
         (self.source / "src/core/a.cpp").write_text("int f() { return 1; }\n", encoding="utf-8")
+        (self.source / "src/core/a.cppm").write_text("export module a;\nexport int f();\n", encoding="utf-8")
         self.build = self.root / "build"
         (self.build / "coverage/a_test").mkdir(parents=True)
         (self.build / "coverage/a_test/1.profraw").write_bytes(b"")
         (self.build / "coverage/binaries.txt").write_text("a_test\t/bin/a_test\n", encoding="utf-8")
+        self.objects = self.build / "src/core/CMakeFiles/core.dir"
+        self.objects.mkdir(parents=True)
+        # a.cpp.o porte la fonction f ; a.cppm.o, interface sans code, n'a pas de données de couverture.
+        self.add_object("a.cpp", [region(1, 9, 0)])
+        self.add_object("a.cppm", None)
         self.profdata = self.tool("llvm-profdata", 'out="${@: -1}"; : > "$out"')
         self.export = self.root / "export.json"
+
+    def add_object(self, name: str, regions: list | None) -> None:
+        path = self.objects / f"{name}.o"
+        path.write_bytes(b"")
+        if regions is not None:
+            self.write_export(self.objects / f"{name}.json", f"src/core/{name}", regions)
+        with (self.build / "coverage/objects.txt").open("a", encoding="utf-8") as manifest:
+            manifest.write(f"{self.objects}/./{name}.o\n")
+
+    def write_export(self, path: Path, filename: str, regions: list) -> None:
+        data = export(filename, regions)
+        data["data"][0]["files"][0]["filename"] = str(self.source / filename)
+        data["data"][0]["functions"][0]["filenames"] = [str(self.source / filename)]
+        path.write_text(json.dumps(data), encoding="utf-8")
 
     def tearDown(self):
         self.directory.cleanup()
@@ -221,16 +254,22 @@ class MainTest(unittest.TestCase):
         return code, stdout.getvalue(), stderr.getvalue()
 
     def llvm_cov(self, count: int, stderr: str = "") -> Path:
-        data = export("src/core/a.cpp", [region(1, 9, count)])
-        data["data"][0]["files"][0]["filename"] = str(self.source / "src/core/a.cpp")
-        data["data"][0]["functions"][0]["filenames"] = [str(self.source / "src/core/a.cpp")]
-        self.export.write_text(json.dumps(data), encoding="utf-8")
-        return self.tool("llvm-cov", f'cat "{self.export}"; echo "{stderr}" >&2')
+        """llvm-cov simulé : un objet renvoie son export voisin (.json), ou « no coverage data found »
+        s'il n'en a pas ; l'exécutable de test renvoie un export où f est exécutée count fois."""
+        self.write_export(self.export, "src/core/a.cpp", [region(1, 9, count)])
+        return self.tool("llvm-cov", textwrap.dedent(f"""\
+            last="${{@: -1}}"
+            case "$last" in
+              *.o)
+                if [ -f "${{last%.o}}.json" ]; then cat "${{last%.o}}.json"; exit 0; fi
+                echo "error: failed to load coverage: '$last': no coverage data found" >&2; exit 1 ;;
+              *) cat "{self.export}"; echo "{stderr}" >&2 ;;
+            esac"""))
 
     def test_covered(self):
         output = self.root / "rapport.md"
         code, stdout, _ = self.run_main(self.llvm_cov(1), "--revision", "abc", "-o", str(output))
-        self.assertEqual(code, 0)
+        self.assertEqual(code, 0, stdout)
         self.assertIn("atteint.", stdout)
         self.assertEqual(output.read_text(encoding="utf-8"), stdout)
 
@@ -238,6 +277,47 @@ class MainTest(unittest.TestCase):
         code, stdout, _ = self.run_main(self.llvm_cov(0))
         self.assertEqual(code, 1)
         self.assertIn("src/core/a.cpp:1:9 : région jamais exécutée", stdout)
+
+    def test_unlinked_module_function_fails(self):
+        # Module compilé dans une cible de src/ mais lié par aucun test : présent par son objet.
+        (self.source / "src/core/b.cppm").write_text("export module b;\nexport int g() { return 2; }\n",
+                                                    encoding="utf-8")
+        self.add_object("b.cppm", [region(2, 17, 0)])
+        code, stdout, _ = self.run_main(self.llvm_cov(1))
+        self.assertEqual(code, 1)
+        self.assertIn("src/core/b.cppm:2:17 : région jamais exécutée", stdout)
+
+    def test_uncompiled_unit_fails(self):
+        (self.source / "src/core/c.cppm").write_text("export module c;\n", encoding="utf-8")
+        code, stdout, _ = self.run_main(self.llvm_cov(1))
+        self.assertEqual(code, 1)
+        self.assertIn("src/core/c.cppm : aucun fichier objet", stdout)
+
+    def test_object_tool_error_is_a_measure_error(self):
+        code, _, stderr = self.run_main(self.tool("llvm-cov", 'echo "error: malformed object" >&2; exit 1'))
+        self.assertEqual(code, 2)
+        self.assertIn("malformed object", stderr)
+
+    def test_missing_object_file(self):
+        (self.objects / "a.cpp.o").unlink()
+        code, _, stderr = self.run_main(self.llvm_cov(1))
+        self.assertEqual(code, 2)
+        self.assertIn("fichier objet absent", stderr)
+
+    def test_missing_objects_manifest(self):
+        (self.build / "coverage/objects.txt").unlink()
+        code, _, stderr = self.run_main(self.llvm_cov(1))
+        self.assertEqual(code, 2)
+        self.assertIn("objects.txt absent", stderr)
+
+    def test_object_source(self):
+        build = self.build.resolve()
+        self.assertEqual(coverage.object_source(build, build / "src/core/CMakeFiles/core.dir/./a.cppm.o"),
+                         "src/core/a.cppm")
+        self.assertEqual(coverage.object_source(build, build / "src/x/CMakeFiles/x.dir/sub/b.cpp.o"), "src/x/sub/b.cpp")
+        self.assertIsNone(coverage.object_source(build, build / "src/core/a.cpp.o"))
+        self.assertIsNone(coverage.object_source(build, Path("/ailleurs/CMakeFiles/x.dir/a.cpp.o")))
+        self.assertIsNone(coverage.object_source(build, build / "src/CMakeFiles/x.dir/a.cpp.obj"))
 
     def test_mismatched_profile_is_a_measure_error(self):
         code, _, stderr = self.run_main(self.llvm_cov(1, "warning: 2 functions have mismatched data"))

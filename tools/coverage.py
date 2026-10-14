@@ -10,6 +10,13 @@ exécutés par CTest. Chaque exécutable mesuré est listé dans
 profils (llvm-profdata), exporte sa couverture (llvm-cov export), puis réunit
 les résultats de tous les exécutables par emplacement dans le source.
 
+Les fichiers objets des cibles de src/, listés dans <build>/coverage/objects.txt,
+sont aussi exportés, avec un profil vide : une fonction compilée qu'aucun
+exécutable de test ne lie figure ainsi dans la mesure, comme non couverte. Chaque
+unité .cpp ou .cppm de classe C doit avoir un fichier objet ; un objet sans code
+exécutable (interface qui ne contient que des déclarations) n'a pas de données
+de couverture et n'ajoute rien.
+
 Critère : 100 % des régions (instructions) et des deux issues de chaque branche
 du code de classe C. Le code de classe C est tout le code de src/, sauf les
 répertoires de NOT_EMBEDDED, qui ne sont pas embarqués.
@@ -74,7 +81,7 @@ class Coverage:
 
     regions: dict[tuple, int] = field(default_factory=dict)
     branches: dict[tuple, Branch] = field(default_factory=dict)
-    files: set[str] = field(default_factory=set)
+    compiled: set[str] = field(default_factory=set)  # sources de classe C qui ont un fichier objet
 
     def add_export(self, export: dict, source_dir: Path) -> None:
         def relative(filename: str) -> str | None:
@@ -84,10 +91,6 @@ class Coverage:
                 return None
 
         for data in export["data"]:
-            for entry in data["files"]:
-                name = relative(entry["filename"])
-                if name is not None and in_class_c(name):
-                    self.files.add(name)
             for function in data["functions"]:
                 names = [relative(filename) for filename in function["filenames"]]
                 for line_start, col_start, line_end, col_end, count, file_id, _, kind in function["regions"]:
@@ -180,10 +183,10 @@ def evaluate(coverage: Coverage, sources: list[str], exclusions: list[Exclusion]
     if not sources:
         problems.append(f"aucun fichier source de classe C sous {CLASS_C_ROOT} : la mesure serait vide")
     for path in sources:
-        # Une unité d'implémentation contient toujours du code : absente de la mesure, elle
-        # n'est liée à aucun exécutable de test, et son code n'est donc pas exécuté.
-        if path.endswith(".cpp") and path not in coverage.files:
-            problems.append(f"{path} : absent de la mesure (lié à aucun exécutable de test)")
+        # Sans fichier objet, le code de l'unité échapperait à la mesure des objets.
+        if path.endswith((".cpp", ".cppm")) and path not in coverage.compiled:
+            problems.append(f"{path} : aucun fichier objet (unité compilée dans aucune cible de src/ "
+                            "déclarée par clepsydre_register_objects)")
     for exclusion in exclusions:
         if not exclusion.justification:
             problems.append(f"{exclusion.path}:{exclusion.line} : exclusion sans justification")
@@ -228,7 +231,11 @@ def render(result: Result, revision: str | None) -> str:
     return "\n".join(lines) + "\n"
 
 
-def run(command: list[str]) -> str:
+NO_COVERAGE_DATA = "no coverage data found"
+
+
+def run(command: list[str], *, allow_no_data: bool = False) -> str | None:
+    """Exécute un outil LLVM ; None si allow_no_data et que l'objet n'a pas de données de couverture."""
     # Sans DEBUGINFOD_URLS, llvm-cov n'interroge pas le réseau : sur un poste où la variable est
     # définie, il peut attendre indéfiniment un serveur de symboles.
     environment = {**os.environ, "DEBUGINFOD_URLS": ""}
@@ -236,6 +243,8 @@ def run(command: list[str]) -> str:
         completed = subprocess.run(command, capture_output=True, text=True, env=environment, check=False)
     except OSError as error:
         raise MeasureError(f"{command[0]} : {error}") from error
+    if completed.returncode != 0 and allow_no_data and NO_COVERAGE_DATA in completed.stderr:
+        return None
     if completed.returncode != 0:
         raise MeasureError(f"{' '.join(command)} a échoué (code {completed.returncode}) :\n{completed.stderr}")
     if "mismatched data" in completed.stderr:
@@ -243,13 +252,45 @@ def run(command: list[str]) -> str:
     return completed.stdout
 
 
+def object_source(build_dir: Path, path: Path) -> str | None:
+    """Source d'un fichier objet : <build>/<rép>/CMakeFiles/<cible>.dir/<fichier>.o vient de <rép>/<fichier>."""
+    try:
+        parts = path.resolve().relative_to(build_dir).parts
+        index = parts.index("CMakeFiles")
+    except ValueError:
+        return None
+    if index + 2 >= len(parts) or not parts[-1].endswith(".o"):
+        return None
+    source = Path(*parts[:index], *parts[index + 2:])
+    return source.with_name(source.name.removesuffix(".o")).as_posix()
+
+
 def measure(build_dir: Path, source_dir: Path, llvm_cov: str, llvm_profdata: str) -> Coverage:
     coverage_dir = build_dir / "coverage"
     manifest = coverage_dir / "binaries.txt"
-    if not manifest.is_file():
-        raise MeasureError(f"{manifest} absent : configurer le build avec -DCLEPSYDRE_COVERAGE=ON")
+    objects = coverage_dir / "objects.txt"
+    for required in (manifest, objects):
+        if not required.is_file():
+            raise MeasureError(f"{required} absent : configurer le build avec -DCLEPSYDRE_COVERAGE=ON")
     coverage = Coverage()
     with tempfile.TemporaryDirectory() as scratch:
+        empty_text = Path(scratch, "vide.proftext")
+        empty_text.write_text("", encoding="utf-8")
+        empty = Path(scratch, "vide.profdata")
+        run([llvm_profdata, "merge", str(empty_text), "-o", str(empty)])
+        for line in objects.read_text(encoding="utf-8").splitlines():
+            if not line:
+                continue
+            path = Path(line)
+            if not path.is_file():
+                raise MeasureError(f"fichier objet absent : {path} (build incomplet ?)")
+            source = object_source(build_dir, path)
+            if source is not None and in_class_c(source):
+                coverage.compiled.add(source)
+            export = run([llvm_cov, "export", "-format=text", f"-instr-profile={empty}", str(path)],
+                         allow_no_data=True)
+            if export is not None:
+                coverage.add_export(json.loads(export), source_dir)
         for line in manifest.read_text(encoding="utf-8").splitlines():
             target, executable = line.split("\t")
             profiles = sorted((coverage_dir / target).glob("*.profraw"))

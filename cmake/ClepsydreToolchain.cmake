@@ -96,7 +96,10 @@ function(clepsydre_coverage_test test target)
     endif()
 endfunction()
 
-# Écrit coverage/binaries.txt : une ligne « <cible> <tab> <exécutable> » par exécutable mesuré.
+# Écrit coverage/binaries.txt : une ligne « <cible> <tab> <exécutable> » par exécutable mesuré,
+# et coverage/objects.txt : les fichiers objets des cibles de src/, un par ligne. Les objets sont
+# mesurés avec un profil vide : une fonction qu'aucun exécutable de test ne lie figure ainsi dans
+# la mesure, comme non couverte, au lieu d'en être absente.
 # Le test coverage_clean efface les profils avant les tests : une mesure ne réunit jamais les
 # profils de deux exécutions.
 function(clepsydre_finalize_coverage)
@@ -114,6 +117,18 @@ function(clepsydre_finalize_coverage)
     add_test(NAME coverage_clean COMMAND "${CMAKE_COMMAND}" -E rm -rf ${directories})
     set_tests_properties(coverage_clean PROPERTIES FIXTURES_SETUP clepsydre_coverage)
     file(GENERATE OUTPUT "${CLEPSYDRE_COVERAGE_DIR}/binaries.txt" CONTENT "${content}")
+
+    get_property(object_targets GLOBAL PROPERTY CLEPSYDRE_OBJECT_TARGETS)
+    set(objects "")
+    foreach(target IN LISTS object_targets)
+        get_target_property(directory ${target} SOURCE_DIR)
+        cmake_path(IS_PREFIX PROJECT_SOURCE_DIR "${directory}" NORMALIZE in_project)
+        file(RELATIVE_PATH relative "${PROJECT_SOURCE_DIR}" "${directory}")
+        if(in_project AND relative MATCHES "^src(/|$)")
+            string(APPEND objects "$<JOIN:$<TARGET_OBJECTS:${target}>,\n>\n")
+        endif()
+    endforeach()
+    file(GENERATE OUTPUT "${CLEPSYDRE_COVERAGE_DIR}/objects.txt" CONTENT "${objects}")
 endfunction()
 
 option(CLEPSYDRE_CLANG_TIDY "Exécuter clang-tidy pendant la compilation" OFF)
