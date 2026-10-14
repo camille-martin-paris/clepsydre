@@ -165,7 +165,7 @@ Les tests [`sim_syringe_pump_test.cpp`](../../tests/sim_syringe_pump_test.cpp), 
 | Perte du secteur | Ni processeur réinitialisé, ni moteur arrêté |
 | Perte totale | Coupure imminente signalée pendant la réserve de maintien de 50 ms, puis processeurs et moteur arrêtés ; au retour du secteur, les processeurs redémarrent et le bouchon du logiciel de commande ne relance pas le moteur |
 
-Dans les lignes qui mettent des processeurs en jeu, ce sont des bouchons de test qui n'échangent que des signaux de vie numérotés : les logiciels de la pompe n'existent pas encore. Ces lignes montrent que chaque défaut injecté est observable ; la détection et la réaction relèvent des logiciels et de leurs propres vérifications.
+Dans les lignes qui mettent des processeurs en jeu, ce sont des bouchons de test qui n'échangent que des signaux de vie numérotés : les logiciels de la pompe n'existent pas encore. Ces lignes montrent que chaque défaut injecté est observable ; la détection et la réaction relèvent des logiciels et de leurs propres vérifications. Le protocole de la liaison ([#125](https://github.com/camille-martin-paris/clepsydre/issues/125)) est déjà essayé face à ces défauts : `tests/protocol_link_sim_test.cpp` vérifie que chacun est détecté comme perte de lien ([conception détaillée](../design/link-protocol.md#vérification)).
 
 Ces résultats illustrent le modèle. Ils ne valent pas mesure du dispositif.
 
