@@ -86,7 +86,7 @@ La pause garde la trace du mode interrompu. `PausedKvo` reprend en maintien de v
 
 Les **conditions** d'un événement sont vérifiées par l'unité qui l'émet, pas par la machine. Par exemple :
 - la ligne non raccordée avant une purge ;
-- le bolus réservé au mode débit continu (SYS-REQ-029) et borné par la bibliothèque ;
+- le bolus réservé au mode débit continu (SYS-REQ-029) et borné par la bibliothèque ([modes de perfusion](infusion-modes.md#validation-du-bolus)) ;
 - l'acquittement de l'état sûr seulement une fois la condition levée ;
 - l'acceptation de la programmation et des changements de mode par le canal de sécurité (SYS-REQ-044).
 
