@@ -67,6 +67,55 @@ if(CLEPSYDRE_SANITIZERS)
     add_link_options(-fsanitize=${CLEPSYDRE_SANITIZERS})
 endif()
 
+# Couverture du code source par Clang (instrumentation par régions et par branches), mesurée par
+# tools/coverage.py ; voir docs/development/build.md, « Couverture ».
+option(CLEPSYDRE_COVERAGE "Instrumenter le code pour mesurer sa couverture (Clang)" OFF)
+if(CLEPSYDRE_COVERAGE)
+    if(NOT CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+        message(FATAL_ERROR "CLEPSYDRE_COVERAGE demande Clang : la mesure repose sur la "
+                            "couverture du code source de Clang (llvm-cov).")
+    endif()
+    if(CLEPSYDRE_SANITIZERS)
+        message(FATAL_ERROR "CLEPSYDRE_COVERAGE ne se combine pas avec les sanitizers.")
+    endif()
+    add_compile_options(-fprofile-instr-generate -fcoverage-mapping)
+    add_link_options(-fprofile-instr-generate)
+endif()
+set(CLEPSYDRE_COVERAGE_DIR "${CMAKE_BINARY_DIR}/coverage")
+
+# clepsydre_coverage_test(<test> <cible exécutable>)
+# Range les profils d'exécution du test par exécutable : chaque exécutable est mesuré avec ses
+# seuls profils. Deux exécutables de test peuvent définir des fonctions de même nom et de corps
+# différents (lambdas de main, par exemple) ; un profil commun en écarterait les données.
+function(clepsydre_coverage_test test target)
+    if(CLEPSYDRE_COVERAGE)
+        set_tests_properties(${test} PROPERTIES
+            ENVIRONMENT "LLVM_PROFILE_FILE=${CLEPSYDRE_COVERAGE_DIR}/${target}/%p.profraw"
+            FIXTURES_REQUIRED clepsydre_coverage)
+        set_property(GLOBAL APPEND PROPERTY CLEPSYDRE_COVERAGE_TARGETS ${target})
+    endif()
+endfunction()
+
+# Écrit coverage/binaries.txt : une ligne « <cible> <tab> <exécutable> » par exécutable mesuré.
+# Le test coverage_clean efface les profils avant les tests : une mesure ne réunit jamais les
+# profils de deux exécutions.
+function(clepsydre_finalize_coverage)
+    get_property(targets GLOBAL PROPERTY CLEPSYDRE_COVERAGE_TARGETS)
+    if(NOT targets)
+        return()
+    endif()
+    list(REMOVE_DUPLICATES targets)
+    set(content "")
+    set(directories "")
+    foreach(target IN LISTS targets)
+        string(APPEND content "${target}\t$<TARGET_FILE:${target}>\n")
+        list(APPEND directories "${CLEPSYDRE_COVERAGE_DIR}/${target}")
+    endforeach()
+    add_test(NAME coverage_clean COMMAND "${CMAKE_COMMAND}" -E rm -rf ${directories})
+    set_tests_properties(coverage_clean PROPERTIES FIXTURES_SETUP clepsydre_coverage)
+    file(GENERATE OUTPUT "${CLEPSYDRE_COVERAGE_DIR}/binaries.txt" CONTENT "${content}")
+endfunction()
+
 option(CLEPSYDRE_CLANG_TIDY "Exécuter clang-tidy pendant la compilation" OFF)
 if(CLEPSYDRE_CLANG_TIDY)
     if(NOT CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
@@ -128,6 +177,7 @@ function(clepsydre_add_test name)
     add_executable(${name})
     target_link_libraries(${name} PRIVATE ${name}_objects ${arg_LIBRARIES})
     add_test(NAME ${name} COMMAND ${name})
+    clepsydre_coverage_test(${name} ${name})
 endfunction()
 
 # Cibles « clepsydre_format » (reformate) et « clepsydre_format_check » (vérifie sans modifier).

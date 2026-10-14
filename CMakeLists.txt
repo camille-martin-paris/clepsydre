@@ -20,3 +20,4 @@ if(BUILD_TESTING)
 endif()
 
 clepsydre_finalize_compile_target()
+clepsydre_finalize_coverage()

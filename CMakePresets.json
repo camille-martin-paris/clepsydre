@@ -79,6 +79,14 @@
       "cacheVariables": {
         "CLEPSYDRE_SANITIZERS": "thread"
       }
+    },
+    {
+      "name": "clang-coverage",
+      "displayName": "Clang, Debug, couverture du code source",
+      "inherits": "clang",
+      "cacheVariables": {
+        "CLEPSYDRE_COVERAGE": "ON"
+      }
     }
   ],
   "buildPresets": [
@@ -113,6 +121,10 @@
     {
       "name": "clang-tsan",
       "configurePreset": "clang-tsan"
+    },
+    {
+      "name": "clang-coverage",
+      "configurePreset": "clang-coverage"
     }
   ],
   "testPresets": [
@@ -165,6 +177,11 @@
       "name": "clang-tsan",
       "inherits": "base",
       "configurePreset": "clang-tsan"
+    },
+    {
+      "name": "clang-coverage",
+      "inherits": "base",
+      "configurePreset": "clang-coverage"
     }
   ],
   "workflowPresets": [
