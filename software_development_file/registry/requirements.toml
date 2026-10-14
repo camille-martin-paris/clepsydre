@@ -394,8 +394,8 @@ status = "draft"
 [[requirement]]
 id = "SW-REQ-001"
 title = "Machine à états"
-text = "Le logiciel de commande doit être une machine à états explicite (arrêt, programmation, prête, perfusion, pause, alarme, état sûr, maintenance, hors service) ; toute transition non prévue doit être refusée et journalisée."
-source = "SYS-REQ-002, SYS-REQ-029, SYS-REQ-038 ; #24"
+text = "Le logiciel de commande doit être une machine à états explicite (démarrage, arrêt, programmation, prête, purge, perfusion avec ses modes débit programmé, bolus et maintien de veine ouverte, pause, état sûr, maintenance, hors service) ; toute demande non admise dans l'état courant doit être refusée et journalisée sans changer d'état, et toute incohérence interne de la machine doit placer la pompe en état sûr."
+source = "SYS-REQ-002, SYS-REQ-014, SYS-REQ-029, SYS-REQ-032, SYS-REQ-038 ; #24"
 status = "draft"
 
 [[requirement]]

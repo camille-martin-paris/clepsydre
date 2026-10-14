@@ -109,6 +109,7 @@ Pour un bloc, la région commence à son accolade ouvrante. L'exclusion porte su
 
 **Limites** :
 - Une fonction `inline` libre qu'aucun test n'appelle, ou un template qu'aucun test n'instancie, n'a pas de données de couverture : elle n'apparaît pas dans la mesure, au lieu d'y figurer comme non couverte. Une fonction membre d'une classe utilisée par les tests apparaît bien, même si elle n'est jamais appelée. La revue de code vérifie donc que chaque fonction de ce genre est appelée par un test.
+- Une fonction `constexpr` évaluée uniquement à la compilation (dans l'initialisation d'une table constante, par exemple) apparaît comme une région jamais exécutée. La déclarer `consteval` : elle est alors réservée à la compilation et n'a pas de code à couvrir.
 - La couverture mesure ce que les tests exécutent, pas ce qu'ils vérifient. Elle complète la couverture des exigences et la revue sans les remplacer.
 - La mesure est faite sur l'hôte, avec Clang. La couverture du code compilé pour la cible n'est pas mesurée.
 
