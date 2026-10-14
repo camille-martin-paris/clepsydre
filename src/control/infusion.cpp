@@ -213,16 +213,22 @@ std::expected<Bolus, Refusal> validateBolus(const BolusRequest& request, const P
 }
 
 Rate setpointBound(ActuatorMode mode, const Program& program, const DrugLimits& limits) noexcept {
+    // Chaque borne est plafonnée par une limite du médicament, indépendante de la consigne : une
+    // programmation altérée après sa validation reste bornée (remarque de relecture de #129).
     Rate bound{};
     switch (mode) {
     case ActuatorMode::Infusion:
-        bound = program.rate;
+        bound = std::min(program.rate, limits.hardMaxRate);
         break;
     case ActuatorMode::Bolus:
         bound = limits.hardMaxBolusRate;
         break;
     case ActuatorMode::Kvo:
-        bound = program.kvoRate;
+        // SYS-REQ-032 : ni le débit programmé, ni le débit de la bibliothèque, ni 5 mL/h ; nulle
+        // si la bibliothèque prévoit l'arrêt en fin de perfusion.
+        if (limits.endOfInfusion == EndOfInfusion::Kvo) {
+            bound = std::min({program.rate, limits.kvoRate, maxKvoRate});
+        }
         break;
     default: // aucune consigne, purge (borne à venir avec son unité), valeur invalide
         break;

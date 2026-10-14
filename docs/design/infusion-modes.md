@@ -111,12 +111,14 @@ Un bolus au-delà de la limite souple de volume est accepté, avec `volumeAboveS
 
 | Mode | Borne |
 | --- | --- |
-| `Infusion` | Débit retenu par la programmation |
+| `Infusion` | Débit retenu par la programmation, plafonné par la limite dure du médicament |
 | `Bolus` | Débit maximal du bolus pour le médicament |
-| `Kvo` | Débit de maintien de veine ouverte de la programmation |
+| `Kvo` | Le plus petit du débit retenu, du débit de maintien de la bibliothèque et de 5 mL/h (SYS-REQ-032) ; nulle si la bibliothèque prévoit l'arrêt en fin de perfusion |
 | `None`, `Purge`, valeur invalide | Nulle : toute consigne non nulle est hors bornes |
 
-Chaque borne est plafonnée par le débit maximal de la pompe. La borne du bolus vient des limites du médicament et non du bolus demandé : un bolus altéré après sa validation reste borné. La borne de la purge viendra avec l'unité de purge (SYS-REQ-014, SYS-REQ-028). D'ici là, toute consigne de purge est hors bornes.
+Chaque borne est aussi plafonnée par le débit maximal de la pompe.
+
+Aucune borne n'est déduite de la seule consigne qu'elle contrôle : chacune est plafonnée par les limites du médicament. Une programmation ou un bolus altérés après leur validation restent donc bornés. Par exemple, un débit de maintien de veine ouverte porté au-delà du débit programmé est arrêté avant d'être appliqué. La relecture de #129 a relevé ce point : la borne du maintien reprenait d'abord la consigne elle-même. La borne de la purge viendra avec l'unité de purge (SYS-REQ-014, SYS-REQ-028). D'ici là, toute consigne de purge est hors bornes.
 
 ## Décompte des volumes
 
@@ -159,7 +161,7 @@ Les tests de `tests/control_infusion_test.cpp` construisent leurs attendus indé
 | Cohérence des entrées | Dix-huit bibliothèques ou seringues incohérentes, chacune refusée (`InvalidLimits`) |
 | Arrondi | Débit exact sans arrondi ; 10 mL en 3 h retenus à 3,3 mL/h, arrondi signalé, durée de 10 910 s ; durée arrondie par excès en débit continu |
 | Limites souples | Débit sous la limite souple basse, au-delà de la limite souple haute ; bolus au-delà de la limite souple |
-| Bornes de consigne | Borne de chaque mode, nulle hors perfusion et pour une valeur invalide, plafonnée à 200 mL/h ; consigne hors bornes jamais appliquée (programmation ou bolus altérés) |
+| Bornes de consigne | Borne de chaque mode, nulle hors perfusion et pour une valeur invalide. Plafonds : 200 mL/h, limite dure du médicament, et pour le maintien de veine ouverte débit programmé, bibliothèque, 5 mL/h et arrêt prévu. Une consigne hors bornes n'est jamais appliquée : débit, bolus et maintien de veine ouverte altérés après validation, dont le cas reproduit en relecture de #129 |
 | Décompte | Volume atteint à la seconde près ; pas tronqué au volume restant ; 200 000 pas irréguliers égaux à l'intégrale exacte ; bolus compté dans le volume perfusé ; volume atteint pendant le bolus, avant ou en même temps que sa fin ; bolus abandonné par une pause, le maintien de veine ouverte ou la purge ; intervalles nul, maximal, négatif et trop long |
 | Intégration avec la machine | Perfusion, bolus, retour au débit programmé et maintien de veine ouverte : chaque événement renvoyé est accepté par la machine |
 | Couverture structurelle | 100 % des régions et des branches, sans exclusion (tâche CI `coverage`) |
