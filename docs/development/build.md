@@ -92,9 +92,10 @@ python3 tools/coverage.py --build-dir build/clang-coverage --llvm-cov llvm-cov-2
 - **Instructions** : chaque *région* de code, une suite d'instructions qui s'exécutent ensemble, doit être exécutée au moins une fois. La région est plus fine que la ligne : deux instructions d'une même ligne séparées par une condition sont deux régions.
 - **Branches** : chaque condition du source (`if`, boucles, `?:`, `&&`, `||`) doit être évaluée vraie et fausse au moins une fois. Seules les branches du source sont comptées. Les chemins que le compilateur ajoute, pour les exceptions ou les destructeurs par exemple, ne le sont pas : ils n'ont pas de condition dans le source.
 - **Profils** : chaque exécutable de test enregistre ses profils dans son propre répertoire, `coverage/<cible>/`, et il est mesuré avec ses seuls profils. Les résultats des exécutables sont ensuite réunis par emplacement dans le source : une région est couverte si au moins un exécutable l'exécute. Deux exécutables peuvent définir des fonctions de même nom et de corps différents (les lambdas de `main`, par exemple). Un profil commun en écarterait les données ; le script refuse donc tout profil incohérent avec son exécutable. Le test CTest `coverage_clean` efface les profils avant chaque exécution des tests, pour qu'une mesure ne réunisse jamais deux exécutions.
-- **Mesure impossible** : profil absent ou incohérent, outil en échec, ou build non instrumenté. Le script renvoie alors le code 2, distinct d'un échec du critère (code 1).
+- **Fichiers objets** : les fichiers objets des cibles de `src/` sont aussi mesurés, avec un profil vide. Une fonction compilée qu'aucun exécutable de test ne lie, dans un `.cpp` comme dans un module `.cppm`, figure ainsi dans la mesure comme non couverte, au lieu d'en être absente. Un objet sans code exécutable, comme une interface qui ne contient que des déclarations, n'a pas de données de couverture et n'ajoute rien. Chaque unité `.cpp` ou `.cppm` de classe C doit avoir un fichier objet, donc appartenir à une cible déclarée par `clepsydre_register_objects` ; sinon la mesure échoue.
+- **Mesure impossible** : profil absent ou incohérent, fichier objet absent, outil en échec, ou build non instrumenté. Le script renvoie alors le code 2, distinct d'un échec du critère (code 1).
 
-**Périmètre** : tout le code de `src/` est de classe C, sauf les répertoires non embarqués `src/sim/` et `src/sim_console/` ([classification](../../software_development_file/safety-classification.md#éléments-logiciels)). Un nouveau répertoire de `src/` est donc mesuré par défaut. Le code de test et les outils sont exclus. Une unité d'implémentation (`.cpp`) de classe C qu'aucun exécutable de test ne lie fait échouer la mesure : son code ne serait jamais exécuté. La mesure porte aujourd'hui sur tous les tests CTest. Quand viendront les essais du logiciel complet face au simulateur, qui relèvent du niveau système, ils seront écartés de la mesure : la couverture structurelle est obtenue par les tests unitaires et d'intégration.
+**Périmètre** : tout le code de `src/` est de classe C, sauf les répertoires non embarqués `src/sim/` et `src/sim_console/` ([classification](../../software_development_file/safety-classification.md#éléments-logiciels)). Un nouveau répertoire de `src/` est donc mesuré par défaut. Le code de test et les outils sont exclus. La mesure porte aujourd'hui sur tous les tests CTest. Quand viendront les essais du logiciel complet face au simulateur, qui relèvent du niveau système, ils seront écartés de la mesure : la couverture structurelle est obtenue par les tests unitaires et d'intégration.
 
 **Exclusions** : une région ou une branche qui ne peut pas être exécutée (code défensif inatteignable, par exemple) est exclue par un commentaire sur la ligne où elle commence :
 
@@ -113,14 +114,15 @@ Pour un bloc, la région commence à son accolade ouvrante. L'exclusion porte su
 
 ### Contre-épreuves de la couverture
 
-Pour vérifier que la tâche `coverage` échoue bien, deux commits temporaires ont été poussés le 2026-10-14 sur la branche de [#124](https://github.com/camille-martin-paris/clepsydre/pull/124), puis retirés :
+Pour vérifier que la tâche `coverage` échoue bien, trois commits temporaires ont été poussés le 2026-10-14 sur la branche de [#124](https://github.com/camille-martin-paris/clepsydre/pull/124), puis retirés :
 
 | Défaut injecté dans `src/core/version.cpp` | Commit | Diagnostic de la tâche `coverage` | Code de sortie |
 | --- | --- | --- | --- |
 | Condition jamais vraie dans les tests | `b6a9dfe` | Critère non atteint : région jamais exécutée, issue vraie de la branche jamais prise | 1 |
 | La même condition, exclue par un marqueur sans justification | `207692b` | Critère non atteint : exclusion sans justification | 1 |
+| Module `src/core/untested.cppm`, compilé dans `clepsydre_core` mais lié par aucun test, avec une fonction non inline et une condition (cas relevé à la relecture de #124) | `42be0c6` | Critère non atteint : quatre régions jamais exécutées, deux issues de branche jamais prises | 1 |
 
-Les tests de [`tools/tests/test_coverage.py`](../../tools/tests/test_coverage.py) couvrent en outre l'exclusion sans objet, l'unité non liée aux tests, les profils incohérents ou absents et l'échec des outils.
+Les tests de [`tools/tests/test_coverage.py`](../../tools/tests/test_coverage.py) couvrent en outre l'exclusion sans objet, l'unité compilée dans aucune cible, l'objet sans données de couverture, les profils incohérents ou absents et l'échec des outils.
 
 ## Dépendances épinglées
 

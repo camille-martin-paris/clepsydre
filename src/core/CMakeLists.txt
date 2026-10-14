@@ -4,7 +4,7 @@
 add_library(clepsydre_core)
 add_library(clepsydre::core ALIAS clepsydre_core)
 target_sources(clepsydre_core
-    PUBLIC FILE_SET CXX_MODULES FILES version.cppm untested.cppm
+    PUBLIC FILE_SET CXX_MODULES FILES version.cppm
     PRIVATE version.cpp)
 target_compile_definitions(clepsydre_core PRIVATE
     CLEPSYDRE_VERSION_MAJOR=${PROJECT_VERSION_MAJOR}
