@@ -51,7 +51,7 @@ public:
 
     // Exécute les lignes de in. En mode script, chaque ligne est recopiée et l'exécution
     // s'arrête à la première erreur ou vérification échouée. Renvoie le code de sortie : 0 si
-    // tout a réussi, 1 si une vérification a échoué, 2 en cas d'erreur.
+    // tout a réussi, 1 si une vérification a échoué, 2 en cas d'erreur, y compris de lecture.
     int run(std::istream& in, bool interactive);
 
 private:

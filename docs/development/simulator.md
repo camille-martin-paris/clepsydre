@@ -179,7 +179,7 @@ build/gcc/src/sim_console/clepsydre-sim                              # commandes
 build/gcc/src/sim_console/clepsydre-sim examples/sim/occlusion-bolus.txt   # scénario
 ```
 
-« aide » liste les commandes ; « verifie liste » liste les grandeurs vérifiables. En mode scénario, chaque ligne est recopiée, et l'exécution s'arrête à la première erreur (code de sortie 2) ou à la première vérification échouée (code 1).
+« aide » liste les commandes ; « verifie liste » liste les grandeurs vérifiables. En mode scénario, chaque ligne est recopiée, et l'exécution s'arrête à la première erreur, de commande ou de lecture du scénario (code de sortie 2), ou à la première vérification échouée (code 1).
 
 La console tient le rôle de l'opérateur : il n'y a pas encore de logiciel de pompe. Elle reproduit seulement deux câblages matériels : la validation du moteur exige l'alimentation, et une perte totale d'alimentation remet la commande du moteur à zéro, comme le logiciel de commande devra le faire à son redémarrage (SYS-REQ-038). Les défauts de la liaison et des processeurs n'y figurent pas : ils n'ont d'effet qu'à travers des logiciels, qui viendront en M1.
 
