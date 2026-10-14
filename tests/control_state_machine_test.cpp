@@ -13,6 +13,7 @@
 #include <format>
 #include <optional>
 #include <string>
+#include <utility>
 #include <vector>
 
 import clepsydre.control.state_machine;
@@ -57,6 +58,8 @@ constexpr std::array expected{
     row(State::Bolus, Event::BolusEnded, State::Infusing),
     row(State::Bolus, Event::PauseRequested, State::Paused),
     row(State::Bolus, Event::StopRequested, State::Stopped),
+    row(State::Bolus, Event::VolumeReached, State::Stopped),
+    row(State::Bolus, Event::VolumeReachedKvo, State::Kvo),
     row(State::Bolus, Event::SyringeEmpty, State::Stopped),
     row(State::Kvo, Event::PauseRequested, State::PausedKvo),
     row(State::Kvo, Event::StopRequested, State::Stopped),
@@ -124,7 +127,7 @@ void exhaustive(Expectations& t) {
             refused += got.verdict == Verdict::Refused ? 1U : 0U;
         }
     }
-    // 35 transitions propres, plus DangerDetected et FatalFault dans les 13 états.
+    // 37 transitions propres, plus DangerDetected et FatalFault dans les 13 états.
     constexpr std::size_t states = stateCount;
     constexpr std::size_t events = eventCount;
     t.expect(accepted == expected.size() + (2 * states), "nombre de transitions admises");
@@ -133,12 +136,16 @@ void exhaustive(Expectations& t) {
 }
 
 void invalidValues(Expectations& t) {
+    // Remarque de relecture de #128 : un état invalide ne dit pas si les autotests ont réussi. Il
+    // mène hors service quel que soit l'événement, FatalFault compris, jamais à l'état sûr dont
+    // l'acquittement ramènerait à l'arrêt sans autotests.
     for (const std::uint8_t value :
          {std::uint8_t{0}, std::uint8_t{stateCount + 1}, std::uint8_t{255}}) {
-        const Transition fromInvalid = transition(stateAt(value), Event::StopRequested);
-        t.expect(fromInvalid.verdict == Verdict::InternalFault &&
-                     fromInvalid.to == State::SafeState,
-                 std::format("état invalide {} : état sûr", value));
+        for (std::uint8_t e = 0; e <= eventCount + 1; ++e) {
+            const Transition got = transition(stateAt(value), eventAt(e));
+            t.expect(got.verdict == Verdict::InternalFault && got.to == State::OutOfService,
+                     std::format("état invalide {}, événement {} : hors service", value, e));
+        }
     }
     for (const std::uint8_t value :
          {std::uint8_t{0}, std::uint8_t{eventCount + 1}, std::uint8_t{255}}) {
@@ -149,6 +156,26 @@ void invalidValues(Expectations& t) {
                      std::format("événement invalide {} depuis l'état {}", value, s));
         }
     }
+}
+
+// Récupération après un état invalide : seule la remise en service, puis des autotests réussis,
+// ramènent à l'arrêt.
+void recoveryFromInvalidState(Expectations& t) {
+    State state = transition(stateAt(0), Event::SafeStateAcknowledged).to;
+    t.expect(state == State::OutOfService, "état invalide : hors service");
+    for (const Event event : {Event::SafeStateAcknowledged, Event::ProgrammingStarted,
+                              Event::StartRequested, Event::SelfTestsPassed}) {
+        const Transition got = transition(state, event);
+        t.expect(got.verdict == Verdict::Refused && got.to == State::OutOfService,
+                 std::format("hors service : événement {} refusé", static_cast<int>(event)));
+    }
+    state = transition(state, Event::ReturnedToService).to;
+    t.expect(state == State::Booting, "remise en service : démarrage");
+    t.expect(transition(state, Event::StartRequested).verdict == Verdict::Refused &&
+                 transition(state, Event::ProgrammingStarted).verdict == Verdict::Refused,
+             "aucune programmation ni démarrage avant les autotests");
+    t.expect(transition(state, Event::SelfTestsPassed).to == State::Stopped,
+             "autotests réussis : arrêt");
 }
 
 void phasesAndModes(Expectations& t) {
@@ -170,8 +197,8 @@ void phasesAndModes(Expectations& t) {
     for (const auto& [state, want] : phases) {
         t.expect(phase(state) == want, std::format("phase de l'état {}", static_cast<int>(state)));
     }
-    t.expect(phase(stateAt(0)) == Phase::SafeState && phase(stateAt(200)) == Phase::SafeState,
-             "état invalide affiché comme état sûr");
+    t.expect(phase(stateAt(0)) == Phase::OutOfService && phase(stateAt(200)) == Phase::OutOfService,
+             "état invalide affiché comme hors service");
 
     for (std::uint8_t s = 1; s <= stateCount; ++s) {
         const State state = stateAt(s);
@@ -211,6 +238,38 @@ std::optional<Transition> run(StateMachine& machine, const std::vector<Event>& e
         }
     }
     return std::nullopt;
+}
+
+// Remarque de relecture de #128 : le volume à perfuser peut être atteint pendant un bolus, selon
+// les deux politiques de la bibliothèque, et en même temps que la fin du bolus, dans les deux
+// ordres.
+void endOfVolumeDuringBolus(Expectations& t) {
+    const std::vector<Event> toBolus{Event::SelfTestsPassed, Event::ProgrammingStarted,
+                                     Event::ProgrammingConfirmed, Event::StartRequested,
+                                     Event::BolusRequested};
+    for (const auto& [end, after] : {std::pair{Event::VolumeReached, State::Stopped},
+                                     std::pair{Event::VolumeReachedKvo, State::Kvo}}) {
+        const std::string policy = end == Event::VolumeReached ? "arrêt" : "maintien de veine";
+        {
+            StateMachine machine;
+            static_cast<void>(run(machine, toBolus));
+            const Transition reached = machine.apply(end);
+            t.expect(reached.verdict == Verdict::Accepted && machine.state() == after,
+                     "volume atteint pendant le bolus : " + policy);
+            const Transition bolusEnd = machine.apply(Event::BolusEnded);
+            t.expect(bolusEnd.verdict == Verdict::Refused && machine.state() == after,
+                     "fin de bolus simultanée, reçue après : refusée, " + policy + " maintenu");
+            t.expect(actuatorMode(machine.state()) != ActuatorMode::Bolus,
+                     "plus de consigne de bolus : " + policy);
+        }
+        {
+            StateMachine machine;
+            static_cast<void>(run(machine, toBolus));
+            const auto refusal = run(machine, {Event::BolusEnded, end});
+            t.expect(!refusal && machine.state() == after,
+                     "fin de bolus puis volume atteint : " + policy);
+        }
+    }
 }
 
 void journeys(Expectations& t) {
@@ -266,8 +325,10 @@ int main() {
     return Expectations{}.run([](Expectations& t) {
         exhaustive(t);
         invalidValues(t);
+        recoveryFromInvalidState(t);
         phasesAndModes(t);
         stableValues(t);
+        endOfVolumeDuringBolus(t);
         journeys(t);
     });
 }

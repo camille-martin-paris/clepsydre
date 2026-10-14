@@ -55,6 +55,9 @@ constexpr std::array rules{
     rule(State::Bolus, Event::BolusEnded, State::Infusing),
     rule(State::Bolus, Event::PauseRequested, State::Paused),
     rule(State::Bolus, Event::StopRequested, State::Stopped),
+    // Le volume à perfuser peut être atteint avant la fin du bolus (SYS-REQ-032).
+    rule(State::Bolus, Event::VolumeReached, State::Stopped),
+    rule(State::Bolus, Event::VolumeReachedKvo, State::Kvo),
     rule(State::Bolus, Event::SyringeEmpty, State::Stopped),
 
     rule(State::Kvo, Event::PauseRequested, State::PausedKvo),
@@ -95,7 +98,15 @@ constexpr std::array rules{
 } // namespace
 
 Transition transition(State from, Event event) noexcept {
-    if (!valid(from) || !valid(event)) {
+    // Un état invalide ne dit pas si les autotests ont réussi : hors service, quel que soit
+    // l'événement. La remise en service repasse par les autotests.
+    if (!valid(from)) {
+        return {.from = from,
+                .event = event,
+                .to = State::OutOfService,
+                .verdict = Verdict::InternalFault};
+    }
+    if (!valid(event)) {
         const State to = untested(from) ? State::OutOfService : State::SafeState;
         return {.from = from, .event = event, .to = to, .verdict = Verdict::InternalFault};
     }
@@ -137,11 +148,11 @@ Phase phase(State state) noexcept {
         return Phase::Pause;
     case State::Maintenance:
         return Phase::Maintenance;
-    case State::OutOfService:
-        return Phase::OutOfService;
     case State::SafeState:
-    default: // valeur invalide : la machine la traite comme l'état sûr
         return Phase::SafeState;
+    case State::OutOfService:
+    default: // valeur invalide : la machine la traite comme hors service
+        return Phase::OutOfService;
     }
 }
 

@@ -13,8 +13,9 @@ export module clepsydre.control.state_machine;
 // La machine est une fonction pure de l'état courant et d'un événement : elle ne commande rien
 // elle-même. Les autres unités (actionneur, alarmes, journal, interface) lisent l'état et le
 // verdict de chaque transition. Une demande non admise dans l'état courant est refusée sans
-// changer d'état, et le verdict permet de la journaliser ; une incohérence interne (valeur d'état
-// ou d'événement invalide) place la pompe en état sûr. Ni allocation dynamique ni exception.
+// changer d'état, et le verdict permet de la journaliser. Une incohérence interne place la pompe
+// en état sûr (événement invalide) ou hors service (état invalide, ou événement invalide au
+// démarrage ou hors service). Ni allocation dynamique ni exception.
 
 export namespace clepsydre::control {
 
@@ -92,7 +93,7 @@ inline constexpr std::uint8_t eventCount = 22;
 enum class Verdict : std::uint8_t {
     Accepted,      // transition prévue, éventuellement vers le même état
     Refused,       // demande non admise dans l'état : état inchangé, à journaliser
-    InternalFault, // état ou événement invalide : état sûr, ou hors service
+    InternalFault, // état ou événement invalide : état sûr ou hors service
 };
 
 struct Transition {

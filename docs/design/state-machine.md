@@ -31,7 +31,7 @@ Ambroise Leclerc a retenu ces deux décisions le 2026-10-14, avant la conception
    - elle n'a **pas d'état « Alarme »**. Les alarmes relèvent du système d'alarmes (#30) et coexistent avec les états. Celles qui imposent l'arrêt mènent à l'état sûr. SW-REQ-001 est révisée en conséquence (révision D).
 2. **Demande non prévue : refus, sauf incohérence interne.**
    - Une demande non admise dans l'état courant est **refusée et journalisée, sans changer d'état**. Un appui sur « Bolus » à l'arrêt, par exemple, ne doit ni arrêter une perfusion ni déclencher d'alarme (fausses alarmes, SYS-REQ-022).
-   - Une **incohérence interne** de la machine, c'est-à-dire une valeur d'état ou d'événement invalide, place la pompe en **état sûr**.
+   - Une **incohérence interne** de la machine, c'est-à-dire une valeur d'état ou d'événement invalide, place la pompe en **état sûr**, ou **hors service** quand la machine ne peut plus savoir si les autotests ont réussi ([Refus et incohérences](#refus-et-incohérences)).
 
 ## États
 
@@ -115,7 +115,8 @@ La machine décide seulement si l'événement est admis dans l'état courant.
 | `Infusing` | `StopRequested`, `VolumeReached`, `SyringeEmpty` | `Stopped` |
 | `Bolus` | `BolusEnded` | `Infusing` |
 | `Bolus` | `PauseRequested` | `Paused` |
-| `Bolus` | `StopRequested`, `SyringeEmpty` | `Stopped` |
+| `Bolus` | `VolumeReachedKvo` | `Kvo` |
+| `Bolus` | `StopRequested`, `VolumeReached`, `SyringeEmpty` | `Stopped` |
 | `Kvo` | `PauseRequested` | `PausedKvo` |
 | `Kvo` | `StopRequested`, `SyringeEmpty` | `Stopped` |
 | `Paused` | `StartRequested` | `Infusing` |
@@ -127,7 +128,7 @@ La machine décide seulement si l'événement est admis dans l'état courant.
 | `Maintenance` | `TakenOutOfService` | `OutOfService` |
 | `OutOfService` | `ReturnedToService` | `Booting` |
 
-Soit 35 transitions.
+Soit 37 transitions.
 
 ### Événements admis dans tous les états
 
@@ -140,15 +141,22 @@ Au démarrage et hors service, la pompe n'a pas passé ses autotests, ou y a éc
 
 ### Refus et incohérences
 
-- **Refus** : tout autre couple (état, événement), valide, est refusé. Sur les 13 × 22 = 286 couples, 61 sont admis : les 35 transitions propres, plus deux événements dans 13 états ; les 225 autres sont refusés. L'état ne change pas, et le verdict `Refused` permet à l'appelant de journaliser le refus (SW-REQ-001).
-- **Incohérence interne** : une valeur d'état ou d'événement hors de l'énumération, par exemple une mémoire corrompue, donne le verdict `InternalFault`. La pompe passe en état sûr, ou hors service depuis le démarrage ou hors service. `phase()` présente un état invalide comme l'état sûr, et `actuatorMode()` n'y admet aucune consigne.
+- **Refus** : tout autre couple (état, événement), valide, est refusé. Sur les 13 × 22 = 286 couples, 63 sont admis : les 37 transitions propres, plus deux événements dans 13 états ; les 223 autres sont refusés. L'état ne change pas, et le verdict `Refused` permet à l'appelant de journaliser le refus (SW-REQ-001).
+- **Incohérence interne** : une valeur hors de l'énumération, par exemple après une corruption de la mémoire, donne le verdict `InternalFault`.
+  - **État invalide** : la pompe passe **hors service**, quel que soit l'événement, `FatalFault` compris. Un état invalide ne dit pas si les autotests ont réussi. L'état sûr ne convient donc pas : son acquittement ramènerait à l'arrêt, puis permettrait programmation et démarrage sans autotests. La remise en service repasse par le démarrage et ses autotests.
+  - **Événement invalide** depuis un état valide : état sûr, ou hors service depuis le démarrage et hors service, comme `DangerDetected`.
+
+  `phase()` présente un état invalide comme hors service, et `actuatorMode()` n'y admet aucune consigne.
 
 ### Conséquences voulues
 
 - **Purge avant le premier démarrage seulement** (SYS-REQ-014) : la purge n'est admise que depuis `Ready`, et la machine n'y revient pas une fois la perfusion démarrée. La pause et l'arrêt ne ramènent pas à `Ready`.
 - **Pas de nouvelle programmation pendant une perfusion** (SYS-REQ-044) : `ProgrammingStarted` n'est admis qu'à l'arrêt ou prête. Changer de débit exige d'arrêter puis de reprogrammer.
 - **Pas de reprise depuis l'état sûr** (ADR 0003) : l'acquittement mène à l'arrêt, et la programmation est perdue. La proposition de reprise après une réinitialisation (SYS-REQ-038) passe par une nouvelle programmation au volume restant, préparée par une autre unité.
-- **Fin de perfusion** (SYS-REQ-032) : à l'atteinte du volume, la machine passe à l'arrêt ou au maintien de veine ouverte selon l'événement reçu, choisi par la bibliothèque. La seringue vide arrête la perfusion dans tous ses modes.
+- **Fin de perfusion** (SYS-REQ-032) : à l'atteinte du volume, la machine passe à l'arrêt ou au maintien de veine ouverte selon l'événement reçu, choisi par la bibliothèque.
+  - Cela vaut aussi **pendant un bolus** : le volume à perfuser peut être atteint avant la fin du bolus, qui est alors abandonné.
+  - Une fin de bolus qui arrive ensuite est refusée, sans revenir au débit programmé.
+  - La seringue vide arrête la perfusion dans tous ses modes.
 
 ## Diagramme
 
@@ -172,6 +180,7 @@ stateDiagram-v2
         Infusing --> Bolus : BolusRequested
         Bolus --> Infusing : BolusEnded
         Infusing --> Kvo : VolumeReachedKvo
+        Bolus --> Kvo : VolumeReachedKvo
     }
     Infusing --> Paused : PauseRequested
     Bolus --> Paused : PauseRequested
@@ -180,6 +189,7 @@ stateDiagram-v2
     PausedKvo --> Kvo : StartRequested
     Perfusion --> Stopped : StopRequested, SyringeEmpty
     Infusing --> Stopped : VolumeReached
+    Bolus --> Stopped : VolumeReached
     Paused --> Stopped : StopRequested
     PausedKvo --> Stopped : StopRequested
     SafeState --> Stopped : SafeStateAcknowledged
@@ -190,10 +200,10 @@ stateDiagram-v2
 
 ## Ressources et traitement des défauts
 
-- **Mémoire** : un octet d'état ; une table constante de 35 règles en mémoire morte. Aucune allocation dynamique.
+- **Mémoire** : un octet d'état ; une table constante de 37 règles en mémoire morte. Aucune allocation dynamique.
 - **Exceptions** : toutes les fonctions sont `noexcept` et ne lèvent pas d'exception.
 - **Fonction totale** : `transition()` a un résultat pour toute valeur de ses arguments, même invalide.
-- **Temps d'exécution** : borné par le parcours de la table, 35 règles au plus.
+- **Temps d'exécution** : borné par le parcours de la table, 37 règles au plus.
 
 ## Vérification
 
@@ -201,9 +211,9 @@ stateDiagram-v2
 
 | Critère (IEC 62304 §5.5.4) | Couverture par les tests |
 | --- | --- |
-| Séquences d'événements | Les 286 couples (état, événement) comparés un par un à la table attendue, avec l'état suivant et le verdict ; trois parcours complets (purge, perfusion, bolus, pause, maintien de veine ouverte, arrêt ; état sûr et acquittement ; maintenance, mise hors service, remise en service, autotests en échec) |
-| Flux de contrôle | Nombre exact de transitions admises (61) ; aucune incohérence interne sur des valeurs valides |
-| Traitement des défauts | États et événements invalides (0, juste au-delà de la plage, 255) depuis chaque état : état sûr, ou hors service depuis le démarrage et hors service |
+| Séquences d'événements | Les 286 couples (état, événement) comparés un par un à la table attendue, avec l'état suivant et le verdict ; trois parcours complets (purge, perfusion, bolus, pause, maintien de veine ouverte, arrêt ; état sûr et acquittement ; maintenance, mise hors service, remise en service, autotests en échec) ; volume atteint pendant un bolus, pour les deux politiques de fin, avec la fin du bolus avant ou après |
+| Flux de contrôle | Nombre exact de transitions admises (63) ; aucune incohérence interne sur des valeurs valides |
+| Traitement des défauts | États invalides (0, juste au-delà de la plage, 255) avec chaque événement, valide ou non : hors service. Événements invalides depuis chaque état : état sûr, ou hors service depuis le démarrage et hors service. Récupération après un état invalide : seuls la remise en service puis des autotests réussis ramènent à l'arrêt |
 | Conditions aux limites | Premières et dernières valeurs des énumérations ; valeurs numériques stables vérifiées |
 | Initialisation | La machine démarre en `Booting` |
 | Couverture structurelle | 100 % des régions et des branches, sans exclusion (tâche CI `coverage`) |
