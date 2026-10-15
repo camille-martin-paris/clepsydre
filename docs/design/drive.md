@@ -62,7 +62,7 @@ Les plages garantissent aussi les calculs : le produit débit × intervalle × n
 - le compteur des pas émis par le générateur d'impulsions ;
 - la force mesurée sur le pousseur, absente si le capteur ne rend rien.
 
-Il rend une commande (`DriveCommand`) : le nombre de pas que le générateur doit émettre, régulièrement espacés, pendant la période suivante. Les pas sont toujours vers l'avant : le recul relève de la décompression après occlusion (#27).
+Il rend une commande (`DriveCommand`) : le nombre de pas que le générateur doit émettre, régulièrement espacés, pendant la période suivante. Les pas sont toujours vers l'avant : le recul relève de la [décompression après occlusion](occlusion.md#décompression-ctrl-008) (#27).
 
 ## Phases
 
@@ -210,7 +210,7 @@ Ces tests préparent les essais sur banc de SYS-REQ-003 (VER-004) et SYS-REQ-048
 ## Limites
 
 - **Boucle ouverte sur le moteur.** Le compteur de pas ne voit pas les pas perdus. Leur détection relève du canal de sécurité (CTRL-001) et de la détection d'actionneur inactif (SYS-REQ-004).
-- **Pas de recul.** La détection d'occlusion par la force (CTRL-007) et la décompression qui la suit (CTRL-008) relèvent de #27.
+- **Pas de recul.** La détection d'occlusion par la force (CTRL-007) et la décompression qui la suit (CTRL-008) relèvent d'une unité distincte, qui remplace l'entraînement dès la détection ([conception détaillée](occlusion.md), #27).
 - **Générateur d'impulsions.** Le contrat retenu (les pas demandés sont émis, régulièrement espacés, pendant la période suivante) est à confirmer avec la carte de commande (#57).
 - **Vitesse bornée par conception.** `maxStepRate` reprend la borne matérielle de SYS-REQ-043 : l'entraînement vérifie qu'une commande au débit maximal de 200 mL/h tient dessous. La borne elle-même est matérielle, et sa vérification relève de l'analyse et du banc (VER-103, VER-104).
 - **Paramètres.** Toutes les valeurs numériques de la simulation sont des ordres de grandeur, non mesurés.
