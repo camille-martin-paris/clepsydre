@@ -58,7 +58,7 @@ control::DriveMechanism driveMechanism() {
             .period = period};
 }
 
-// Caractéristiques d'entraînement que le banc mesurerait sur la seringue listed (#73) : section
+// Caractéristiques d'entraînement que le banc mesurerait sur le modèle de la liste (#73) : section
 // nominale ; fin du rattrapage aux trois quarts du frottement statique ; course du jeu et de la
 // compression du joint jusqu'à cette force, avec 25 % de marge sur la compression.
 control::SyringeDrive syringeDrive(const sim::SyringeModel& listed) {
