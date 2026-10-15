@@ -14,6 +14,7 @@
 #include <format>
 #include <optional>
 #include <string>
+#include <utility>
 
 import clepsydre.control.drive;
 import clepsydre.control.infusion;
@@ -57,8 +58,8 @@ bool constructorAgrees(const DriveMechanism& m, const SyringeDrive& s) {
 }
 
 // Entraînement sorti du rattrapage au compteur 0, sans aucun pas.
-Drive trackingDrive(Expectations& t) {
-    Drive drive{mechanism(), syringe(), 0};
+Drive trackingDrive(Expectations& t, const DriveMechanism& m = mechanism()) {
+    Drive drive{m, syringe(), 0};
     const DriveCommand command = drive.update(10ms, uLh(0), 0, mN(5'000));
     t.expect(command.steps == 0 && !command.fault && drive.phase() == DrivePhase::Tracking,
              "force atteinte au premier relevé : perfusion");
@@ -94,13 +95,14 @@ void parameters(Expectations& t) {
     m.maxStepRate = 100'000;
     admitted(m, syringe(), "65 536 pas par tour");
 
-    // 200 mL/h avec la seringue de référence : 1 280 000 pas/h, soit 355,6 pas/s.
+    // 200 mL/h avec la seringue de référence : 1 280 000 pas/h, soit 3,56 pas par période de
+    // 10 ms, 4 arrondis par excès : une commande exige 400 pas/s au moins.
     m = mechanism();
-    m.maxStepRate = 355;
-    m.takeUpStepRate = 355;
+    m.maxStepRate = 399;
+    m.takeUpStepRate = 399;
     refused(m, syringe(), "200 mL/h au-delà de la vitesse maximale du moteur");
-    m.maxStepRate = 356;
-    m.takeUpStepRate = 356;
+    m.maxStepRate = 400;
+    m.takeUpStepRate = 400;
     admitted(m, syringe(), "200 mL/h sous la vitesse maximale du moteur");
     m = mechanism();
     m.maxStepRate = 0;
@@ -216,6 +218,39 @@ void takeUp(Expectations& t) {
                  "course maximale sans la force : défaut");
     }
     {
+        // Générateur en retard d'une commande jusqu'à la dernière (relecture de #130) : la course
+        // est jugée une fois la dernière commande émise, pas avant.
+        const auto lagging = [&](std::int32_t finalForce, std::int64_t finalCount) {
+            Drive drive{mechanism(), syringe(), 0};
+            std::int64_t emitted = 0; // pas demandés avant la dernière commande
+            std::int64_t requested = 0;
+            bool clean = true;
+            for (int period = 0; period < 16; ++period) {
+                const DriveCommand command = drive.update(10ms, uLh(0), emitted, mN(0));
+                clean = clean && !command.fault && command.steps == 20;
+                emitted = requested;
+                requested += command.steps;
+            }
+            const DriveCommand wait = drive.update(10ms, uLh(0), emitted, mN(4'999));
+            t.expect(clean && requested == 320 && emitted == 300 && wait.steps == 0 &&
+                         !wait.fault && drive.phase() == DrivePhase::TakingUp,
+                     "course entièrement demandée, dernière commande non émise : attente");
+            const DriveCommand last = drive.update(
+                10ms, uLh(0), finalCount == 0 ? requested : finalCount, mN(finalForce));
+            return std::pair{last, drive.phase()};
+        };
+        const auto [reached, reachedPhase] = lagging(5'000, 0);
+        t.expect(!reached.fault && reachedPhase == DrivePhase::Tracking,
+                 "force atteinte par la dernière commande émise : perfusion");
+        const auto [short_, shortPhase] = lagging(4'999, 0);
+        t.expect(short_.fault == DriveFault::TakeUpTravelExceeded &&
+                     shortPhase == DrivePhase::Faulted,
+                 "dernière commande émise, force toujours insuffisante : défaut");
+        const auto [stuck, stuckPhase] = lagging(4'999, 300);
+        t.expect(stuck.fault == DriveFault::StepsNotEmitted && stuckPhase == DrivePhase::Faulted,
+                 "dernière commande jamais émise : défaut du générateur");
+    }
+    {
         // Course non multiple de la période : dernière commande tronquée (105 µm, 336 pas).
         SyringeDrive s = syringe();
         s.takeUpTravel = 105;
@@ -257,9 +292,12 @@ void tracking(Expectations& t) {
         t.expect(largest == 1, "au plus un pas par période à 1 mL/h");
     }
     {
-        // Intervalles irréguliers et consignes changeantes : la somme des pas est la partie
-        // entière de l'intégrale, 6 400 pas par mL.
-        Drive drive = trackingDrive(t);
+        // Intervalles irréguliers et consignes changeantes, avec une période de 100 ms qui couvre
+        // tout intervalle admis : la somme des pas est la partie entière de l'intégrale, 6 400 pas
+        // par mL.
+        DriveMechanism m = mechanism();
+        m.period = 100ms;
+        Drive drive = trackingDrive(t, m);
         std::int64_t count = 0;
         std::uint64_t integral = 0; // µL/h × ms
         std::uint32_t seed = 12'345;
@@ -305,6 +343,52 @@ void tracking(Expectations& t) {
         Drive drive = trackingDrive(t);
         const DriveCommand command = drive.update(-1ms, uLh(1'000), 0, std::nullopt);
         t.expect(command.fault == DriveFault::InvalidStep, "intervalle négatif : défaut");
+    }
+}
+
+// Intervalle plus long que la période (relecture de #130) : la commande reste réalisable par le
+// moteur pendant la période d'émission, le retard est rattrapé aux périodes suivantes, et borné.
+void longInterval(Expectations& t) {
+    DriveMechanism m = mechanism();
+    m.maxStepRate = 400; // 4 pas par période, juste ce qu'exige 200 mL/h
+    m.takeUpStepRate = 400;
+    {
+        Drive drive = trackingDrive(t, m);
+        std::int64_t count = 0;
+        std::uint64_t integral = 0; // µL/h × ms
+        // 100 ms à 200 mL/h : 35 pas dus, 4 émis pendant la période suivante, 31 en retard.
+        DriveCommand command = drive.update(100ms, pumpMaxRate, count, std::nullopt);
+        integral += 200'000ULL * 100;
+        count += command.steps;
+        t.expect(command.steps == 4 && !command.fault && drive.backlogSteps() == 31,
+                 std::format("intervalle de 100 ms : 4 pas, 31 en retard (obtenu : {}, {})",
+                             command.steps, drive.backlogSteps()));
+        std::uint32_t largest = command.steps;
+        bool consistent = true;
+        for (int period = 0; period < 100; ++period) {
+            command = drive.update(10ms, pumpMaxRate, count, std::nullopt);
+            integral += 200'000ULL * 10;
+            count += command.steps;
+            largest = std::max(largest, command.steps);
+            consistent =
+                consistent && !command.fault &&
+                static_cast<std::uint64_t>(count) + drive.backlogSteps() == integral / 562'500;
+        }
+        t.expect(consistent, "pas demandés et retard égaux à l'intégrale à chaque période");
+        t.expect(largest <= 4, "jamais plus de 4 pas par période : 400 pas/s");
+        t.expect(drive.backlogSteps() == 0 &&
+                     static_cast<std::uint64_t>(count) == integral / 562'500,
+                 "retard rattrapé en 100 périodes au débit maximal");
+    }
+    {
+        // Deux intervalles de 100 ms de suite : 63 pas de retard, au-delà des 36 de 100 ms au
+        // débit maximal.
+        Drive drive = trackingDrive(t, m);
+        const DriveCommand first = drive.update(100ms, pumpMaxRate, 0, std::nullopt);
+        const DriveCommand second = drive.update(100ms, pumpMaxRate, first.steps, std::nullopt);
+        t.expect(!first.fault && second.steps == 0 && second.fault == DriveFault::TrackingLag &&
+                     drive.phase() == DrivePhase::Faulted,
+                 "retard au-delà de 100 ms au débit maximal : défaut");
     }
 }
 
@@ -356,7 +440,8 @@ void stableValues(Expectations& t) {
              "valeurs des phases");
     t.expect(static_cast<int>(DriveFault::InvalidParameters) == 1 &&
                  static_cast<int>(DriveFault::TakeUpTravelExceeded) == 5 &&
-                 static_cast<int>(DriveFault::StepsNotEmitted) == 7,
+                 static_cast<int>(DriveFault::StepsNotEmitted) == 7 &&
+                 static_cast<int>(DriveFault::TrackingLag) == 8,
              "valeurs des défauts");
 }
 
@@ -367,6 +452,7 @@ int main() {
         parameters(t);
         takeUp(t);
         tracking(t);
+        longInterval(t);
         counter(t);
         latched(t);
         stableValues(t);

@@ -72,13 +72,24 @@ constexpr std::uint64_t nanometresPerMicrometre = 1'000;
            syringe.takeUpTravel <= maxTakeUpTravel && maxTakeUpSteps(mechanism, syringe) >= 1;
 }
 
-// Le débit maximal de la pompe, converti en pas par seconde, tient sous la vitesse maximale du
-// moteur : une consigne admise n'est jamais limitée par le matériel.
+// Pas qu'exige le débit maximal de la pompe pendant duration, arrondis par excès.
+[[nodiscard]] std::uint64_t maximumRateSteps(const DriveMechanism& mechanism,
+                                             const SyringeDrive& syringe,
+                                             std::chrono::milliseconds duration) noexcept {
+    const std::uint64_t numerator = std::uint64_t{pumpMaxRate.microlitresPerHour} *
+                                    static_cast<std::uint64_t>(duration.count()) *
+                                    stepNumerator(mechanism);
+    const std::uint64_t divisor = stepDivisor(mechanism, syringe);
+    return (numerator + divisor - 1) / divisor;
+}
+
+// Une commande, plafonnée aux pas du débit maximal de la pompe sur une période, peut être émise
+// pendant cette période sans dépasser la vitesse maximale du moteur.
 [[nodiscard]] bool maximumRateReachable(const DriveMechanism& mechanism,
                                         const SyringeDrive& syringe) noexcept {
-    const std::uint64_t stepsPerSecondNumerator = std::uint64_t{pumpMaxRate.microlitresPerHour} *
-                                                  millisecondsPerSecond * stepNumerator(mechanism);
-    return stepsPerSecondNumerator <= mechanism.maxStepRate * stepDivisor(mechanism, syringe);
+    return maximumRateSteps(mechanism, syringe, mechanism.period) <=
+           std::uint64_t{mechanism.maxStepRate} * periodMilliseconds(mechanism) /
+               millisecondsPerSecond;
 }
 
 } // namespace
@@ -101,6 +112,8 @@ Drive::Drive(const DriveMechanism& mechanism, const SyringeDrive& syringe,
     stepDivisor_ = stepDivisor(mechanism, syringe);
     maxTakeUpSteps_ = static_cast<std::int64_t>(maxTakeUpSteps(mechanism, syringe));
     takeUpStepsPerPeriod_ = static_cast<std::uint32_t>(takeUpStepsPerPeriod(mechanism));
+    maxStepsPerPeriod_ = maximumRateSteps(mechanism, syringe, mechanism.period);
+    maxBacklog_ = maximumRateSteps(mechanism, syringe, maxStep);
 }
 
 DriveCommand Drive::update(std::chrono::milliseconds elapsed, Rate setpoint, std::int64_t stepCount,
@@ -148,6 +161,13 @@ DriveCommand Drive::takeUp(std::optional<Force> force) noexcept {
     }
     const std::int64_t travel = requested_ - start_;
     if (travel >= maxTakeUpSteps_) {
+        // Toute la course est demandée : la force n'est jugée qu'une fois la dernière commande
+        // émise, au pas de tolérance près. L'attente dure une période : le contrôle du compteur
+        // exige ensuite cette émission.
+        if (requested_ - counted_ > 1) {
+            lastSteps_ = 0;
+            return {};
+        }
         return fail(DriveFault::TakeUpTravelExceeded);
     }
     const auto steps = static_cast<std::uint32_t>(
@@ -162,8 +182,16 @@ DriveCommand Drive::track(std::chrono::milliseconds elapsed, Rate setpoint) noex
     // d'arrondi ne se cumule.
     remainder_ += std::uint64_t{setpoint.microlitresPerHour} *
                   static_cast<std::uint64_t>(elapsed.count()) * stepNumerator_;
-    const std::uint64_t steps = remainder_ / stepDivisor_;
+    backlog_ += remainder_ / stepDivisor_;
     remainder_ %= stepDivisor_;
+    // Les pas sont émis pendant la période suivante : la commande est plafonnée à ce que le débit
+    // maximal de la pompe y demande. Le reste, après un intervalle plus long que la période, est
+    // un retard rattrapé aux périodes suivantes, et borné.
+    const std::uint64_t steps = std::min(backlog_, maxStepsPerPeriod_);
+    backlog_ -= steps;
+    if (backlog_ > maxBacklog_) {
+        return fail(DriveFault::TrackingLag);
+    }
     tracked_ += steps;
     requested_ += static_cast<std::int64_t>(steps);
     lastSteps_ = static_cast<std::uint32_t>(steps);

@@ -31,7 +31,8 @@ struct DriveMechanism {
     std::uint32_t screwLeadNanometres = 0; // avance de l'écrou par tour de vis
     std::uint32_t stepsPerRevolution = 0;  // pas moteur par tour, micro-pas compris
     // Vitesse maximale du moteur, en pas par seconde : celle que le matériel borne
-    // indépendamment du logiciel (SYS-REQ-043). Le débit maximal de la pompe doit tenir dessous.
+    // indépendamment du logiciel (SYS-REQ-043). Les pas du débit maximal de la pompe sur une
+    // période, arrondis par excès, doivent tenir dessous.
     std::uint32_t maxStepRate = 0;
     std::uint32_t takeUpStepRate = 0;   // vitesse du rattrapage des jeux, en pas par seconde
     std::chrono::milliseconds period{}; // période de la boucle de commande
@@ -66,6 +67,7 @@ enum class DriveFault : std::uint8_t {
     TakeUpTravelExceeded = 5, // course maximale du rattrapage atteinte sans la force attendue
     CounterInconsistent = 6,  // compteur de pas qui recule ou dépasse les pas demandés
     StepsNotEmitted = 7,      // pas demandés non émis dans la période
+    TrackingLag = 8,          // retard sur l'intégrale au-delà de maxStep au débit maximal
 };
 
 // Commande d'une période : nombre de pas que le générateur doit émettre, régulièrement espacés,
@@ -77,7 +79,8 @@ struct DriveCommand {
 };
 
 // Plages admises : elles garantissent les calculs en entiers de 64 bits sans débordement, et que
-// le débit maximal de la pompe tient sous la vitesse maximale du moteur.
+// les pas du débit maximal de la pompe sur une période tiennent sous la vitesse maximale du
+// moteur.
 [[nodiscard]] bool validDriveParameters(const DriveMechanism& mechanism,
                                         const SyringeDrive& syringe) noexcept;
 
@@ -106,6 +109,10 @@ public:
     // Pas demandés depuis la fin du rattrapage : la position commandée du pousseur.
     [[nodiscard]] std::uint64_t trackedSteps() const noexcept { return tracked_; }
 
+    // Pas de l'intégrale de la consigne pas encore demandés, après un intervalle plus long que la
+    // période.
+    [[nodiscard]] std::uint64_t backlogSteps() const noexcept { return backlog_; }
+
 private:
     DriveCommand fail(DriveFault fault) noexcept;
     DriveCommand takeUp(std::optional<Force> force) noexcept;
@@ -115,9 +122,12 @@ private:
     SyringeDrive syringe_;
     DrivePhase phase_ = DrivePhase::TakingUp;
     std::optional<DriveFault> fault_;
-    std::uint64_t stepDivisor_ = 0;   // pas = débit × ms × stepNumerator_ / stepDivisor_
-    std::uint64_t stepNumerator_ = 0; // facteur commun au débit et à l'intervalle
-    std::uint64_t remainder_ = 0;     // reste de la division, reporté au cycle suivant
+    std::uint64_t stepDivisor_ = 0;       // pas = débit × ms × stepNumerator_ / stepDivisor_
+    std::uint64_t stepNumerator_ = 0;     // facteur commun au débit et à l'intervalle
+    std::uint64_t remainder_ = 0;         // reste de la division, reporté au cycle suivant
+    std::uint64_t backlog_ = 0;           // pas dus, pas encore demandés
+    std::uint64_t maxStepsPerPeriod_ = 0; // plafond d'une commande : débit maximal sur une période
+    std::uint64_t maxBacklog_ = 0;        // retard admis : débit maximal pendant maxStep
     std::int64_t maxTakeUpSteps_ = 0;
     std::uint32_t takeUpStepsPerPeriod_ = 0;
     std::int64_t start_ = 0;     // compteur au début du rattrapage
