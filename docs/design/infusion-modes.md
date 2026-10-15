@@ -142,7 +142,7 @@ Aucune borne n'est déduite de la seule consigne qu'elle contrôle : chacune est
 
 **Absence de dérive (SW-REQ-005).** Les volumes sont tenus en µL·ms/h, sur des entiers de 64 bits : un microlitre vaut 3 600 000 unités. Le produit d'un débit entier en µL/h par un intervalle entier en ms est exact, et aucun reste n'est perdu d'un cycle à l'autre. Les volumes lus (`infused()`, `remaining()`, `bolusDelivered()`, `kvoDelivered()`) sont arrondis par défaut au microlitre. L'erreur reste donc inférieure à 0,001 mL sur toute la perfusion, pour une exigence de 0,01 mL. Au débit maximal et au pas maximal, un cycle ajoute 1,2 × 10¹⁰ unités, ce qui laisse une marge de plusieurs siècles avant tout débordement.
 
-Le décompte porte sur le volume **commandé**. Le volume réellement délivré par le pousseur relève de l'asservissement (#26), et sa supervision indépendante du canal de sécurité (SYS-REQ-001).
+Le décompte porte sur le volume **commandé**. Le volume réellement délivré par le pousseur relève de l'[asservissement](drive.md) (#26), et sa supervision indépendante du canal de sécurité (SYS-REQ-001).
 
 ## Ressources et traitement des défauts
 
@@ -175,4 +175,4 @@ Ces tests vérifient l'unité. Ils préparent les vérifications unitaires prév
 - **Volume exigé.** Le volume à perfuser est exigé dans les deux modes, pour que la fin de perfusion soit toujours définie. L'interface pourra proposer par défaut le volume utile de la seringue.
 - **Préalarmes.** Les préalarmes de fin de perfusion et de seringue presque vide (SYS-REQ-032) relèvent des alarmes (#30). Elles s'appuieront sur `remaining()` et la durée restante.
 - **Purge.** Sa borne et ses limites propres viendront avec son unité.
-- **Volume délivré.** Le décompte suit le volume commandé : la précision du débit relève de l'asservissement (#26), la réservation durable avant délivrance (SYS-REQ-051) de la persistance de l'état de perfusion.
+- **Volume délivré.** Le décompte suit le volume commandé : la précision du débit relève de l'[asservissement](drive.md) (#26), la réservation durable avant délivrance (SYS-REQ-051) de la persistance de l'état de perfusion.

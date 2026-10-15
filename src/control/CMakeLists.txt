@@ -5,7 +5,7 @@
 add_library(clepsydre_control)
 add_library(clepsydre::control ALIAS clepsydre_control)
 target_sources(clepsydre_control
-    PUBLIC FILE_SET CXX_MODULES FILES state_machine.cppm infusion.cppm
-    PRIVATE state_machine.cpp infusion.cpp)
+    PUBLIC FILE_SET CXX_MODULES FILES state_machine.cppm infusion.cppm drive.cppm
+    PRIVATE state_machine.cpp infusion.cpp drive.cpp)
 target_link_libraries(clepsydre_control PRIVATE clepsydre_warnings)
 clepsydre_register_objects(clepsydre_control)
