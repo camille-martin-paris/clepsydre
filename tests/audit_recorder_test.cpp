@@ -39,6 +39,10 @@ Action invalidAction() {
     return static_cast<Action>(200); // NOLINT(clang-analyzer-optin.core.EnumCastOutOfRange)
 }
 
+AuditPhase invalidPhase(std::uint8_t value) {
+    return static_cast<AuditPhase>(value); // NOLINT(clang-analyzer-optin.core.EnumCastOutOfRange)
+}
+
 AlarmCondition invalidCondition() {
     return static_cast<AlarmCondition>(99); // NOLINT(clang-analyzer-optin.core.EnumCastOutOfRange)
 }
@@ -214,6 +218,13 @@ void refusals(Expectations& t) {
     t.expect(recorder.record(invalidCondition(), AlarmStep::Raise, requested).outcome ==
                  Outcome::UnknownAction,
              "alarme hors vocabulaire");
+    for (const std::uint8_t value : {std::uint8_t{4}, std::uint8_t{32}, std::uint8_t{255}}) {
+        Entry outside = requested;
+        outside.phase = invalidPhase(value);
+        t.expect(recorder.record(Action::TherapyProgram, outside).outcome ==
+                     Outcome::PhaseNotAdmitted,
+                 "phase hors énumération : non admise");
+    }
     t.expect(recorder.record(Action::DeviceBoot, requested).outcome == Outcome::PhaseNotAdmitted,
              "démarrage demandé : phase non admise");
     t.expect(recorder.record(Action::JournalWitnessRefusal,
@@ -243,7 +254,7 @@ void refusals(Expectations& t) {
                  invalid.refusal->reason == mddlog::core::AuditRefusalReason::InvalidIdentifier &&
                  invalid.refusal->field == mddlog::core::AuditField::Actor,
              "acteur accentué refusé par mddlog, jamais tronqué");
-    t.expect(recorder.refused() == 7, "chaque refus compté");
+    t.expect(recorder.refused() == 10, "chaque refus compté");
 
     // Anneau plein : refus explicite, sans écrasement.
     std::size_t count = 0;
@@ -256,7 +267,7 @@ void refusals(Expectations& t) {
                  full65.refusal->reason == mddlog::core::AuditRefusalReason::RingFull,
              "anneau plein : refusé");
     t.expect(recorder.ring().refusalCount() == 2, "refus de l'anneau comptés par mddlog");
-    t.expect(recorder.refused() == 9, "et par l'enregistreur");
+    t.expect(recorder.refused() == 12, "et par l'enregistreur");
 }
 
 } // namespace

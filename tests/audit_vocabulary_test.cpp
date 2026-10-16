@@ -22,6 +22,10 @@ namespace {
 using clepsydre::test::Expectations;
 using namespace clepsydre::audit;
 
+AuditPhase invalidPhase(std::uint8_t value) {
+    return static_cast<AuditPhase>(value); // NOLINT(clang-analyzer-optin.core.EnumCastOutOfRange)
+}
+
 Priority invalidPriority() {
     return static_cast<Priority>(9); // NOLINT(clang-analyzer-optin.core.EnumCastOutOfRange)
 }
@@ -130,6 +134,10 @@ void alarms(Expectations& t) {
 void helpers(Expectations& t) {
     t.expect(contains(requested | failed, AuditPhase::Failed), "union de phases");
     t.expect(!contains(PhaseSet{}, AuditPhase::Executed), "ensemble vide");
+    const PhaseSet all{.bits = 0xFF};
+    t.expect(!contains(all, invalidPhase(4)) && !contains(all, invalidPhase(32)) &&
+                 !contains(all, invalidPhase(255)),
+             "phase hors énumération : dans aucun ensemble, sans décalage indéfini");
     t.expect(contains(both, Producer::Safety) && !contains(command, Producer::Safety) &&
                  contains(safety, Producer::Safety),
              "ensembles de producteurs");

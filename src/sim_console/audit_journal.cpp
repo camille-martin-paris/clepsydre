@@ -295,15 +295,11 @@ std::optional<std::uint64_t> AuditJournal::incrementBoot() {
 }
 
 std::optional<std::uint64_t> AuditJournal::start() {
+    // Le démarrage précédent s'arrête sans clôture : le lecteur le dira « ended without close ».
+    // Son adaptateur est retiré avant tout retour, réussi ou non : il ne référence plus les anneaux
+    // des producteurs arrêtés, que l'appelant peut alors détruire.
     if (adapter_) {
         drain();
-    }
-    const std::optional<std::uint64_t> boot = incrementBoot();
-    if (!boot) {
-        return std::nullopt;
-    }
-    // Le démarrage précédent s'arrête sans clôture : le lecteur le dira « ended without close ».
-    if (adapter_) {
         const AuditHealthSnapshot health = adapter_->healthSnapshot();
         lossesBefore_ += health.reportedLosses;
         handedBefore_ += health.handedOff;
@@ -315,6 +311,10 @@ std::optional<std::uint64_t> AuditJournal::start() {
     adapter_.reset();
     sink_.reset();
 
+    const std::optional<std::uint64_t> boot = incrementBoot();
+    if (!boot) {
+        return std::nullopt;
+    }
     auto adapter = std::make_unique<AuditSinkAdapter>();
     StorageConfig config;
     config.segmentSize = segmentSize;

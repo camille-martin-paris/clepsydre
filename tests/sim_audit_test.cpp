@@ -302,6 +302,58 @@ void session(Expectations& t) {
     t.expect(sim::coherent(console.audit().verify()), "journal cohérent pour le lecteur de mddlog");
 }
 
+// Pause pendant le rattrapage des jeux : le moteur s'arrête, puis la reprise repart.
+void pauseDuringTakeUp(Expectations& t) {
+    std::ostringstream out;
+    sim::Console console{out};
+    for (const std::string_view line : {"programmer 25 20", "demarrer", "avance 20ms", "pause"}) {
+        static_cast<void>(console.execute(line));
+    }
+    t.expect(console.execute("avance 100ms") == sim::Console::Outcome::ok, "temps avancé");
+    t.expect(console.execute("verifie etat-commande = 9") == sim::Console::Outcome::ok,
+             "pause acceptée");
+    t.expect(console.execute("verifie moteur = non") == sim::Console::Outcome::ok,
+             "moteur arrêté pendant la pause, rattrapage compris");
+    t.expect(console.execute("repere") == sim::Console::Outcome::ok, "repère");
+    static_cast<void>(console.execute("avance 1min"));
+    t.expect(console.execute("verifie volume-depuis-repere = 0") == sim::Console::Outcome::ok,
+             "rien ne bouge pendant une minute de pause");
+    for (const std::string_view line : {"demarrer", "avance 2min"}) {
+        static_cast<void>(console.execute(line));
+    }
+    t.expect(console.execute("verifie etat-commande = 6") == sim::Console::Outcome::ok &&
+                 console.execute("verifie volume-perfuse > 0.5") == sim::Console::Outcome::ok,
+             "reprise : rattrapage achevé, perfusion");
+}
+
+// Compteur de démarrage corrompu entre une coupure et le retour de l'alimentation : la commande
+// ne redémarre pas, et le journal ne lit plus l'anneau de la commande arrêtée.
+void corruptCounterOnRestart(Expectations& t) {
+    const fs::path directory = workspace("audit-redemarrage");
+    std::string error;
+    {
+        std::ostringstream out;
+        sim::Console console{out, nullptr,
+                             sim::AuditJournal::open(directory, sim::simulatedSerial, error)};
+        t.expect(console.ready(), "premier démarrage");
+        for (const std::string_view line : {"programmer 25 20", "demarrer", "avance 1min",
+                                            "secteur non", "batterie non", "avance 1s"}) {
+            static_cast<void>(console.execute(line));
+        }
+        std::ofstream{directory / "boot", std::ios::trunc} << "illisible\n";
+        for (const std::string_view line : {"batterie oui", "avance 1s", "audit"}) {
+            static_cast<void>(console.execute(line));
+        }
+        t.expect(!console.ready(), "compteur corrompu : commande hors service");
+        t.expect(out.str().contains("compteur de démarrage du journal d'audit illisible"),
+                 "échec du redémarrage signalé");
+        t.expect(console.execute("demarrer") == sim::Console::Outcome::error,
+                 "plus aucune commande du soignant");
+        t.expect(sim::coherent(console.audit().verify()), "le premier flux reste cohérent");
+    }
+    fs::remove_all(directory);
+}
+
 } // namespace
 
 int main() {
@@ -310,5 +362,7 @@ int main() {
         memory(e);
         files(e);
         session(e);
+        pauseDuringTakeUp(e);
+        corruptCounterOnRestart(e);
     });
 }
