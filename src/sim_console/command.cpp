@@ -652,6 +652,13 @@ void Command::cycle(std::chrono::nanoseconds now) {
         return;
     }
     const control::ActuatorMode mode = control::actuatorMode(machine_.state());
+    if (mode == control::ActuatorMode::None) {
+        // Pause : aucun pas, ni de rattrapage, que l'entraînement poursuivrait malgré une consigne
+        // nulle, ni de retard dû. L'entraînement est suspendu tel quel : la commande précédente est
+        // émise, le compteur ne bouge plus, et la reprise repart de cet état.
+        setStepRate(0.0);
+        return;
+    }
     const control::Rate setpoint = delivery_ ? delivery_->setpoint(mode) : control::Rate{};
     const control::DriveCommand command = drive_->update(period, setpoint, steps, force);
     if (command.fault) {

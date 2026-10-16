@@ -20,6 +20,19 @@ namespace {
 
 constexpr std::string_view pumpPrefix = "pump-";
 
+// Bornes des identifiants composés, avec un numéro de série de 32 caractères et des compteurs de
+// 64 bits (20 chiffres) : ils tiennent toujours dans les capacités de mddlog, et aucun ne peut
+// déborder. Le plus long suffixe de cible est « /syringe-list », le plus long producteur
+// « commande » ou « securite ».
+constexpr std::size_t maxDigits = 20;
+constexpr std::size_t maxStream =
+    pumpPrefix.size() + maxSerialLength + std::string_view{":commande:boot-"}.size() + maxDigits;
+static_assert(maxStream <= mddlog::core::auditStreamCapacity);
+static_assert(pumpPrefix.size() + maxSerialLength + std::string_view{"/syringe-list"}.size() <=
+              mddlog::core::auditTargetCapacity);
+static_assert(maxStream + std::string_view{":input-"}.size() + maxDigits <=
+              mddlog::core::auditCorrelationCapacity);
+
 bool knownProducer(Producer producer) noexcept {
     return producer == Producer::Command || producer == Producer::Safety;
 }

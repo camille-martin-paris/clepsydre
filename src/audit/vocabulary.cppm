@@ -31,8 +31,10 @@ struct PhaseSet {
     std::uint8_t bits = 0;
 };
 
+// Une phase hors des quatre valeurs de AuditPhase n'appartient à aucun ensemble.
 [[nodiscard]] constexpr bool contains(PhaseSet set, AuditPhase phase) noexcept {
-    return ((static_cast<unsigned>(set.bits) >> static_cast<unsigned>(phase)) & 1U) != 0;
+    const auto bit = static_cast<unsigned>(phase);
+    return bit < 4U && ((static_cast<unsigned>(set.bits) >> bit) & 1U) != 0;
 }
 
 [[nodiscard]] constexpr PhaseSet operator|(PhaseSet a, PhaseSet b) noexcept {
