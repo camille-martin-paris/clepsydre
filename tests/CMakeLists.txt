@@ -5,6 +5,12 @@ add_library(clepsydre_test_support INTERFACE)
 target_include_directories(clepsydre_test_support INTERFACE support)
 
 clepsydre_add_test(version_test SOURCES version_test.cpp LIBRARIES clepsydre::core)
+clepsydre_add_test(audit_vocabulary_test SOURCES audit_vocabulary_test.cpp LIBRARIES clepsydre::audit)
+clepsydre_add_test(audit_recorder_test SOURCES audit_recorder_test.cpp LIBRARIES clepsydre::audit)
+clepsydre_add_test(audit_vocabulary_doc_test SOURCES audit_vocabulary_doc_test.cpp
+    LIBRARIES clepsydre::audit)
+target_compile_definitions(audit_vocabulary_doc_test_objects
+    PRIVATE CLEPSYDRE_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
 clepsydre_add_test(control_state_machine_test SOURCES control_state_machine_test.cpp
     LIBRARIES clepsydre::control)
 clepsydre_add_test(control_infusion_test SOURCES control_infusion_test.cpp LIBRARIES clepsydre::control)

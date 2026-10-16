@@ -1,6 +1,7 @@
 # SPDX-FileCopyrightText: 2026 Contributeurs du projet Clepsydre
 # SPDX-License-Identifier: EUPL-1.2
 
+add_subdirectory(audit)
 add_subdirectory(control)
 add_subdirectory(core)
 add_subdirectory(protocol)
