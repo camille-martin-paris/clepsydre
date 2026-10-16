@@ -20,7 +20,7 @@ Le dépôt est à son stade initial : il contient la documentation de cadrage et
 
 Le [simulateur physique de la pompe](docs/development/simulator.md) est en cours de développement ([#21](https://github.com/camille-martin-paris/clepsydre/issues/21)) : il modélise déjà le pousse-seringue, la liaison entre les processeurs et leurs horloges indépendantes. Il sert à explorer les comportements de la pompe et à préparer les essais, qu'il ne remplace pas.
 
-[mddlog](https://github.com/ambroise-leclerc/mddlog), bibliothèque de journalisation en C++23, est retenue sous conditions pour les événements d'audit et les diagnostics ([ADR 0005](docs/adr/0005-journalisation-et-evenements-d-audit.md)). Son évaluation comme composant tiers et son intégration restent à faire ([#44](https://github.com/camille-martin-paris/clepsydre/issues/44)).
+[mddlog](https://github.com/ambroise-leclerc/mddlog), bibliothèque de journalisation en C++23, est retenue sous conditions pour les événements d'audit et les diagnostics ([ADR 0005](docs/adr/0005-journalisation-et-evenements-d-audit.md)). Le simulateur l'emploie pour son journal de diagnostic ([#44](https://github.com/camille-martin-paris/clepsydre/issues/44)), et le [vocabulaire des événements d'audit](docs/event-vocabulary.md) est défini sur son modèle d'événement. Son évaluation comme composant tiers, relue par une autre personne que son auteur, et son portage sur la cible restent à faire ([#135](https://github.com/camille-martin-paris/clepsydre/issues/135)).
 
 ## Périmètre visé
 

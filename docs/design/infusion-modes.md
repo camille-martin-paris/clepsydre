@@ -78,7 +78,7 @@ Une incohérence fait refuser toute programmation et tout bolus (`InvalidLimits`
 | 5 | Débit : 0,1 mL/h au moins, 200 mL/h au plus, débit maximal de la seringue au plus | `RateBelowPumpMinimum`, `RateAbovePumpMaximum`, `RateAboveSyringeMaximum` |
 | 6 | Débit dans les limites dures du médicament | `RateBelowHardLimit`, `RateAboveHardLimit` |
 
-Les valeurs numériques des motifs sont stables : elles seront journalisées (#42).
+Les valeurs numériques des motifs sont stables : elles seront journalisées dans le détail des événements d'audit ([vocabulaire des événements](../event-vocabulary.md#refus)).
 
 La programmation acceptée (`Program`) contient ce que le récapitulatif doit afficher :
 - le mode, le débit retenu et le volume ;

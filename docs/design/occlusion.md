@@ -119,7 +119,7 @@ Pendant la surveillance, l'entraînement contrôle le compteur ([Contrôle du co
 
 ## Défauts
 
-Tout défaut est **verrouillé** : le surveillant ne demande plus aucun pas, et chaque appel rend la même cause. L'appelant applique `DangerDetected` à la [machine à états](state-machine.md), qui place la pompe en état sûr (SYS-REQ-002). Une occlusion détectée avant le défaut reste signalée. Les valeurs des causes sont stables : elles seront journalisées (#42).
+Tout défaut est **verrouillé** : le surveillant ne demande plus aucun pas, et chaque appel rend la même cause. L'appelant applique `DangerDetected` à la [machine à états](state-machine.md), qui place la pompe en état sûr (SYS-REQ-002). Une occlusion détectée avant le défaut reste signalée. Les valeurs des causes sont stables : elles seront journalisées dans le détail des événements d'audit ([vocabulaire des événements](../event-vocabulary.md)).
 
 | Défaut | Valeur | Cause |
 | --- | --- | --- |
