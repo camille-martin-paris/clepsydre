@@ -18,7 +18,6 @@
 #include <system_error>
 
 import clepsydre.sim.console;
-import clepsydre.sim.journal;
 
 int main(int argc, char** argv) {
     try {
@@ -48,7 +47,6 @@ int main(int argc, char** argv) {
             }
         }
         std::ofstream journalFile;
-        clepsydre::sim::Journal journal;
         if (journalPath != nullptr) {
             std::error_code ignored;
             if (scenario.is_open() &&
@@ -61,9 +59,8 @@ int main(int argc, char** argv) {
                 std::println(stderr, "Journal impossible à ouvrir : {}", journalPath);
                 return 2;
             }
-            journal = clepsydre::sim::Journal{journalFile};
         }
-        clepsydre::sim::Console console{std::cout, journal};
+        clepsydre::sim::Console console{std::cout, journalFile.is_open() ? &journalFile : nullptr};
         if (scenario.is_open()) {
             return console.run(scenario, false);
         }

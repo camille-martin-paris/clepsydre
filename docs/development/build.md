@@ -6,7 +6,7 @@ Ce document décrit la chaîne de build du logiciel : langage, compilateurs pris
 
 | Outil | Version minimale | Motif |
 | --- | --- | --- |
-| CMake | 4.0 | Plancher de [mddlog](https://github.com/ambroise-leclerc/mddlog), bibliothèque de journalisation envisagée ([#16](https://github.com/camille-martin-paris/clepsydre/issues/16)) |
+| CMake | 4.0 ; **4.4 et au-delà refusés** | Plancher de [mddlog](https://github.com/ambroise-leclerc/mddlog), bibliothèque de journalisation retenue ([ADR 0005](../adr/0005-journalisation-et-evenements-d-audit.md)). mddlog utilise `import std`, encore expérimental dans CMake : son activation dépend de la série de CMake, et mddlog refuse une série qu'il n'a pas qualifiée ([Bibliothèque standard en module](#bibliothèque-standard-en-module)) |
 | Ninja | 1.11 | Seul générateur CMake qui gère les dépendances entre modules C++ |
 | GCC | 16.1 ; **16.2 refusé** | Plancher de mddlog : GCC 15 ne relit pas le module `std` de libstdc++ à travers un second niveau de BMI ; GCC 16.2 a corrompu les BMI de mddlog. GCC 14 provoque en outre une erreur interne sur nos modules avec `-fsanitize=address,undefined` (CI du 2026-10-09). |
 | Clang | 20 | Plancher de mddlog ; clang-tidy 18 ne charge pas les modules du projet (« module not found », CI du 2026-10-09). Fournir `clang-scan-deps` de la même version. |
@@ -14,9 +14,18 @@ Ce document décrit la chaîne de build du logiciel : langage, compilateurs pris
 | llvm-cov, llvm-profdata | Même version majeure que Clang | Mesure de la couverture ([Couverture](#couverture)) ; paquet `llvm-<version>` sous Ubuntu |
 | clang-format | 21.1.8 exactement | Formatage selon [`.clang-format`](../../.clang-format) ; deux versions différentes peuvent formater différemment |
 
-Ces planchers sont alignés sur ceux de mddlog afin qu'une intégration éventuelle n'oblige pas à les relever ; ils seront réexaminés par l'ADR [#16](https://github.com/camille-martin-paris/clepsydre/issues/16).
+Ces planchers sont ceux de mddlog, intégré au simulateur par [#44](https://github.com/camille-martin-paris/clepsydre/issues/44) : un projet qui l'intègre ne peut pas admettre des compilateurs qu'il refuse.
 
-Le langage est C++23 strict (`CMAKE_CXX_STANDARD 23`, sans extensions). Le code du projet est organisé en modules nommés (`export module clepsydre.…`). Les en-têtes de la bibliothèque standard sont inclus dans le fragment global des modules ; `import std;` n'est pas utilisé tant que sa prise en charge par CMake reste expérimentale.
+Le langage est C++23 strict (`CMAKE_CXX_STANDARD 23`, sans extensions). Le code du projet est organisé en modules nommés (`export module clepsydre.…`). Les en-têtes de la bibliothèque standard sont inclus dans le fragment global des modules ; le code du projet n'utilise pas `import std;`, dont la prise en charge par CMake reste expérimentale.
+
+### Bibliothèque standard en module
+
+mddlog, lui, importe la bibliothèque standard par `import std;`. Cette règle est donc levée pour la consommation de mddlog (condition 3 de l'[ADR 0005](../adr/0005-journalisation-et-evenements-d-audit.md#conditions-à-remplir-avant-tout-usage-dans-du-code-de-classe-c)), et pour elle seule :
+- [`CMakeLists.txt`](../../CMakeLists.txt) active la prise en charge expérimentale avant `project()`, avec l'identifiant propre à la série de CMake (4.0 à 4.2, ou 4.3), et refuse une série ultérieure, que mddlog n'a pas qualifiée ;
+- la norme et le refus des extensions y sont aussi fixés avant `project()` : CMake compile le module `std` selon ces réglages, et Clang refuse un module compilé avec les extensions GNU dans une unité qui les exclut ;
+- une unité du projet peut importer un module de mddlog après avoir inclus des en-têtes standard dans son fragment global : vérifié avec GCC 16.1 et Clang 20, avec libstdc++.
+
+Un répertoire de build configuré avant cette activation doit être **reconfiguré depuis zéro** (`rm -rf build/<préréglage>`) : CMake garde en cache la détection du compilateur, faite sans `import std`, et mddlog refuse alors la configuration (« do not provide C++23 import std support »).
 
 Toute autre famille de compilateurs (MSVC, compilateurs embarqués) est refusée à la configuration. La chaîne croisée de la cible embarquée sera ajoutée après le choix de l'architecture de calcul ([#14](https://github.com/camille-martin-paris/clepsydre/issues/14)).
 
@@ -26,6 +35,7 @@ Toute autre famille de compilateurs (MSVC, compilateurs embarqués) est refusée
 | --- | --- | --- | --- |
 | 2026-10-09 | Ubuntu 26.04 | GCC 16.1, Clang 20, 21 et 22, clang-tidy 20 et 21, CMake 4.2, Ninja 1.13 | Configuration, compilation, édition de liens et tests réussis |
 | 2026-10-09 | Ubuntu 26.04 | GCC 15.2 | Refusé à la configuration, comme attendu |
+| 2026-10-16 | Ubuntu 26.04 | GCC 16.1 et Clang 20 avec libstdc++, clang-tidy 20, llvm-cov 20, CMake 4.2.3, Ninja 1.13 ; mddlog 0.3.0 intégré | Tous les préréglages (Debug, sanitizers, couverture, clang-tidy) : configuration, compilation et tests réussis |
 
 La CI vérifie les compilateurs planchers à chaque pull request, dans des images épinglées par empreinte : `gcc:16.1.0` (CMake 4.2.3 et Ninja 1.13.2 téléchargés et vérifiés par SHA-256) et `ubuntu:26.04` (Clang 20, CMake 4.2.3 et Ninja 1.13.2, depuis un instantané daté de l'archive). Voir [Intégration continue](#intégration-continue) et [Dépendances épinglées](#dépendances-épinglées).
 
@@ -137,7 +147,7 @@ Chaque dépendance du build et de la CI est épinglée par **révision complète
 | Archive téléchargée (CMake, Ninja) | Version exacte ; SHA-256 vérifié par `sha256sum --check` dans le même pas | `ci.yml` |
 | Outils Python (clang-format) | Verrou donnant la version exacte et les empreintes de toutes les dépendances, installé par `pip --require-hashes --only-binary=:all:` | [`tools/requirements/`](../../tools/requirements/) |
 | Python des tâches | Version complète X.Y.Z dans `actions/setup-python` | `.github/workflows/` |
-| Dépendance CMake (`FetchContent`, `ExternalProject`) | `GIT_TAG` de commit complet ou `URL_HASH SHA256` ; aucune à ce jour | `CMakeLists.txt`, `cmake/` |
+| Dépendance CMake (`FetchContent`, `ExternalProject`) | `GIT_TAG` de commit complet ou `URL_HASH SHA256` ; aujourd'hui mddlog seul ([Bibliothèques tierces](#bibliothèques-tierces)) | [`cmake/ClepsydreDependencies.cmake`](../../cmake/ClepsydreDependencies.cmake) |
 
 L'instantané n'est servi qu'en HTTPS, et l'image de base n'a pas de certificats racine. Le script installe donc d'abord `ca-certificates` depuis la poche de publication de la distribution, figée depuis sa sortie. Dans les deux cas, apt authentifie les index par la clé de l'archive Ubuntu.
 
@@ -163,6 +173,20 @@ L'instantané n'est servi qu'en HTTPS, et l'image de base n'a pas de certificats
 - l'image des exécuteurs GitHub (`ubuntu-24.04`) évolue sans épinglage possible ; les tâches installent donc elles-mêmes leurs outils, épinglés, ou s'exécutent dans une image épinglée ;
 - le contrôle est textuel : il ne remplace pas la relecture d'une montée de version ;
 - l'outil reste soumis à la réserve R3 ([#89](https://github.com/camille-martin-paris/clepsydre/issues/89)).
+
+### Bibliothèques tierces
+
+[`cmake/ClepsydreDependencies.cmake`](../../cmake/ClepsydreDependencies.cmake) récupère les bibliothèques tierces à la configuration. Chacune est un SOUP inscrit au [registre](../../software_development_file/soup.md).
+
+| Bibliothèque | Révision | Récupération | Cibles liées |
+| --- | --- | --- | --- |
+| mddlog 0.3.0 (SOUP-001) | Commit `073761b7a6d5ed29ed87bc37c85967db72386d3c`, étiquette `v0.3.0` | Archive du commit sur GitHub, vérifiée par son SHA-256 : aucun client git n'est requis dans les images de CI | `mddlog::core`, le cœur sans allocation, par `clepsydre_sim_console` |
+
+- **Construction** : seules les cibles liées sont compilées (`EXCLUDE_FROM_ALL`), sans les tests ni les exemples de mddlog. Elles le sont avec les réglages globaux du projet, sanitizers et couverture compris, et avec les avertissements propres à mddlog, traités comme des erreurs : son cœur n'en produit aucun.
+- **Outils de qualité** : clang-tidy n'analyse pas mddlog, qui a ses propres contrôles. La couverture ne le mesure pas : il est hors de `src/`.
+- **Réseau** : la première configuration télécharge l'archive. Hors ligne, `-DFETCHCONTENT_SOURCE_DIR_MDDLOG=<répertoire>` désigne une copie locale du même commit ; elle n'est alors pas vérifiée par l'empreinte.
+- **Empreinte** : si GitHub régénérait l'archive avec une autre empreinte, la configuration échouerait sur la vérification, sans rien construire. L'empreinte se relève alors sur une archive vérifiée par rapport au commit, dans une pull request dédiée.
+- **Adaptateurs non utilisés** : avec Clang et libstdc++, les adaptateurs de mddlog 0.3.0 (`SinkRegistry`) appellent `std::atomic_load_explicit` sur un `shared_ptr`, déprécié en C++20, et ne masquent cet avertissement que pour GCC et MSVC ; avec `-Werror`, leur compilation échoue. Le projet ne les compile pas ; l'anomalie est à remonter en amont ([#50](https://github.com/camille-martin-paris/clepsydre/issues/50)).
 
 ## Nomenclature logicielle (SBOM)
 
