@@ -72,7 +72,7 @@ enum class DriveFault : std::uint8_t {
 
 // Commande d'une période : nombre de pas que le générateur doit émettre, régulièrement espacés,
 // pendant la période suivante. Avant, jamais en arrière : le recul relève de la décompression
-// (#27).
+// (clepsydre.control.occlusion, #27).
 struct DriveCommand {
     std::uint32_t steps = 0;
     std::optional<DriveFault> fault; // défaut verrouillé : steps est nul
