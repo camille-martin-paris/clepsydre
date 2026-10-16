@@ -122,7 +122,7 @@ Le compteur ne voit que les pas émis par le processeur. Il ne voit pas les pas 
 
 ## Défauts
 
-Tout défaut est **verrouillé** : l'entraînement ne demande plus aucun pas, et chaque appel rend la même cause. L'appelant applique `DangerDetected` à la [machine à états](state-machine.md), qui place la pompe en état sûr (SYS-REQ-002). Les valeurs des causes sont stables : elles seront journalisées (#42).
+Tout défaut est **verrouillé** : l'entraînement ne demande plus aucun pas, et chaque appel rend la même cause. L'appelant applique `DangerDetected` à la [machine à états](state-machine.md), qui place la pompe en état sûr (SYS-REQ-002). Les valeurs des causes sont stables : elles seront journalisées dans le détail des événements d'audit ([vocabulaire des événements](../event-vocabulary.md)).
 
 | Défaut | Valeur | Cause |
 | --- | --- | --- |
