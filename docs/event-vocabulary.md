@@ -64,11 +64,12 @@ L'issue #42 citait quatre catégories. La cinquième, l'accès, vient de mddlog 
 | Demandée | `Requested` | Une personne ou un processeur demande l'action. Rien n'est encore fait |
 | Confirmée | `Confirmed` | Une confirmation distincte de la demande a été obtenue : appui sur Confirmer observé par le canal de sécurité (SYS-REQ-044), confirmation spécifique au-delà d'une limite souple (SYS-REQ-012) |
 | Exécutée | `Executed` | L'effet est établi : transition admise par la machine à états, condition détectée, configuration enregistrée |
-| Échouée | `Failed` | L'action est refusée ou n'a pas abouti. Le détail en donne la cause ([Refus](#refus)) |
+| Échouée | `Failed` | Une demande est refusée ou n'aboutit pas, ou un contrôle automatique donne un résultat négatif. Le détail en donne la cause ([Échecs](#échecs)) |
 
 Règles :
 - **Chaque demande se clôt** par exactement un événement « exécutée » ou « échouée », de même action et de même corrélation. Seule une coupure peut l'empêcher : la frontière du flux se voit alors au démarrage suivant.
 - **Une détection n'a pas de demande.** Les actions que la pompe constate elle-même (alarme, défaillance, bascule d'alimentation) n'ont que la phase « exécutée ».
+- **Un contrôle automatique n'a pas de demande non plus** (`device.self-test`, `journal.cross-check`) : il est « exécuté » s'il réussit, « échoué » s'il donne un résultat négatif, sans événement « demandé » avant.
 - La colonne « Phases » des tableaux donne les phases admises pour chaque action. Une phase non admise est un défaut.
 
 ## Acteurs
@@ -105,16 +106,17 @@ La corrélation relie les événements d'une même cause. Elle prend l'une de tr
 | Forme | Cause | Exemple |
 | --- | --- | --- |
 | `pump-<série>:<producteur>:boot-<n>:input-<m>` | Une action d'une personne, lue au clavier (ADR 0006) | Programmation : demande, confirmation, exécution |
-| `pump-<série>:<producteur>:boot-<n>:cond-<m>` | Une condition détectée | Occlusion : détection, alarme, état sûr, recul, pause du signal, acquittement, fin |
+| `pump-<série>:<producteur>:boot-<n>:cond-<m>` | Une condition détectée | Occlusion : détection, déclenchement de l'alarme, état sûr, fin |
 | `pump-<série>:<producteur>:boot-<n>` | Le démarrage lui-même | Autotests, avertissement de prototype |
 
 Règles :
 - `<m>` est un compteur propre au producteur et au démarrage, un pour les entrées, un pour les conditions, strictement croissant.
 - L'issue #42 proposait `pump-<série>:boot-<n>:input-<m>`. L'ADR 0006, acceptée depuis, y ajoute le producteur, pour qu'un redémarrage d'un seul processeur ne réutilise aucun identifiant : c'est sa forme qui est retenue.
 - La forme `cond-<m>` est ajoutée par ce document. Sans elle, les étapes d'une alarme ne seraient reliées que par leur ordre.
-- **Une action de la personne sur une alarme** (pause du signal, acquittement) porte la corrélation de la condition, pas une nouvelle entrée : elle se lit alors avec l'alarme qu'elle concerne.
+- **Chaque action d'une personne a sa propre entrée** `input-<m>`, même quand elle porte sur une condition : chaque pause du signal sonore, chaque acquittement. Une condition persistante peut en recevoir plusieurs, par exemple une nouvelle pause après la reprise du signal à l'échéance (SYS-REQ-036) ; chacune se clôt séparément, et l'unicité des actions de l'ADR 0006 est préservée.
+- **Le lien vers la condition** est porté par la clé `cond` du détail, qui donne la corrélation de la condition sans le préfixe de la pompe : `cond=securite:boot-9:cond-3`. Il en va de même pour l'interruption d'un bolus ou d'une purge par l'état sûr ([Thérapie](#thérapie)).
 - **Une action transmise d'un processeur à l'autre** garde sa corrélation (ADR 0006) : le canal de sécurité enregistre sous l'identifiant reçu de la commande.
-- Au plus 99 octets, avec un numéro de série de 32 caractères et des compteurs de 64 bits.
+- Au plus 99 octets, avec un numéro de série de 32 caractères et des compteurs de 64 bits ; 61 octets pour la clé `cond`.
 
 ## Datation
 
@@ -136,7 +138,7 @@ Le détail est une suite de paires `clé=valeur` séparées par une espace, en A
 - les grandeurs sont des entiers, en unités fixes : `ul` (µL), `ulh` (µL/h), `s`, `ms`, `mv` (mV), `mah` (mAh), comme dans le code ([grandeurs](design/infusion-modes.md#grandeurs)) ;
 - les causes et motifs sont les **valeurs numériques stables** des énumérations du code, que leurs documents de conception publient ;
 - les versions et empreintes sont des identifiants courts (`v1.2.0`, 16 chiffres hexadécimaux d'empreinte) ;
-- un flux cité dans le détail (`stream`) s'écrit sans le préfixe de la pompe, qui est la même : `securite:boot-9`. Le détail le plus long, celui de `journal.stream-gap`, tient ainsi dans 160 octets avec des séquences de 64 bits.
+- un flux cité dans le détail (`stream`) s'écrit sans le préfixe de la pompe, qui est la même : `securite:boot-9`. Les détails tiennent ainsi dans 160 octets avec des compteurs de 64 bits : le plus long, celui de `therapy.bolus-end` interrompu par l'état sûr (`clock`, `cause=syringe-empty` et `cond` compris), fait 150 octets au plus.
 
 Les clés communes :
 
@@ -144,14 +146,15 @@ Les clés communes :
 | --- | --- |
 | `mono` | Temps monotone du producteur, en ms |
 | `clock` | `doubtful` ; absente sinon |
-| `refus` | Cause d'un échec ([Refus](#refus)) ; seulement en phase « échouée » |
-
-En phase « échouée », le détail porte `refus` et sa clé complémentaire **à la place** des clés de l'action : la demande, enregistrée avant, les porte déjà.
+| `refus` | Cause du refus d'une demande ([Échecs](#échecs)) ; seulement en phase « échouée » |
 | `state` | Valeur de l'état de la machine à états ([états](design/state-machine.md#états)) au moment de l'événement |
+| `cond` | Condition liée à une action, sans le préfixe de la pompe ([Corrélation](#corrélation)) |
 
-### Refus
+### Échecs
 
-En phase « échouée », `refus` donne la cause, prise dans cette liste fermée :
+La phase « échouée » couvre deux cas, qui ne s'écrivent pas de la même façon.
+
+**Refus d'une demande** (action précédée d'un événement « demandé ») : le détail porte `refus` et sa clé complémentaire **à la place** des clés de l'action, que la demande, enregistrée avant, porte déjà. `refus` est pris dans cette liste fermée :
 
 | `refus` | Cause | Clé complémentaire |
 | --- | --- | --- |
@@ -165,6 +168,10 @@ En phase « échouée », `refus` donne la cause, prise dans cette liste fermée
 | `integrity` | Signature ou intégrité refusée (SW-REQ-014, SW-REQ-015) | |
 | `journal` | L'événement de la demande n'a pas pu être enregistré ; la conséquence relève de #46 | |
 | `power` | Coupure ou épuisement pendant l'action | |
+
+**Résultat négatif d'un contrôle automatique** (sans événement « demandé ») : le détail **garde** les clés de l'action, puisque aucun événement antérieur ne les porte, et y ajoute `cause`, prise dans la liste propre à l'action ([Cycle de vie](#cycle-de-vie), [Journal](#journal)). Il ne porte pas `refus`.
+
+`maintenance.functional-check` relève des deux cas : refusé avant d'être lancé, il porte `refus` ; lancé puis négatif, il garde `check` et ajoute `cause=fail`.
 
 ## Actions
 
@@ -185,16 +192,17 @@ Catégorie : opérateur, sauf mention. Cible : `pump-<série>/channel-1`. Acteur
 | `therapy.resume` | R, C, E, F | C, S | SYS-REQ-044 | RISK-015 | `state` |
 | `therapy.stop` | R, E, F | C, S | SYS-REQ-044 | RISK-015 | `state`, `delivered_ul` |
 | `therapy.bolus` | R, C, E, F | C, S | SYS-REQ-014 | RISK-009 | `volume_ul`, `rate_ulh`, `soft` |
-| `therapy.bolus-end` | E | C | SYS-REQ-014 | RISK-009 | `delivered_ul`, `cause` |
+| `therapy.bolus-end` | E | C | SYS-REQ-014 | RISK-009 | `delivered_ul`, `cause`, `cond` |
 | `therapy.purge` | R, E, F | C | SYS-REQ-028 | RISK-009 | `volume_ul`, `rate_ulh` |
-| `therapy.purge-end` | E | C | SYS-REQ-028 | | `delivered_ul`, `cause` |
+| `therapy.purge-end` | E | C | SYS-REQ-028 | | `delivered_ul`, `cause`, `cond` |
 | `therapy.end` (cycle de vie) | E | C | SYS-REQ-032 | RISK-002 | `cause`, `next`, `delivered_ul` |
 | `therapy.recovery` | R, C, E, F | C, S | SYS-REQ-038 | RISK-010 | `remaining_ul`, `rate_ulh` |
 | `syringe.select` | R, E, F | C | SYS-REQ-047 | RISK-001 | `syringe`, `diameter_um` |
 
 Valeurs :
 - `mode` : valeur de `Mode` (1 débit continu, 2 volume sur durée) ; `soft` : `above` si une limite souple est dépassée, absente sinon ; `drug` : identifiant du médicament dans la bibliothèque ; `syringe` : identifiant du modèle dans la liste vérifiée ; 16 caractères au plus chacun. La version de la bibliothèque n'est pas répétée : elle est consignée à son chargement (`config.library`).
-- `cause` de `therapy.bolus-end` : `volume` (bolus délivré), `pause`, `stop`, `end` (volume à perfuser atteint pendant le bolus) ; de `therapy.purge-end` : `volume`, `stop`, `line` (condition de ligne perdue).
+- `cause` de `therapy.bolus-end` : `volume` (bolus délivré), `pause`, `stop`, `end` (volume à perfuser atteint pendant le bolus), `syringe-empty`, `safety` (état sûr ou mise hors service, sur `DangerDetected` ou `FatalFault`) ; de `therapy.purge-end` : `volume`, `stop`, `line` (condition de ligne perdue), `safety`.
+- `therapy.bolus-end` et `therapy.purge-end` portent la corrélation de la demande qu'ils terminent (`input-<m>` du bolus ou de la purge) et `delivered_ul`, le volume effectivement délivré. Avec `cause=safety`, `cond` donne la condition qui a provoqué l'état sûr ou la mise hors service. Ils sont enregistrés avant `safety.safe-state` ou `safety.out-of-service`.
 - `therapy.end` : `cause` vaut `volume` ou `syringe-empty`, `next` vaut `stop` ou `kvo` (SYS-REQ-032).
 - La reprise après une pause (`therapy.resume`) est distincte du démarrage, bien que la machine à états reçoive le même `StartRequested`. L'historique (SYS-REQ-037) doit les distinguer.
 
@@ -202,15 +210,15 @@ Valeurs :
 
 ### Alarmes
 
-Catégorie : maîtrise du risque. Cible : `pump-<série>/channel-1` pour les alarmes de perfusion, `pump-<série>` ou l'objet concerné pour les autres. Corrélation : `cond-<m>` de la condition.
+Catégorie : maîtrise du risque. Cible : `pump-<série>/channel-1` pour les alarmes de perfusion, `pump-<série>` ou l'objet concerné pour les autres. Corrélation : `cond-<m>` de la condition pour le déclenchement et la fin ; `input-<m>` de l'action pour la pause du signal et l'acquittement, qui citent la condition par `cond`.
 
 Chaque condition d'alarme a quatre étapes, soit quatre actions :
 
 | Étape | Action | Phases | Acteur | Clés du détail |
 | --- | --- | --- | --- | --- |
 | Déclenchement | `alarm.<condition>.raise` | E | `commande` ou `securite` | `priority`, puis les clés de la condition |
-| Pause du signal sonore (SYS-REQ-036) | `alarm.<condition>.silence` | R, E, F | `operateur` | `until_s` |
-| Acquittement | `alarm.<condition>.acknowledge` | R, E, F | `operateur` | |
+| Pause du signal sonore (SYS-REQ-036) | `alarm.<condition>.silence` | R, E, F | `operateur` | `cond`, `until_s` |
+| Acquittement | `alarm.<condition>.acknowledge` | R, E, F | `operateur` | `cond` |
 | Fin | `alarm.<condition>.clear` | E | `commande` ou `securite` | `cause` |
 
 `priority` vaut `high`, `medium`, `low` ou `info`. `cause` de la fin vaut `resolved` (condition levée) ou `superseded` (remplacée par l'état sûr ou par l'arrêt).
@@ -244,17 +252,17 @@ Conditions, d'après le [catalogue des alarmes](requirements/requirements-specif
 
 ### Sûreté de fonctionnement
 
-Catégorie : maîtrise du risque. Cible : `pump-<série>`, ou `pump-<série>/channel-1` pour l'état sûr. Corrélation : `cond-<m>`.
+Catégorie : maîtrise du risque. Cible : `pump-<série>`, ou `pump-<série>/channel-1` pour l'état sûr. Corrélation : `cond-<m>`, sauf l'acquittement de l'état sûr, action du soignant : `input-<m>`, avec `cond`.
 
 | Action | Phases | Producteur | Exigence | Risque | Clés du détail |
 | --- | --- | --- | --- | --- | --- |
 | `safety.safe-state` | E | C, S | SYS-REQ-002 | RISK-001 | `state`, `cause` |
-| `safety.safe-state-acknowledge` | R, E, F | C | SW-REQ-001 | RISK-013 | `state` |
+| `safety.safe-state-acknowledge` | R, E, F | C | SW-REQ-001 | RISK-013 | `cond`, `state` |
 | `safety.out-of-service` | E | C, S | SW-REQ-001 | RISK-012 | `state`, `cause` |
 | `fault.drive` | E | C | SYS-REQ-002 | RISK-012 | `cause` : [défauts de l'entraînement](design/drive.md#défauts) |
 | `fault.occlusion-monitor` | E | C | SYS-REQ-002 | RISK-005 | `cause` : [défauts du surveillant](design/occlusion.md#défauts) |
 | `fault.state-machine` | E | C | SW-REQ-001 | RISK-012 | `state`, `event` : valeurs reçues, même invalides |
-| `fault.self-test` | E | C, S | SW-REQ-011 | RISK-012 | `test` |
+| `fault.self-test` | E | C, S | SW-REQ-011 | RISK-012 | `test` : [liste des tests](#tests) |
 | `fault.channel-mismatch` | E | C, S | SW-REQ-013 | RISK-001 | `field` |
 | `link.loss` | E | C, S | SYS-REQ-053 | RISK-012 | `cause` : `silence`, `transport`, `boot`, `version` |
 
@@ -268,7 +276,7 @@ Catégorie : cycle de vie, sauf mention. Cible : `pump-<série>`. Corrélation :
 | Action | Phases | Producteur | Exigence | Risque | Clés du détail |
 | --- | --- | --- | --- | --- | --- |
 | `device.boot` | E | C, S | SW-REQ-020 | RISK-011 | `boot`, `software`, `reset` |
-| `device.self-test` | E, F | C, S | SW-REQ-010 | RISK-012 | `test` |
+| `device.self-test` | E, F | C, S | SW-REQ-010 | RISK-012 | `test`, et `cause` en cas d'échec |
 | `device.prototype-warning` (opérateur) | E | C | SYS-REQ-027 | RISK-021 | |
 | `device.shutdown` | R, E | C | SYS-REQ-016 | RISK-010 | `cause` : `operator`, `battery` |
 | `device.power-fail` | E | C, S | SYS-REQ-050 | RISK-011 | |
@@ -278,10 +286,32 @@ Catégorie : cycle de vie, sauf mention. Cible : `pump-<série>`. Corrélation :
 | `clock.unavailable` | E | C | SYS-REQ-054 | RISK-011 | `cause` : `oscillator`, `reserve`, `unreadable` |
 | `maintenance.enter` | R, E, F | C | SYS-REQ-023 | RISK-015 | `state` |
 | `maintenance.exit` | R, E | C | SYS-REQ-023 | | `cause` : `operator`, `timeout` |
-| `maintenance.functional-check` | R, E, F | C | SYS-REQ-041 | RISK-012 | `check` |
+| `maintenance.functional-check` | R, E, F | C | SYS-REQ-041 | RISK-012 | `check` : `sensors`, `alarm-signals`, `accuracy` |
 
 - `device.boot` est le premier événement de chaque flux : `boot` est le numéro de démarrage, `software` la version du logiciel du producteur, `reset` la cause de la réinitialisation précédente si le processeur la connaît (`power`, `watchdog`, `software`, `unknown`).
 - `device.power-fail` n'est enregistré que si la réserve de maintien le permet (SYS-REQ-050) ; son absence n'est pas une perte.
+
+#### Tests
+
+`device.self-test` consigne un événement par test du démarrage (SW-REQ-010, SYS-REQ-046) ; `fault.self-test` un test périodique en échec (SW-REQ-011). `test` prend une valeur de cette liste fermée :
+
+| `test` | Test | Producteur |
+| --- | --- | --- |
+| `program-memory` | Intégrité de la mémoire programme | C, S |
+| `ram` | Mémoire vive | C, S |
+| `persistent-data` | Intégrité des données persistantes (SW-REQ-017) | C, S |
+| `boot-counter` | Compteur de démarrage lisible et intègre (SW-REQ-020) | C, S |
+| `clock` | Horloge temps réel | C |
+| `sensors` | Plausibilité des capteurs | C, S |
+| `alarm-signals` | Signaux d'alarme visuels et sonores | C |
+| `cutoff-command` | Coupure du moteur par le canal de commande (SYS-REQ-046) | C |
+| `cutoff-safety` | Coupure du moteur par le canal de sécurité (SYS-REQ-046) | S |
+| `fallback-alarm` | Circuit d'alarme autonome qui retentit (SYS-REQ-046) | S |
+| `fallback-battery` | Tension en charge de la pile du circuit autonome (SYS-REQ-046) | S |
+| `protocol-version` | Version du protocole de la liaison (SYS-REQ-053) | C, S |
+
+En cas d'échec, `cause` vaut `fail` (résultat hors tolérance), `timeout` (aucun résultat dans le délai) ou `unavailable` (test impossible : capteur ou périphérique absent). Pour `fallback-battery`, la clé `mv` donne la tension mesurée.
+
 
 ### Configuration
 
@@ -321,7 +351,7 @@ Catégorie : maîtrise du risque. Cible : `pump-<série>/journal`. Acteur : `com
 | `journal.loss` | E | C, S | SW-REQ-008 | RISK-011 | `count`, `cause` : `ring-full`, `medium-full`, `write`, `anchor` |
 | `journal.stream-gap` | E | C, S | SW-REQ-021 | RISK-011 | `stream`, `from`, `to` : séquences manquantes |
 | `journal.witness-refusal` | E | S | SYS-REQ-052 | RISK-011 | `stream`, `sequence`, `cause` : `gap`, `divergent`, `decreasing`, `retention` |
-| `journal.cross-check` | E, F | C, S | SYS-REQ-052 | RISK-011 | `stream`, `sequence` |
+| `journal.cross-check` | E, F | C, S | SYS-REQ-052 | RISK-011 | `stream`, `sequence`, et `cause` en cas d'échec : `digest` (condensats différents à la même séquence), `position` (le support et le témoin ne sont pas à la même séquence), `unreadable` (journal ou état du témoin illisible) |
 
 - `journal.loss` consigne les événements refusés ou perdus depuis le précédent, dès qu'il peut être enregistré : la perte n'est jamais silencieuse (SW-REQ-008). La réponse de l'appareil relève de #46.
 - Les frontières, retraits et rotations que tient mddlog lui-même (actions `mddlog.*`) ne sont pas dupliqués ici.
