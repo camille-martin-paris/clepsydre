@@ -14,6 +14,7 @@ Ce document décrit le modèle physique qui permet de développer et d'éprouver
 | 3 | Injection de défauts : liaison, horloges et processeurs | Ce document |
 | 3 (suite) | Injection de défauts : pilote, capteurs, seringue, air, alimentation | Ce document |
 | 4 | Démonstration interactive et limites complètes du modèle | Ce document |
+| 5 | Commande simulée et journal d'audit persistant ([#136](https://github.com/camille-martin-paris/clepsydre/issues/136)) | Ce document |
 
 ## Organisation
 
@@ -30,7 +31,16 @@ Le simulateur est la bibliothèque `clepsydre_sim` ([`src/sim/`](../../src/sim))
 | `clepsydre.sim.processor` | Processeur simulé (`Processor`) qui exécute un logiciel sur son propre compteur, avec ses défauts : blocage, réinitialisation, arrêt de l'oscillateur, mise hors tension |
 | `clepsydre.sim.power` | Alimentation (`PowerSupply`) : secteur, batterie, bascule matérielle, superviseur de tension et réserve de maintien (ADR 0004) |
 
-La démonstration interactive est la bibliothèque `clepsydre_sim_console` (modules `clepsydre.sim.console` et `clepsydre.sim.journal`, ce dernier sur [mddlog](../../software_development_file/soup.md)) et l'exécutable `clepsydre-sim` ([`src/sim_console/`](../../src/sim_console)) ; voir [Démonstration](#démonstration) et [Journal de diagnostic](#journal-de-diagnostic).
+La démonstration interactive est la bibliothèque `clepsydre_sim_console` et l'exécutable `clepsydre-sim` ([`src/sim_console/`](../../src/sim_console)), sur l'hôte ; voir [Démonstration](#démonstration).
+
+| Module | Rôle |
+| --- | --- |
+| `clepsydre.sim.console` | Interprète des commandes texte : banc, défauts, soignant |
+| `clepsydre.sim.journal` | [Journal de diagnostic](#journal-de-diagnostic), sur le cœur de [mddlog](../../software_development_file/soup.md) |
+| `clepsydre.sim.command` | [Commande simulée](#commande-simulée-et-journal-daudit) : machine à états et unités de [`src/control`](../../src/control) assemblées autour du modèle |
+| `clepsydre.sim.audit_journal` | Journal d'audit persistant : support sur fichiers, sink persistant et lecteur de mddlog |
+
+La commande simulée enregistre ses événements par la bibliothèque `clepsydre_audit` ([`src/audit/`](../../src/audit), [conception](../design/audit-recorder.md)), code embarqué de classe C : le [vocabulaire des événements](../event-vocabulary.md) en constantes et l'enregistreur, sur le cœur sans allocation de mddlog.
 
 La virgule flottante convient au modèle, qui représente le monde physique. Le logiciel embarqué utilisera ses propres types, en arithmétique entière ou à virgule fixe (SW-REQ-005).
 
@@ -181,7 +191,7 @@ build/gcc/src/sim_console/clepsydre-sim examples/sim/occlusion-bolus.txt   # sc�
 
 « aide » liste les commandes ; « verifie liste » liste les grandeurs vérifiables. En mode scénario, chaque ligne est recopiée, et l'exécution s'arrête à la première erreur, de commande ou de lecture du scénario (code de sortie 2), ou à la première vérification échouée (code 1).
 
-La console tient le rôle de l'opérateur : il n'y a pas encore de logiciel de pompe. Elle reproduit seulement deux câblages matériels : la validation du moteur exige l'alimentation, et une perte totale d'alimentation remet la commande du moteur à zéro, comme le logiciel de commande devra le faire à son redémarrage (SYS-REQ-038). Les défauts de la liaison et des processeurs n'y figurent pas : ils n'ont d'effet qu'à travers des logiciels, qui viendront en M1.
+La console tient le rôle du banc et du soignant. Elle reproduit deux câblages matériels : la validation du moteur exige l'alimentation, et une perte totale d'alimentation remet la commande du moteur à zéro (SYS-REQ-038). Les commandes du banc (`debit`, `recul`) pilotent le moteur directement ; celles du soignant passent par la [commande simulée](#commande-simulée-et-journal-daudit), qui pilote alors le moteur, et le banc ne peut plus le faire avant l'arrêt. Les défauts de la liaison et des processeurs n'y figurent pas : ils n'ont d'effet qu'à travers les deux logiciels, et la commande simulée n'a pas de canal de sécurité.
 
 | Scénario ([`examples/sim/`](../../examples/sim)) | Ce qu'il montre |
 | --- | --- |
@@ -191,6 +201,7 @@ La console tient le rôle de l'opérateur : il n'y a pas encore de logiciel de p
 | `coupure-alimentation.txt` | Bascule sur batterie sans interruption ; perte totale, coupure imminente puis arrêt ; pas de reprise au retour du secteur |
 | `air.txt` | Bulle de 60 µL vue par le détecteur, puis délivrée au patient |
 | `seringue-mal-placee.txt` | Seringue entraînée par le pousseur sans délivrer ; seul le berceau le révèle |
+| `seance-auditee.txt` | Séance de la commande simulée : programmation refusée puis acceptée, perfusion, bolus au-delà de la limite souple refusé puis confirmé, occlusion, état sûr, acquittement ; journal d'audit cohérent, dans le vocabulaire |
 
 Chaque scénario porte ses propres vérifications. CTest les exécute comme tests de fumée, en CI, pour que la démonstration ne se dégrade pas sans qu'on le voie. Ces vérifications portent sur le modèle et ses paramètres d'exemple, jamais sur la pompe.
 
@@ -249,6 +260,44 @@ Mesures, sur [`console.cpp`](../../src/sim_console/console.cpp) et [`main.cpp`](
 | Lignes par chemin métier | 1 appel par événement (8 sites) | 1 appel par événement (8 sites) | Tenu |
 
 Ce que mddlog apporte au-delà de ces critères : un anneau borné qui refuse au lieu d'écraser et rend ses refus visibles, des identifiants validés (un nom de composant trop long est refusé, jamais tronqué), une troncature du message signalée, et une écriture sans allocation, qui est celle du chemin retenu pour la cible. Ce qu'il coûte : 5 liaisons à déclarer, le résultat de chaque écriture à écarter explicitement (les refus étant comptés par l'anneau), et l'activation d'`import std` dans le build ([build.md](build.md#bibliothèque-standard-en-module)).
+
+### Commande simulée et journal d'audit
+
+La commande simulée ([`command.cppm`](../../src/sim_console/command.cppm), [#136](https://github.com/camille-martin-paris/clepsydre/issues/136)) assemble les unités du logiciel de commande autour du modèle : la [machine à états](../design/state-machine.md), la [validation et le décompte des volumes](../design/infusion-modes.md), l'[entraînement](../design/drive.md) et le [surveillant d'occlusion](../design/occlusion.md). Ce n'est pas le logiciel de commande ([#23](https://github.com/camille-martin-paris/clepsydre/issues/23)) : c'est l'assemblage minimal qui fait produire au simulateur une séance auditée, avec un médicament et des réglages d'exemple.
+
+| Commande | Effet | Événements d'audit |
+| --- | --- | --- |
+| `programmer <mL/h> <mL>` | Programmation en débit continu, validée contre les limites du médicament d'exemple et de la seringue | `therapy.program` : demandée, puis exécutée ou échouée (`refus=validation`, `refus=state`) |
+| `demarrer` | Démarrage, ou reprise après une pause | `therapy.start` ou `therapy.resume` |
+| `pause`, `arret` | Pause, arrêt | `therapy.pause`, `therapy.stop` ; `therapy.bolus-end` si un bolus est interrompu |
+| `bolus <mL> <mL/h> [confirme]` | Bolus ; au-delà de la limite souple, `confirme` est exigé (SYS-REQ-012) | `therapy.bolus` : demandée, confirmée au-delà de la limite souple, exécutée ou échouée (`refus=timeout` sans confirmation) ; `therapy.bolus-end` à la fin |
+| `acquitter` | Acquitte l'état sûr, ou l'alarme en cours (fin de perfusion, reprise après réinitialisation) | `safety.safe-state-acknowledge` ou `alarm.<condition>.acknowledge`, puis `alarm.<condition>.clear` |
+| `seringue 10\|20\|50` | Choix d'une seringue de la liste, à l'arrêt seulement | `syringe.select` |
+| `audit [evenements]` | Compteurs, verdict du lecteur de mddlog pour chaque flux et chaque registre, notes de frontière ; avec `evenements`, les événements relus | — |
+
+Toutes les 10 ms du temps simulé, la boucle de commande fait avancer le décompte, l'entraînement et le surveillant d'occlusion. Elle enregistre ce qu'elle constate :
+- **occlusion** : `alarm.occlusion.raise`, puis `safety.safe-state`, corrélés à la condition (`cond-<m>`) ; le pousseur recule ensuite de la course calculée ;
+- **défaut** de l'entraînement ou du surveillant : `fault.drive` ou `fault.occlusion-monitor`, `alarm.technical.raise`, `safety.safe-state` ;
+- **fin de perfusion** : `therapy.end`, `alarm.infusion-end.raise` ;
+- **coupure imminente** : `device.power-fail` ;
+- **démarrage** : `device.boot` ; après une perte totale d'alimentation pendant une perfusion, `alarm.reset-recovery.raise` (SYS-REQ-038).
+
+Chaque démarrage du processeur de commande, à l'ouverture et à chaque retour de l'alimentation, prend un nouveau numéro, écrit durablement avant tout événement (SW-REQ-020) : un nouveau flux `pump-SIM0001:commande:boot-<n>`.
+
+**Persistance.** `clepsydre-sim --audit <répertoire> [scénario]` conserve le journal dans un répertoire, créé au besoin et repris d'une exécution à l'autre ; sans cette option, il est en mémoire. Les anneaux de l'enregistreur sont vidés par l'adaptateur de mddlog (`AuditSinkAdapter`) vers son sink persistant (`PersistingAuditSink`) : segments en ajout seul, une confirmation durable par événement (`fsync` du fichier et du répertoire), un registre (ledger) par démarrage. Le compteur de démarrage est le fichier `boot` ; illisible, il empêche le démarrage (code 2). Un répertoire qui désigne le scénario ou le journal de diagnostic est refusé.
+
+**Vérification.** `audit` et les grandeurs `audit-*` de `verifie` relisent le support avec le lecteur de mddlog (`LogVerifier`). Sans témoin d'ancrage ([#47](https://github.com/camille-martin-paris/clepsydre/issues/47)), le meilleur verdict d'un flux est « internally consistent, unanchored ». Le journal est dit cohérent si chaque flux et chaque registre l'est, et si aucune note de frontière ne révèle d'écart avec ce que les registres ont consigné ([`audit_journal.cppm`](../../src/sim_console/audit_journal.cppm)).
+
+Limites propres à cette étape :
+- **Pas de canal de sécurité** (#29) : les confirmations observées par la sécurité (phase confirmée de `therapy.program` et de `therapy.start`) et son flux n'existent pas ; la phase confirmée n'apparaît que pour le bolus au-delà de la limite souple.
+- **Pas de témoin d'ancrage** (#47) : une modification d'un enregistrement se voit si un registre ultérieur cite la position du flux (vérifié par [`sim_audit_test.cpp`](../../tests/sim_audit_test.cpp)) ; la troncature du dernier flux, que nul registre ne cite encore, ne se voit pas.
+- **Heure civile indisponible** : la console ne simule pas d'horloge temps réel ; chaque événement porte « heure indisponible » et le temps monotone depuis le démarrage, en tête du détail ([vocabulaire](../event-vocabulary.md#datation)).
+- **Pas d'autotests** : aucun `device.self-test` n'est enregistré, plutôt qu'une réussite fictive.
+- **Décompte après le rattrapage des jeux** : le volume n'est compté qu'une fois l'entraînement en poursuite ([#131](https://github.com/camille-martin-paris/clepsydre/issues/131)).
+- **Réduite au débit continu** : ni volume sur durée, ni purge, ni maintien de veine ouverte (le médicament d'exemple prévoit l'arrêt en fin de perfusion), ni confirmation spécifique d'un débit au-delà de la limite souple.
+- **Acquittement sans contrôle de la condition** : l'état sûr est acquitté sans vérifier que l'occlusion est levée.
+- **Support de l'hôte** : `fsync` engage le système de fichiers de l'hôte, pas une mémoire qualifiée ([ADR 0005](../adr/0005-journalisation-et-evenements-d-audit.md#usage-retenu)).
+- **`AuditService`**, que cite l'ADR 0005, n'existe pas dans mddlog 0.3.0 : l'adaptateur et le sink sont pilotés directement.
 
 ## Limites du modèle
 

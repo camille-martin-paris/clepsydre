@@ -5,9 +5,11 @@
 add_library(clepsydre_sim_console)
 add_library(clepsydre::sim_console ALIAS clepsydre_sim_console)
 target_sources(clepsydre_sim_console
-    PUBLIC FILE_SET CXX_MODULES FILES console.cppm journal.cppm
-    PRIVATE console.cpp journal.cpp)
-target_link_libraries(clepsydre_sim_console PUBLIC clepsydre::sim mddlog::core PRIVATE clepsydre_warnings)
+    PUBLIC FILE_SET CXX_MODULES FILES console.cppm journal.cppm audit_journal.cppm command.cppm
+    PRIVATE console.cpp journal.cpp audit_journal.cpp command.cpp)
+target_link_libraries(clepsydre_sim_console
+    PUBLIC clepsydre::sim clepsydre::audit clepsydre::control mddlog::mddlog
+    PRIVATE clepsydre::core clepsydre_warnings)
 clepsydre_register_objects(clepsydre_sim_console)
 
 add_executable(clepsydre-sim main.cpp)
