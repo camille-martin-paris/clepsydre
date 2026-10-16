@@ -276,7 +276,7 @@ Catégorie : cycle de vie, sauf mention. Cible : `pump-<série>`. Corrélation :
 | Action | Phases | Producteur | Exigence | Risque | Clés du détail |
 | --- | --- | --- | --- | --- | --- |
 | `device.boot` | E | C, S | SW-REQ-020 | RISK-011 | `boot`, `software`, `reset` |
-| `device.self-test` | E, F | C, S | SW-REQ-010 | RISK-012 | `test`, et `cause` en cas d'échec |
+| `device.self-test` | E, F | C, S | SW-REQ-010 | RISK-012 | `test`, `peer` pour le compteur de l'autre processeur, et `cause` en cas d'échec |
 | `device.prototype-warning` (opérateur) | E | C | SYS-REQ-027 | RISK-021 | |
 | `device.shutdown` | R, E | C | SYS-REQ-016 | RISK-010 | `cause` : `operator`, `battery` |
 | `device.power-fail` | E | C, S | SYS-REQ-050 | RISK-011 | |
@@ -300,7 +300,7 @@ Catégorie : cycle de vie, sauf mention. Cible : `pump-<série>`. Corrélation :
 | `program-memory` | Intégrité de la mémoire programme | C, S |
 | `ram` | Mémoire vive | C, S |
 | `persistent-data` | Intégrité des données persistantes (SW-REQ-017) | C, S |
-| `boot-counter` | Compteur de démarrage lisible et intègre (SW-REQ-020) | C, S |
+| `boot-counter` | Compteur de démarrage lisible et intègre (SW-REQ-020) ; consigné en réussite seulement par le processeur testé, en échec par l'autre ([ci-dessous](#compteur-de-démarrage-en-défaut)) | C, S |
 | `clock` | Horloge temps réel | C |
 | `sensors` | Plausibilité des capteurs | C, S |
 | `alarm-signals` | Signaux d'alarme visuels et sonores | C |
@@ -311,6 +311,14 @@ Catégorie : cycle de vie, sauf mention. Cible : `pump-<série>`. Corrélation :
 | `protocol-version` | Version du protocole de la liaison (SYS-REQ-053) | C, S |
 
 En cas d'échec, `cause` vaut `fail` (résultat hors tolérance), `timeout` (aucun résultat dans le délai) ou `unavailable` (test impossible : capteur ou périphérique absent). Pour `fallback-battery`, la clé `mv` donne la tension mesurée.
+
+#### Compteur de démarrage en défaut
+
+Le compteur de démarrage est incrémenté et écrit durablement **avant tout événement** du démarrage (SW-REQ-020, ADR 0006). S'il est illisible ou corrompu, ou si son écriture n'est pas confirmée, le processeur n'a aucun numéro de démarrage valide : il ne peut créer aucun flux. Réutiliser le dernier numéro ou en inventer un rendrait deux flux indiscernables. D'où cette exception, la seule où un fait du vocabulaire n'est pas consigné dans le flux de son producteur :
+- **Le processeur en défaut n'enregistre aucun événement d'audit**, pas même `device.boot`. Il met la pompe hors service, comme SW-REQ-020 l'exige, affiche le message de défaillance (SW-REQ-010) et consigne le défaut dans son journal de diagnostic, qui ne sert pas de preuve.
+- **Il signale l'échec à l'autre processeur** dans la séquence des tests du démarrage (message « Test » de la liaison, ADR 0006). Le codage de ce signalement, sans numéro de démarrage valide, sera fixé avec le protocole de la sécurité (#29).
+- **L'autre processeur l'enregistre dans son propre flux** : `device.self-test`, phase « échouée », `test=boot-counter`, `peer=commande` ou `peer=securite`, `cause` (`fail` pour un compteur corrompu, `unavailable` pour un compteur illisible, `timeout` pour une écriture non confirmée). L'acteur est le processeur qui enregistre, la cible la pompe. La clé `peer` n'est employée que dans ce cas.
+- **Si la commande est en défaut**, c'est le flux de la sécurité qui porte l'événement, et la commande, qui tient le journal ([ADR 0005](adr/0005-journalisation-et-evenements-d-audit.md)), doit encore l'enregistrer : l'écriture d'un flux de la sécurité ne dépend pas du compteur de la commande. Si le support du journal est lui-même inutilisable, ou si les deux compteurs sont en défaut, aucun événement n'est enregistré ; la pompe reste hors service, et l'échec reste visible à chaque démarrage tant que le compteur n'est pas réparé. Ce cas est une limite du journal, pas une perte silencieuse : il ne produit aucune perfusion.
 
 
 ### Configuration
@@ -384,5 +392,6 @@ La confirmation de la programmation est observée par le canal de sécurité (SY
 - **mddlog ne porte ni le temps monotone ni l'heure douteuse.** Les deux sont dans le détail, en attendant des champs propres (mddlog#154, mddlog#155) ; un lecteur hors appareil doit donc analyser le détail pour les retrouver.
 - **Une seule référence** d'exigence et de risque par événement : le champ de mddlog n'en porte qu'une. La traçabilité complète passe par le registre.
 - **Le catalogue des alarmes** n'est pas établi (#31) : la liste des conditions suit la spécification, et la priorité du désaccord avec le témoin reste à fixer.
+- **Un compteur de démarrage en défaut** ne laisse aucune trace dans le flux du processeur concerné ; il n'est consigné que par l'autre processeur, s'il le peut ([Compteur de démarrage en défaut](#compteur-de-démarrage-en-défaut)).
 - **Les rôles** ne sont pas établis (#39) : seul `role:technicien` est employé.
 - **Les clés de détail** des bibliothèques (`drug`, `library`, `syringe`) dépendent de leur format, qui n'est pas encore fixé.
