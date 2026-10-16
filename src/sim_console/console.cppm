@@ -10,9 +10,11 @@ module;
 #include <ostream>
 #include <string>
 #include <string_view>
+#include <vector>
 
 export module clepsydre.sim.console;
 
+import clepsydre.sim.journal;
 import clepsydre.sim.power;
 import clepsydre.sim.simulation;
 import clepsydre.sim.syringe_pump;
@@ -26,6 +28,10 @@ import clepsydre.sim.syringe_pump;
 // reproduit seulement deux câblages matériels : la validation du moteur exige l'alimentation,
 // et une perte totale d'alimentation remet la commande du moteur à zéro, comme le logiciel de
 // commande devra le faire à son redémarrage (SYS-REQ-038).
+//
+// Le journal de diagnostic (#43), s'il est activé, consigne les commandes de l'opérateur qui
+// agissent sur la simulation, les erreurs, les vérifications échouées, et les changements d'état
+// observés pendant que le temps avance : alimentation, moteur, détecteur d'air.
 
 export namespace clepsydre::sim {
 
@@ -38,7 +44,7 @@ public:
         quit,
     };
 
-    explicit Console(std::ostream& out);
+    explicit Console(std::ostream& out, Journal journal = {});
 
     Console(const Console&) = delete;
     Console(Console&&) = delete;
@@ -55,6 +61,9 @@ public:
     int run(std::istream& in, bool interactive);
 
 private:
+    Outcome interpret(const std::vector<std::string_view>& w);
+    void note(Severity severity, std::string_view component, std::string_view message);
+    void observe();
     void reset(const SyringeModel& syringe);
     void advance(std::chrono::nanoseconds duration);
     void wire();
@@ -75,6 +84,7 @@ private:
     Outcome error(std::string_view message);
 
     std::ostream* out_;
+    Journal journal_;
     SyringeModel syringe_;
     SyringePump pump_;
     PowerSupply power_;
@@ -82,7 +92,12 @@ private:
     bool occluded_ = false;
     Length height_;
     bool enabled_ = true;
+    // États observés au pas précédent, pour journaliser leurs changements.
     bool wasPowered_ = true;
+    bool wasOnBattery_ = false;
+    bool wasImminent_ = false;
+    bool wasRunning_ = false;
+    bool wasAirDetected_ = false;
     double millilitresPerHour_ = 0.0;
     Volume mark_;
 };

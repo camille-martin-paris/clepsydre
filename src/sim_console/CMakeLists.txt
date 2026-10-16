@@ -5,8 +5,8 @@
 add_library(clepsydre_sim_console)
 add_library(clepsydre::sim_console ALIAS clepsydre_sim_console)
 target_sources(clepsydre_sim_console
-    PUBLIC FILE_SET CXX_MODULES FILES console.cppm
-    PRIVATE console.cpp)
+    PUBLIC FILE_SET CXX_MODULES FILES console.cppm journal.cppm
+    PRIVATE console.cpp journal.cpp)
 target_link_libraries(clepsydre_sim_console PUBLIC clepsydre::sim PRIVATE clepsydre_warnings)
 clepsydre_register_objects(clepsydre_sim_console)
 

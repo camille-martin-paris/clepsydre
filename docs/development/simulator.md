@@ -30,7 +30,7 @@ Le simulateur est la bibliothèque `clepsydre_sim` ([`src/sim/`](../../src/sim))
 | `clepsydre.sim.processor` | Processeur simulé (`Processor`) qui exécute un logiciel sur son propre compteur, avec ses défauts : blocage, réinitialisation, arrêt de l'oscillateur, mise hors tension |
 | `clepsydre.sim.power` | Alimentation (`PowerSupply`) : secteur, batterie, bascule matérielle, superviseur de tension et réserve de maintien (ADR 0004) |
 
-La démonstration interactive est la bibliothèque `clepsydre_sim_console` (module `clepsydre.sim.console`) et l'exécutable `clepsydre-sim` ([`src/sim_console/`](../../src/sim_console)) ; voir [Démonstration](#démonstration).
+La démonstration interactive est la bibliothèque `clepsydre_sim_console` (modules `clepsydre.sim.console` et `clepsydre.sim.journal`) et l'exécutable `clepsydre-sim` ([`src/sim_console/`](../../src/sim_console)) ; voir [Démonstration](#démonstration) et [Journal de diagnostic](#journal-de-diagnostic).
 
 La virgule flottante convient au modèle, qui représente le monde physique. Le logiciel embarqué utilisera ses propres types, en arithmétique entière ou à virgule fixe (SW-REQ-005).
 
@@ -193,6 +193,37 @@ La console tient le rôle de l'opérateur : il n'y a pas encore de logiciel de p
 | `seringue-mal-placee.txt` | Seringue entraînée par le pousseur sans délivrer ; seul le berceau le révèle |
 
 Chaque scénario porte ses propres vérifications. CTest les exécute comme tests de fumée, en CI, pour que la démonstration ne se dégrade pas sans qu'on le voie. Ces vérifications portent sur le modèle et ses paramètres d'exemple, jamais sur la pompe.
+
+### Journal de diagnostic
+
+`clepsydre-sim --journal <fichier> [scénario]` écrit un journal de diagnostic ([#43](https://github.com/camille-martin-paris/clepsydre/issues/43)). C'est une **journalisation minimale, écrite sans bibliothèque** : elle sert de point de comparaison pour l'intégration de la bibliothèque retenue par l'[ADR 0005](../adr/0005-journalisation-et-evenements-d-audit.md) ([#44](https://github.com/camille-martin-paris/clepsydre/issues/44)). Ce n'est pas le journal d'événements de la pompe (#41) : il ne consigne que le simulateur, sur l'hôte, sans persistance garantie ni vérification. Le fichier du journal est écrasé ; un journal qui désigne le scénario, par le même chemin ou par un lien, est refusé (code 2) sans que le scénario soit modifié.
+
+Une ligne par événement, datée sur le temps simulé à la milliseconde :
+
+```text
+00:10:00.000 INFO [operateur] secteur non
+00:10:00.001 INFO [alimentation] bascule sur batterie
+00:11:00.001 ALERTE [alimentation] coupure imminente
+00:11:00.050 ALERTE [alimentation] perte totale de l'alimentation
+00:11:00.050 INFO [moteur] moteur arrêté
+```
+
+| Composant | Événements | Gravité |
+| --- | --- | --- |
+| `operateur` | Chaque commande qui agit sur la simulation, consignée avant son exécution, sans son commentaire. `aide`, `etat`, `verifie`, `quitter` et `avance` ne le sont pas : ils n'agissent pas sur la simulation, ou ne font qu'avancer le temps | INFO |
+| `console` | Commande refusée, avec le motif ; vérification échouée | ALERTE |
+| `alimentation` | Bascule sur batterie et fin du fonctionnement sur batterie ; coupure imminente ; perte totale et retour de l'alimentation | INFO ; ALERTE pour la coupure imminente et la perte totale |
+| `moteur` | Mise en marche et arrêt | INFO |
+| `air` | Air détecté, puis plus d'air détecté | ALERTE, puis INFO |
+
+Les changements d'état sont relevés et datés à la fin de chaque pas de simulation, de 1 ms ; une réinitialisation (`seringue`, `frottement`) remet le temps à zéro sans journaliser les changements qu'elle provoque.
+
+**Instrumentation, relevée pour la comparaison de #44** :
+- **configuration** : un seul site, le point de composition [`main.cpp`](../../src/sim_console/main.cpp), qui ouvre le fichier et passe un `Journal` à la console ; sans `--journal`, le journal est désactivé ;
+- **objets à gérer** : le `Journal`, copié dans la console, et le flux qu'il emprunte ;
+- **contexte répété** : chaque appel répète le composant et la gravité ; le temps est lu par une fonction de la console (`note`) ;
+- **chemins métier** : 8 appels de `note` (5 changements d'état, la commande, le refus, la vérification échouée), plus 5 indicateurs d'état observé pour détecter les changements ;
+- **refus** : aucun ; une erreur d'écriture du flux est ignorée.
 
 ## Limites du modèle
 

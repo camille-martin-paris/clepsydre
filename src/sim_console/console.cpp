@@ -168,10 +168,15 @@ constexpr std::string_view measures = R"(Grandeurs pour « verifie » :
   alimente, sur-batterie, coupure-imminente, moteur, air-detecte, berceau,
   piston-capture : oui ou non)";
 
+// Commandes qui n'agissent pas sur la simulation, ou ne font qu'avancer le temps : elles ne sont
+// pas journalisées.
+constexpr std::array<std::string_view, 5> unjournaled{"aide", "etat", "verifie", "quitter",
+                                                      "avance"};
+
 } // namespace
 
-Console::Console(std::ostream& out)
-    : out_{&out}, syringe_{exampleSyringes[2]},
+Console::Console(std::ostream& out, Journal journal)
+    : out_{&out}, journal_{journal}, syringe_{exampleSyringes[2]},
       pump_{exampleMechanism, exampleSyringes[2], exampleLine}, power_{examplePower} {
     wire();
 }
@@ -184,13 +189,17 @@ void Console::reset(const SyringeModel& syringe) {
     occluded_ = false;
     height_ = Length{};
     enabled_ = true;
-    wasPowered_ = true;
     millilitresPerHour_ = 0.0;
     mark_ = Volume{};
     wire();
 }
 
 void Console::wire() {
+    wasPowered_ = power_.powered();
+    wasOnBattery_ = power_.onBattery();
+    wasImminent_ = power_.powerFailImminent();
+    wasRunning_ = pump_.motorRunning();
+    wasAirDetected_ = pump_.airDetected();
     world_.add([this](TrueTime, std::chrono::nanoseconds dt) {
         power_.step(dt, pump_.motorRunning());
         const bool powered = power_.powered();
@@ -199,10 +208,41 @@ void Console::wire() {
             millilitresPerHour_ = 0.0;
             applyStepRate();
         }
-        wasPowered_ = powered;
         pump_.setMotorEnabled(powered && enabled_);
         pump_.step(dt);
+        observe();
     });
+}
+
+// Journalise les changements d'état depuis le pas précédent.
+void Console::observe() {
+    const auto changed = [](bool& previous, bool current) {
+        const bool result = previous != current;
+        previous = current;
+        return result;
+    };
+    if (changed(wasPowered_, power_.powered())) {
+        note(wasPowered_ ? Severity::info : Severity::alert, "alimentation",
+             wasPowered_ ? "alimentation rétablie" : "perte totale de l'alimentation");
+    }
+    if (changed(wasOnBattery_, power_.onBattery())) {
+        note(Severity::info, "alimentation",
+             wasOnBattery_ ? "bascule sur batterie" : "fin du fonctionnement sur batterie");
+    }
+    if (changed(wasImminent_, power_.powerFailImminent()) && wasImminent_) {
+        note(Severity::alert, "alimentation", "coupure imminente");
+    }
+    if (changed(wasRunning_, pump_.motorRunning())) {
+        note(Severity::info, "moteur", wasRunning_ ? "moteur en marche" : "moteur arrêté");
+    }
+    if (changed(wasAirDetected_, pump_.airDetected())) {
+        note(wasAirDetected_ ? Severity::alert : Severity::info, "air",
+             wasAirDetected_ ? "air détecté" : "plus d'air détecté");
+    }
+}
+
+void Console::note(Severity severity, std::string_view component, std::string_view message) {
+    journal_.record(world_.now(), severity, component, message);
 }
 
 void Console::advance(std::chrono::nanoseconds duration) {
@@ -232,6 +272,20 @@ Console::Outcome Console::execute(std::string_view line) {
     if (w.empty()) {
         return Outcome::ok;
     }
+    // La commande est consignée avant son exécution, qui peut faire avancer le temps (recul) ;
+    // un refus suit dans le journal.
+    if (journal_.enabled() && !std::ranges::contains(unjournaled, w[0])) {
+        std::string text;
+        for (const std::string_view word : w) {
+            text += text.empty() ? "" : " ";
+            text += word;
+        }
+        note(Severity::info, "operateur", text);
+    }
+    return interpret(w);
+}
+
+Console::Outcome Console::interpret(const std::vector<std::string_view>& w) {
     const std::string_view command = w[0];
     const auto argument = [&w](std::size_t index) {
         return index < w.size() ? w[index] : std::string_view{};
@@ -592,8 +646,10 @@ Console::Outcome Console::commandCheck(std::string_view name, std::string_view o
     }
     const std::string shownValue = value ? std::format("{:.6g}", *value) : "aucune mesure";
     if (!holds) {
-        std::println(*out_, "ÉCHEC : {} vaut {}, attendu {} {}", name, shownValue, operation,
-                     expected);
+        const std::string message =
+            std::format("ÉCHEC : {} vaut {}, attendu {} {}", name, shownValue, operation, expected);
+        std::println(*out_, "{}", message);
+        note(Severity::alert, "console", message);
         return Outcome::failed;
     }
     std::println(*out_, "ok : {} vaut {}", name, shownValue);
@@ -635,6 +691,7 @@ void Console::printHelp() {
 
 Console::Outcome Console::error(std::string_view message) {
     std::println(*out_, "Erreur : {}", message);
+    note(Severity::alert, "console", std::format("erreur : {}", message));
     return Outcome::error;
 }
 

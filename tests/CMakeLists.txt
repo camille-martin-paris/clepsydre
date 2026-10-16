@@ -39,3 +39,19 @@ foreach(_scenario IN LISTS _clepsydre_sim_scenarios)
     add_test(NAME sim_scenario_${_name} COMMAND clepsydre-sim "${_scenario}")
     clepsydre_coverage_test(sim_scenario_${_name} clepsydre-sim)
 endforeach()
+
+# Option --journal de clepsydre-sim (#43) : journal écrit dans un fichier, option incomplète
+# refusée (code 2), journal qui désigne le scénario refusé sans le modifier.
+add_test(NAME sim_cli_journal
+    COMMAND clepsydre-sim --journal "${CMAKE_CURRENT_BINARY_DIR}/sim_cli_journal.log"
+            "${PROJECT_SOURCE_DIR}/examples/sim/coupure-alimentation.txt")
+clepsydre_coverage_test(sim_cli_journal clepsydre-sim)
+add_test(NAME sim_cli_journal_missing COMMAND clepsydre-sim --journal)
+set_tests_properties(sim_cli_journal_missing PROPERTIES WILL_FAIL TRUE)
+clepsydre_coverage_test(sim_cli_journal_missing clepsydre-sim)
+add_test(NAME sim_cli_journal_collision
+    COMMAND "${CMAKE_COMMAND}" -DSIM=$<TARGET_FILE:clepsydre-sim>
+            -DSOURCE=${PROJECT_SOURCE_DIR}/examples/sim/air.txt
+            -DWORK=${CMAKE_CURRENT_BINARY_DIR}/sim_cli_journal_collision
+            -P ${CMAKE_CURRENT_SOURCE_DIR}/cli/journal_collision.cmake)
+clepsydre_coverage_test(sim_cli_journal_collision clepsydre-sim)
