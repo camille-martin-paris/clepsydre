@@ -1,0 +1,36 @@
+# SPDX-FileCopyrightText: 2026 Contributeurs du projet Clepsydre
+# SPDX-License-Identifier: EUPL-1.2
+#
+# Scénario de démonstration du simulateur : clepsydre-sim examples/sim/<fichier>.txt
+# Les vérifications portent sur le modèle, avec ses paramètres d'exemple non mesurés ;
+# elles ne vérifient aucune exigence de la pompe.
+
+# Séance auditée (#136) : la commande simulée enregistre chaque action du soignant et chaque
+# condition détectée dans le journal d'audit, selon docs/event-vocabulary.md. Avec
+# « --audit <répertoire> », le journal persiste d'une exécution à l'autre.
+programmer 300 20
+programmer 25 20
+demarrer
+verifie etat-commande = 6
+avance 2min
+# Bolus au-delà de la limite souple (2 mL) : refusé sans confirmation, admis avec.
+bolus 3 50
+bolus 3 50 confirme
+verifie etat-commande = 7
+avance 4min
+verifie etat-commande = 6
+verifie volume-perfuse > 3.5
+# Occlusion aval : détection, alarme haute, état sûr, recul du pousseur (CTRL-007, CTRL-008).
+occlusion oui
+avance 3min
+verifie etat-commande = 11
+verifie moteur = non
+acquitter
+verifie etat-commande = 2
+occlusion non
+audit evenements
+verifie audit-coherent = oui
+verifie audit-hors-vocabulaire = 0
+verifie audit-pertes = 0
+verifie audit-refus = 0
+verifie audit-confirmes = 18

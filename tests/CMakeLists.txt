@@ -36,6 +36,7 @@ clepsydre_add_test(sim_processor_test SOURCES sim_processor_test.cpp LIBRARIES c
 clepsydre_add_test(sim_pump_faults_test SOURCES sim_pump_faults_test.cpp LIBRARIES clepsydre::sim)
 clepsydre_add_test(sim_power_test SOURCES sim_power_test.cpp LIBRARIES clepsydre::sim)
 clepsydre_add_test(sim_console_test SOURCES sim_console_test.cpp LIBRARIES clepsydre::sim_console)
+clepsydre_add_test(sim_audit_test SOURCES sim_audit_test.cpp LIBRARIES clepsydre::sim_console)
 
 # Scénarios de démonstration du simulateur, exécutés comme tests de fumée : chacun porte ses
 # propres vérifications.
@@ -61,3 +62,11 @@ add_test(NAME sim_cli_journal_collision
             -DWORK=${CMAKE_CURRENT_BINARY_DIR}/sim_cli_journal_collision
             -P ${CMAKE_CURRENT_SOURCE_DIR}/cli/journal_collision.cmake)
 clepsydre_coverage_test(sim_cli_journal_collision clepsydre-sim)
+
+# Option --audit de clepsydre-sim (#136) : journal d'audit persistant d'une exécution à l'autre.
+add_test(NAME sim_cli_audit
+    COMMAND "${CMAKE_COMMAND}" -DSIM=$<TARGET_FILE:clepsydre-sim>
+            -DSOURCE=${PROJECT_SOURCE_DIR}/examples/sim/seance-auditee.txt
+            -DWORK=${CMAKE_CURRENT_BINARY_DIR}/sim_cli_audit
+            -P ${CMAKE_CURRENT_SOURCE_DIR}/cli/audit_persistence.cmake)
+clepsydre_coverage_test(sim_cli_audit clepsydre-sim)

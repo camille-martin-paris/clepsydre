@@ -142,8 +142,16 @@ double inVoltsOf(Voltage value) {
 constexpr std::string_view help = R"(Commandes (une par ligne ; # commence un commentaire) :
   seringue 10|20|50          choisit une seringue d'exemple et réinitialise la simulation
   frottement <N> <N>         frottements statique et dynamique du joint ; réinitialise
-  debit <mL/h>               débit commandé
+  debit <mL/h>               débit commandé directement, hors commande simulée
   recul <durée>              recul du pousseur à la vitesse maximale, puis arrêt
+Soignant, par la commande simulée (journal d'audit) :
+  programmer <mL/h> <mL>     programmation en débit continu, médicament d'exemple
+  demarrer                   démarre la perfusion programmée, ou la reprend après une pause
+  pause, arret               pause, arrêt de la perfusion
+  bolus <mL> <mL/h> [confirme]
+                             bolus ; confirme est exigé au-delà de la limite souple
+  acquitter                  acquitte l'état sûr ou l'alarme en cours
+  audit [evenements]         compteurs et verdicts du journal d'audit, ou ses événements
   avance <durée>             fait avancer le temps (ms, s, min, h : 500ms, 30s, 5min, 2h)
   etat                       grandeurs réelles et mesures des capteurs
   repere                     repère le volume délivré pour volume-depuis-repere
@@ -168,12 +176,33 @@ constexpr std::string_view measures = R"(Grandeurs pour « verifie » :
   force (N), force-mesuree (N), piston (mm), piston-mesure (mm), batterie (%),
   tension (V), courant (mA)
   alimente, sur-batterie, coupure-imminente, moteur, air-detecte, berceau,
-  piston-capture : oui ou non)";
+  piston-capture : oui ou non
+  etat-commande (valeur de l'état de la machine à états), volume-perfuse (mL),
+  audit-confirmes, audit-pertes, audit-refus, audit-hors-vocabulaire (nombres d'événements),
+  audit-coherent : oui si chaque flux est cohérent pour le lecteur de mddlog)";
 
 // Commandes qui n'agissent pas sur la simulation, ou ne font qu'avancer le temps : elles ne sont
 // pas journalisées.
 constexpr std::array<std::string_view, 5> unjournaled{"aide", "etat", "verifie", "quitter",
                                                       "avance"};
+
+// Commandes du soignant, passées à la commande simulée.
+constexpr std::array<std::string_view, 7> soignant{"programmer", "demarrer",  "pause", "arret",
+                                                   "bolus",      "acquitter", "audit"};
+
+std::string_view phaseName(mddlog::core::AuditPhase phase) {
+    switch (phase) {
+    case mddlog::core::AuditPhase::Requested:
+        return "demandée";
+    case mddlog::core::AuditPhase::Confirmed:
+        return "confirmée";
+    case mddlog::core::AuditPhase::Executed:
+        return "exécutée";
+    case mddlog::core::AuditPhase::Failed:
+        break;
+    }
+    return "échouée";
+}
 
 // Contexte d'un composant ; les noms de la console tiennent dans la capacité de mddlog.
 JournalBinding bound(Journal& journal, std::string_view component) {
@@ -182,16 +211,67 @@ JournalBinding bound(Journal& journal, std::string_view component) {
 
 } // namespace
 
-Console::Console(std::ostream& out, std::ostream* journal)
-    : out_{&out}, journal_{journal}, operatorLog_{bound(journal_, "operateur")},
-      consoleLog_{bound(journal_, "console")}, powerLog_{bound(journal_, "alimentation")},
-      motorLog_{bound(journal_, "moteur")}, airLog_{bound(journal_, "air")},
-      syringe_{exampleSyringes[2]}, pump_{exampleMechanism, exampleSyringes[2], exampleLine},
-      power_{examplePower} {
+Console::Console(std::ostream& out, std::ostream* journal, std::unique_ptr<AuditJournal> audit)
+    : out_{&out}, audit_{std::move(audit)}, journal_{journal},
+      operatorLog_{bound(journal_, "operateur")}, consoleLog_{bound(journal_, "console")},
+      powerLog_{bound(journal_, "alimentation")}, motorLog_{bound(journal_, "moteur")},
+      airLog_{bound(journal_, "air")}, syringe_{exampleSyringes[2]}, listed_{exampleSyringes[2]},
+      pump_{exampleMechanism, exampleSyringes[2], exampleLine}, power_{examplePower} {
+    if (!audit_) {
+        std::string ignored;
+        audit_ = AuditJournal::open(std::nullopt, simulatedSerial, ignored);
+    }
     wire();
+    startCommand(ResetCause::Unknown, false);
+}
+
+Console::~Console() {
+    try {
+        audit_->close();
+    } catch (...) { // NOLINT(bugprone-empty-catch): un destructeur ne lève pas ; le lecteur dira
+                    // le flux « ended without close »
+    }
+}
+
+std::chrono::nanoseconds Console::commandNow() const noexcept {
+    return earlier_ + world_.now();
+}
+
+// Démarrage du processeur de commande : nouveau numéro de démarrage écrit avant tout événement
+// (SW-REQ-020), donc nouveau flux. Sans compteur utilisable, la commande ne démarre pas.
+void Console::startCommand(ResetCause reset, bool interrupted) {
+    const std::optional<std::uint64_t> boot = audit_->start();
+    if (!boot) {
+        std::println(*out_, "Erreur : compteur de démarrage du journal d'audit illisible ; "
+                            "commande simulée hors service.");
+        command_.reset();
+        halted_ = true;
+        return;
+    }
+    command_ = std::make_unique<Command>(pump_, listed_, *boot, commandNow(), reset, interrupted);
+    halted_ = false;
+    sinceCycle_ = std::chrono::nanoseconds{0};
+    if (!audit_->attach(command_->recorder().ring())) {
+        std::println(*out_, "Erreur : flux d'audit refusé par le journal.");
+    }
+    audit_->drain();
+}
+
+// Boucle de commande, toutes les 10 ms du temps simulé.
+void Console::controlStep(std::chrono::nanoseconds dt) {
+    if (!command_ || halted_) {
+        return;
+    }
+    sinceCycle_ += dt;
+    while (sinceCycle_ >= Command::period) {
+        sinceCycle_ -= Command::period;
+        command_->cycle(commandNow());
+    }
 }
 
 void Console::reset(const SyringeModel& syringe) {
+    earlier_ += world_.now();
+    sinceCycle_ = std::chrono::nanoseconds{0};
     syringe_ = syringe;
     pump_ = SyringePump{exampleMechanism, syringe_, exampleLine};
     power_ = PowerSupply{examplePower};
@@ -213,15 +293,33 @@ void Console::wire() {
     world_.add([this](TrueTime, std::chrono::nanoseconds dt) {
         power_.step(dt, pump_.motorRunning());
         const bool powered = power_.powered();
+        if (power_.powerFailImminent() && !wasImminent_ && command_ && !halted_) {
+            command_->powerFailing(commandNow());
+        }
         if (!powered && wasPowered_) {
-            // Perte totale : au redémarrage, le logiciel de commande ne relance pas le moteur.
+            // Perte totale : la commande s'arrête, ce qu'elle n'a pas confirmé est perdu, et au
+            // redémarrage elle ne relance pas le moteur.
             millilitresPerHour_ = 0.0;
             applyStepRate();
+            if (command_ && !halted_) {
+                audit_->drain();
+                const control::State state = command_->state();
+                interrupted_ = state == control::State::Infusing ||
+                               state == control::State::Bolus || state == control::State::Kvo ||
+                               state == control::State::Paused ||
+                               state == control::State::PausedKvo;
+                halted_ = true;
+            }
+        }
+        if (powered && !wasPowered_ && command_) {
+            startCommand(ResetCause::Power, interrupted_);
         }
         pump_.setMotorEnabled(powered && enabled_);
+        controlStep(dt);
         pump_.step(dt);
         observe();
         journal_.flush(world_.now());
+        audit_->drain();
     });
 }
 
@@ -296,6 +394,7 @@ Console::Outcome Console::execute(std::string_view line) {
     }
     const Outcome outcome = interpret(w);
     journal_.flush(world_.now());
+    audit_->drain();
     return outcome;
 }
 
@@ -326,6 +425,9 @@ Console::Outcome Console::interpret(const std::vector<std::string_view>& w) {
     }
     if (command == "frottement" && expectCount(3)) {
         return commandFriction(argument(1), argument(2));
+    }
+    if ((command == "debit" || command == "recul") && command_ && command_->drivesMotor()) {
+        return error("la commande simulée pilote le moteur : « arret » d'abord");
     }
     if (command == "debit" && expectCount(2)) {
         const auto value = number(argument(1));
@@ -416,6 +518,49 @@ Console::Outcome Console::interpret(const std::vector<std::string_view>& w) {
         power_.setCapacityFactor(*value);
         return Outcome::ok;
     }
+    if (command == "audit" && (expectCount(1) || (expectCount(2) && argument(1) == "evenements"))) {
+        return commandAudit(argument(1));
+    }
+    if (std::ranges::contains(soignant, command)) {
+        if (!command_ || halted_) {
+            return error("commande simulée arrêtée : pompe hors tension ou hors service");
+        }
+        if (command == "programmer" && expectCount(3)) {
+            const auto rate = number(argument(1));
+            const auto volume = number(argument(2));
+            if (!rate || !volume || *rate < 0.0 || *volume < 0.0 || *rate > 1e6 || *volume > 1e6) {
+                return error("débit en mL/h et volume en mL attendus, positifs");
+            }
+            return reply(command_->program(
+                {.microlitresPerHour = static_cast<std::uint32_t>(std::lround(*rate * 1e3))},
+                {.microlitres = static_cast<std::uint32_t>(std::lround(*volume * 1e3))},
+                commandNow()));
+        }
+        if (command == "bolus" &&
+            (expectCount(3) || (expectCount(4) && argument(3) == "confirme"))) {
+            const auto volume = number(argument(1));
+            const auto rate = number(argument(2));
+            if (!rate || !volume || *rate < 0.0 || *volume < 0.0 || *rate > 1e6 || *volume > 1e6) {
+                return error("volume en mL et débit en mL/h attendus, positifs");
+            }
+            return reply(command_->bolus(
+                {.microlitres = static_cast<std::uint32_t>(std::lround(*volume * 1e3))},
+                {.microlitresPerHour = static_cast<std::uint32_t>(std::lround(*rate * 1e3))},
+                expectCount(4), commandNow()));
+        }
+        if (command == "demarrer" && expectCount(1)) {
+            return reply(command_->start(commandNow()));
+        }
+        if (command == "pause" && expectCount(1)) {
+            return reply(command_->pause(commandNow()));
+        }
+        if (command == "arret" && expectCount(1)) {
+            return reply(command_->stop(commandNow()));
+        }
+        if (command == "acquitter" && expectCount(1)) {
+            return reply(command_->acknowledge(commandNow()));
+        }
+    }
     if (command == "verifie" && expectCount(2) && argument(1) == "liste") {
         std::println(*out_, "{}", measures);
         return Outcome::ok;
@@ -467,6 +612,14 @@ int Console::run(std::istream& in, bool interactive) {
 Console::Outcome Console::commandSyringe(std::string_view argument) {
     for (const SyringeModel& syringe : exampleSyringes) {
         if (std::format("exemple {} mL", argument) == syringe.name) {
+            if (!command_ || halted_) {
+                return error("commande simulée arrêtée : pompe hors tension ou hors service");
+            }
+            const Reply answer = command_->selectSyringe(syringe, commandNow());
+            if (!answer.accepted) {
+                return error(answer.message);
+            }
+            listed_ = syringe;
             reset(syringe);
             std::println(*out_, "Seringue « {} » ; simulation réinitialisée.", syringe.name);
             return Outcome::ok;
@@ -482,6 +635,9 @@ Console::Outcome Console::commandFriction(std::string_view breakaway, std::strin
         *dynamicFriction > *staticFriction) {
         return error("frottements statique et dynamique attendus, en N, avec 0 < dynamique <= "
                      "statique");
+    }
+    if (!command_ || halted_ || command_->state() != control::State::Stopped) {
+        return error("frottements changés seulement à l'arrêt de la commande simulée");
     }
     SyringeModel syringe = syringe_;
     syringe.breakawayFriction = newtons(*staticFriction);
@@ -559,7 +715,7 @@ Console::Outcome Console::commandPlacement(std::string_view argument) {
     return Outcome::ok;
 }
 
-std::optional<double> Console::measure(std::string_view name, bool& known) const {
+std::optional<double> Console::measure(std::string_view name, bool& known) {
     known = true;
     const auto flag = [](bool value) { return value ? 1.0 : 0.0; };
     if (name == "temps") {
@@ -621,6 +777,15 @@ std::optional<double> Console::measure(std::string_view name, bool& known) const
     }
     if (name == "piston-capture") {
         return flag(pump_.plungerCaptured());
+    }
+    if (name == "etat-commande") {
+        return command_ ? std::optional{static_cast<double>(command_->state())} : std::nullopt;
+    }
+    if (name == "volume-perfuse") {
+        return command_ ? std::optional{command_->infused().microlitres / 1e3} : std::nullopt;
+    }
+    if (name.starts_with("audit-")) {
+        return measureAudit(name, known);
     }
     known = false;
     return std::nullopt;
@@ -693,6 +858,11 @@ void Console::printStatus() {
         *out_, "  Alimentation  alimentée {} ; secteur {} ; sur batterie {} ; coupure imminente {}",
         yesNo(power_.powered()), yesNo(power_.mainsPresent()), yesNo(power_.onBattery()),
         yesNo(power_.powerFailImminent()));
+    if (command_) {
+        std::println(*out_, "  Commande      {} ; état {} ; perfusé {:.3f} mL ; flux {}",
+                     halted_ ? "arrêtée" : "en marche", static_cast<int>(command_->state()),
+                     command_->infused().microlitres / 1e3, command_->recorder().stream());
+    }
     std::println(*out_, "  Batterie      {:.1f} % ; tension {} ; courant {:.1f} mA",
                  power_.stateOfCharge() * 100.0,
                  shown(power_.measuredBatteryVoltage(), &inVoltsOf, "V"),
@@ -701,6 +871,78 @@ void Console::printStatus() {
 
 void Console::printHelp() {
     std::println(*out_, "{}", help);
+}
+
+Console::Outcome Console::reply(const Reply& answer) {
+    if (answer.accepted) {
+        std::println(*out_, "{}", answer.message);
+    } else {
+        // Un refus est une issue normale d'une demande : il est consigné, sans arrêter un scénario.
+        std::println(*out_, "Refusé : {}", answer.message);
+        note(consoleLog_, LogLevel::Info, std::format("refusé : {}", answer.message));
+    }
+    return Outcome::ok;
+}
+
+Console::Outcome Console::commandAudit(std::string_view argument) {
+    audit_->drain();
+    const AuditStatus status = audit_->status();
+    std::println(*out_,
+                 "Journal d'audit {} : {} remis, {} confirmés durablement depuis le démarrage, "
+                 "{} en attente, {} perdus, {} échecs du support",
+                 audit_->directory() ? audit_->directory()->string() : "en mémoire",
+                 status.handedOff, status.durable, status.pending, status.losses,
+                 status.storageFailures);
+    if (command_) {
+        std::println(*out_, "  Flux courant {} : {} refusés à l'admission, dont {} anneau plein",
+                     command_->recorder().stream(), command_->recorder().refused(),
+                     command_->recorder().ring().refusalCount());
+    }
+    const mddlog::adapter::LogReport report = audit_->verify();
+    for (const mddlog::adapter::StreamBoundaryReport& stream : report.streams) {
+        std::println(*out_, "  {} {} : {}, enregistrements {} à {}",
+                     stream.ledger ? "Registre" : "Flux", stream.report.streamId,
+                     mddlog::adapter::verdictName(stream.report.verdict),
+                     stream.report.firstRetained, stream.report.lastPresent);
+    }
+    for (const mddlog::adapter::BoundaryNote& note : report.notes) {
+        std::println(*out_, "  {}{} : {} {}", anomaly(note.kind) ? "ANOMALIE " : "", note.stream,
+                     mddlog::adapter::boundaryName(note.kind), note.position);
+    }
+    std::println(*out_, "  Journal {}",
+                 coherent(report) ? "cohérent, non ancré (sans témoin, #47)" : "NON COHÉRENT");
+    if (argument == "evenements") {
+        for (const StoredEvent& event : audit_->events()) {
+            std::println(*out_, "  {}#{} {} {} {} [{}] {}{}", event.stream, event.sequence,
+                         phaseName(event.phase), event.action, event.actor, event.correlation,
+                         event.detail, event.inVocabulary ? "" : " (hors vocabulaire)");
+        }
+    }
+    return Outcome::ok;
+}
+
+std::optional<double> Console::measureAudit(std::string_view name, bool& known) {
+    audit_->drain();
+    if (name == "audit-confirmes") {
+        return static_cast<double>(audit_->status().durable);
+    }
+    if (name == "audit-pertes") {
+        const std::uint64_t ring = command_ ? command_->recorder().ring().refusalCount() : 0;
+        return static_cast<double>(audit_->status().losses + ring);
+    }
+    if (name == "audit-refus") {
+        return command_ ? static_cast<double>(command_->recorder().refused()) : 0.0;
+    }
+    if (name == "audit-hors-vocabulaire") {
+        const auto events = audit_->events();
+        return static_cast<double>(
+            std::ranges::count_if(events, [](const StoredEvent& e) { return !e.inVocabulary; }));
+    }
+    if (name == "audit-coherent") {
+        return coherent(audit_->verify()) ? 1.0 : 0.0;
+    }
+    known = false;
+    return std::nullopt;
 }
 
 Console::Outcome Console::error(std::string_view message) {

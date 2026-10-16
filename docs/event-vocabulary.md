@@ -200,7 +200,7 @@ Catégorie : opérateur, sauf mention. Cible : `pump-<série>/channel-1`. Acteur
 | `syringe.select` | R, E, F | C | SYS-REQ-047 | RISK-001 | `syringe`, `diameter_um` |
 
 Valeurs :
-- `mode` : valeur de `Mode` (1 débit continu, 2 volume sur durée) ; `soft` : `above` si une limite souple est dépassée, absente sinon ; `drug` : identifiant du médicament dans la bibliothèque ; `syringe` : identifiant du modèle dans la liste vérifiée ; 16 caractères au plus chacun. La version de la bibliothèque n'est pas répétée : elle est consignée à son chargement (`config.library`).
+- `mode` : valeur de `Mode` (1 débit continu, 2 volume sur durée) ; `soft` : `above` ou `below`, la limite souple dépassée par le haut ou par le bas, absente sinon ; `drug` : identifiant du médicament dans la bibliothèque ; `syringe` : identifiant du modèle dans la liste vérifiée ; 16 caractères au plus chacun. La version de la bibliothèque n'est pas répétée : elle est consignée à son chargement (`config.library`).
 - `cause` de `therapy.bolus-end` : `volume` (bolus délivré), `pause`, `stop`, `end` (volume à perfuser atteint pendant le bolus), `syringe-empty`, `safety` (état sûr ou mise hors service, sur `DangerDetected` ou `FatalFault`) ; de `therapy.purge-end` : `volume`, `stop`, `line` (condition de ligne perdue), `safety`.
 - `therapy.bolus-end` et `therapy.purge-end` portent la corrélation de la demande qu'ils terminent (`input-<m>` du bolus ou de la purge) et `delivered_ul`, le volume effectivement délivré. Avec `cause=safety`, `cond` donne la condition qui a provoqué l'état sûr ou la mise hors service. Ils sont enregistrés avant `safety.safe-state` ou `safety.out-of-service`.
 - `therapy.end` : `cause` vaut `volume` ou `syringe-empty`, `next` vaut `stop` ou `kvo` (SYS-REQ-032).
@@ -381,11 +381,11 @@ La confirmation de la programmation est observée par le canal de sécurité (SY
 
 ## Vérification
 
-À la mise en œuvre, dans le simulateur d'abord ([#136](https://github.com/camille-martin-paris/clepsydre/issues/136)) :
-- les actions, catégories et phases admises seront des constantes du code, et un test les comparera à ce document ;
-- chaque `requirementRef` et `riskRef` employé sera vérifié dans le registre ;
-- le détail de chaque action, aux valeurs les plus longues, sera vérifié sans troncature ;
-- une trace de diagnostic présentée comme événement d'audit sera refusée (VER-132).
+Mise en œuvre dans [`src/audit`](../src/audit) et, sur l'hôte, dans la commande simulée ([#136](https://github.com/camille-martin-paris/clepsydre/issues/136), [simulateur](development/simulator.md#commande-simulée-et-journal-daudit)) :
+- **fait** : les actions, catégories, phases et producteurs admis, et les références, sont des constantes du code ; [`audit_vocabulary_doc_test`](../tests/audit_vocabulary_doc_test.cpp) les compare aux tableaux de ce document et vérifie chaque référence dans le registre ;
+- **fait** : l'enregistreur refuse une action hors du vocabulaire, une phase ou un producteur non admis, et un détail qui dépasse 160 octets, temps monotone compris ; rien n'est tronqué, et chaque refus est compté ([`audit_recorder_test`](../tests/audit_recorder_test.cpp)) ;
+- **fait** : le lecteur du simulateur signale tout événement relu hors du vocabulaire (`audit-hors-vocabulaire`) ;
+- **à faire** : vérifier le détail de chaque action à ses valeurs les plus longues, quand les deux logiciels les émettront toutes ; la trace de diagnostic présentée comme événement d'audit (VER-132) reste à éprouver sur le logiciel embarqué, où les deux journaux coexisteront.
 
 ## Limites
 
