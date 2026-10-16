@@ -9,11 +9,13 @@
 
 #include <cstdio>
 #include <exception>
+#include <filesystem>
 #include <fstream>
 #include <iostream>
 #include <print>
 #include <span>
 #include <string_view>
+#include <system_error>
 
 import clepsydre.sim.console;
 import clepsydre.sim.journal;
@@ -22,32 +24,47 @@ int main(int argc, char** argv) {
     try {
         std::span arguments(argv, static_cast<std::size_t>(argc));
         arguments = arguments.subspan(1);
-        std::ofstream journalFile;
-        clepsydre::sim::Journal journal;
+        const char* journalPath = nullptr;
         if (!arguments.empty() && std::string_view{arguments[0]} == "--journal") {
             if (arguments.size() < 2) {
                 std::println(stderr, "Usage : clepsydre-sim [--journal <fichier>] [scénario]");
                 return 2;
             }
-            journalFile.open(arguments[1]);
-            if (!journalFile) {
-                std::println(stderr, "Journal impossible à ouvrir : {}", arguments[1]);
-                return 2;
-            }
-            journal = clepsydre::sim::Journal{journalFile};
+            journalPath = arguments[1];
             arguments = arguments.subspan(2);
         }
         if (arguments.size() > 1) {
             std::println(stderr, "Usage : clepsydre-sim [--journal <fichier>] [scénario]");
             return 2;
         }
-        clepsydre::sim::Console console{std::cout, journal};
+        // Le scénario est ouvert avant le journal, dont l'ouverture tronque le fichier : un
+        // journal qui désigne le scénario, par le même chemin ou par un lien, le détruirait.
+        std::ifstream scenario;
         if (arguments.size() == 1) {
-            std::ifstream scenario{arguments[0]};
+            scenario.open(arguments[0]);
             if (!scenario) {
                 std::println(stderr, "Scénario illisible : {}", arguments[0]);
                 return 2;
             }
+        }
+        std::ofstream journalFile;
+        clepsydre::sim::Journal journal;
+        if (journalPath != nullptr) {
+            std::error_code ignored;
+            if (scenario.is_open() &&
+                std::filesystem::equivalent(journalPath, arguments[0], ignored)) {
+                std::println(stderr, "Le journal désigne le scénario : {}", journalPath);
+                return 2;
+            }
+            journalFile.open(journalPath);
+            if (!journalFile) {
+                std::println(stderr, "Journal impossible à ouvrir : {}", journalPath);
+                return 2;
+            }
+            journal = clepsydre::sim::Journal{journalFile};
+        }
+        clepsydre::sim::Console console{std::cout, journal};
+        if (scenario.is_open()) {
             return console.run(scenario, false);
         }
         return console.run(std::cin, true);

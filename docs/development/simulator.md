@@ -196,7 +196,7 @@ Chaque scénario porte ses propres vérifications. CTest les exécute comme test
 
 ### Journal de diagnostic
 
-`clepsydre-sim --journal <fichier> [scénario]` écrit un journal de diagnostic ([#43](https://github.com/camille-martin-paris/clepsydre/issues/43)). C'est une **journalisation minimale, écrite sans bibliothèque** : elle sert de point de comparaison pour l'intégration de la bibliothèque retenue par l'[ADR 0005](../adr/0005-journalisation-et-evenements-d-audit.md) ([#44](https://github.com/camille-martin-paris/clepsydre/issues/44)). Ce n'est pas le journal d'événements de la pompe (#41) : il ne consigne que le simulateur, sur l'hôte, sans persistance garantie ni vérification.
+`clepsydre-sim --journal <fichier> [scénario]` écrit un journal de diagnostic ([#43](https://github.com/camille-martin-paris/clepsydre/issues/43)). C'est une **journalisation minimale, écrite sans bibliothèque** : elle sert de point de comparaison pour l'intégration de la bibliothèque retenue par l'[ADR 0005](../adr/0005-journalisation-et-evenements-d-audit.md) ([#44](https://github.com/camille-martin-paris/clepsydre/issues/44)). Ce n'est pas le journal d'événements de la pompe (#41) : il ne consigne que le simulateur, sur l'hôte, sans persistance garantie ni vérification. Le fichier du journal est écrasé ; un journal qui désigne le scénario, par le même chemin ou par un lien, est refusé (code 2) sans que le scénario soit modifié.
 
 Une ligne par événement, datée sur le temps simulé à la milliseconde :
 
