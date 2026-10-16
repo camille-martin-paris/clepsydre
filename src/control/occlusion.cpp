@@ -7,6 +7,7 @@ module;
 #include <chrono>
 #include <cstdint>
 #include <expected>
+#include <limits>
 #include <optional>
 
 module clepsydre.control.occlusion;
@@ -158,7 +159,11 @@ OcclusionCommand OcclusionMonitor::watch(std::chrono::milliseconds elapsed,
 
 OcclusionCommand OcclusionMonitor::startBackoff(std::int64_t stepCount) noexcept {
     // L'entraînement a cessé d'avancer à la détection : sa dernière commande est émise, et le
-    // compteur lu sert d'origine au recul.
+    // compteur lu sert d'origine au recul. Toute la course doit y tenir : le recul décompte le
+    // compteur, qui ne doit pas déborder sous sa capacité.
+    if (stepCount < std::numeric_limits<std::int64_t>::min() + std::int64_t{target_}) {
+        return fail(OcclusionFault::CounterOutOfRange);
+    }
     counted_ = stepCount;
     requested_ = stepCount;
     phase_ = OcclusionPhase::BackingOff;

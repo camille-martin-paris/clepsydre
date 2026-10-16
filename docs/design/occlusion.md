@@ -113,6 +113,8 @@ Pendant le recul et après, le compteur relu à chaque période doit rester entr
 - compteur qui avance, ou qui recule au-delà des pas demandés : `CounterInconsistent`. Après le recul, un seul pas vers l'avant est un défaut : le moteur doit rester arrêté ;
 - pas demandés non émis : `StepsNotEmitted`.
 
+À l'origine du recul, le compteur doit laisser place à toute la course sous sa valeur, dans la capacité d'un entier signé de 64 bits ; sinon, le recul ne commence pas : `CounterOutOfRange`.
+
 Pendant la surveillance, l'entraînement contrôle le compteur ([Contrôle du compteur de pas](drive.md#contrôle-du-compteur-de-pas)).
 
 ## Défauts
@@ -126,6 +128,7 @@ Tout défaut est **verrouillé** : le surveillant ne demande plus aucun pas, et 
 | `ForceUnavailable` | 3 | Aucune mesure de force pendant la surveillance |
 | `CounterInconsistent` | 4 | Compteur qui avance pendant ou après le recul, ou qui recule au-delà des pas demandés |
 | `StepsNotEmitted` | 5 | Pas de recul demandés avant la dernière commande non émis |
+| `CounterOutOfRange` | 6 | Compteur sans place, sous l'origine du recul, pour toute la course |
 
 ## Intégration dans la boucle de commande
 
@@ -156,7 +159,7 @@ Les tests de [`tests/control_occlusion_test.cpp`](../../tests/control_occlusion_
 | Seuil réglable | Bornes exactes admises, seuil intermédiaire admis tel quel, un millinewton au-delà de chaque borne refusé avec son motif ; réglages refusés ; constructeur conforme à `selectThreshold` |
 | Détection | Force juste sous le seuil pendant 10 s : aucune ; force au seuil : détection au onzième relevé, 100 ms après le premier ; pointe interrompue : la confirmation repart de zéro ; intervalles irréguliers ; confirmation nulle ; seuil à la borne haute |
 | Recul | 1 600 pas pour 20 N, au plus 20 par période, origine prise après l'arrêt ; dernière commande tronquée (1 608 pas pour 20,1 N) ; course tronquée au pas ; course bornée à 1,25 mm pour 60 N ; course de moins d'un pas ; recul achevé : moteur arrêté, occlusion toujours signalée, force non requise |
-| Compteur | Dernière commande non émise et un pas de retard admis ; deux pas de retard, compteur qui avance ou qui recule au-delà : défaut ; générateur en retard d'une commande jusqu'à la dernière : attente, puis recul achevé, ou défaut si la commande n'est jamais émise ; un pas vers l'avant après le recul : défaut |
+| Compteur | Dernière commande non émise et un pas de retard admis ; deux pas de retard, compteur qui avance ou qui recule au-delà : défaut ; générateur en retard d'une commande jusqu'à la dernière : attente, puis recul achevé, ou défaut si la commande n'est jamais émise ; un pas vers l'avant après le recul : défaut ; origine du recul à la capacité basse du compteur plus la course : admise, recul jusqu'à la capacité ; un pas plus bas : défaut, aucun pas |
 | Défauts | Force absente pendant la surveillance, défaut verrouillé malgré son retour ; intervalles nul et maximal admis, négatif et trop long refusés ; défaut pendant le recul : occlusion toujours signalée, recul interrompu |
 | Couverture structurelle | 100 % des régions et des branches visés, sans exclusion (tâche CI `coverage`) |
 

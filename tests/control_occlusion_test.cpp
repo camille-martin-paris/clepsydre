@@ -14,6 +14,7 @@
 #include <expect.hpp>
 #include <expected>
 #include <format>
+#include <limits>
 #include <optional>
 #include <string>
 
@@ -393,6 +394,31 @@ void counter(Expectations& t) {
         t.expect(monitor.update(10ms, stepCount + 1, mN(0)).fault ==
                      OcclusionFault::CounterInconsistent,
                  "recul achevé : un pas vers l'avant est un défaut");
+    }
+    {
+        // Origine du recul à la capacité basse du compteur plus la course de 1 600 pas : le recul
+        // tient tout juste ; un pas plus bas, il déborderait.
+        constexpr std::int64_t lowest = std::numeric_limits<std::int64_t>::min();
+        {
+            OcclusionMonitor monitor{mechanism(), syringe(), settings(), mN(20'000)};
+            static_cast<void>(detect(monitor, mN(20'000), lowest + 1'600));
+            std::int64_t stepCount = lowest + 1'600;
+            std::uint32_t largest = 0;
+            t.expect(backOff(monitor, stepCount, largest) == 1'600 && stepCount == lowest &&
+                         monitor.phase() == OcclusionPhase::Decompressed && !monitor.fault(),
+                     "origine à la capacité basse plus la course : recul achevé à la capacité");
+        }
+        OcclusionMonitor monitor{mechanism(), syringe(), settings(), mN(20'000)};
+        static_cast<void>(detect(monitor, mN(20'000), lowest + 1'599));
+        const OcclusionCommand command = monitor.update(10ms, lowest + 1'599, mN(0));
+        t.expect(command.fault == OcclusionFault::CounterOutOfRange && command.occlusion &&
+                     command.backoffSteps == 0 && monitor.backoffRequested() == 0,
+                 "origine un pas plus bas : défaut, occlusion signalée, aucun pas");
+        OcclusionMonitor lowestMonitor{mechanism(), syringe(), settings(), mN(20'000)};
+        static_cast<void>(detect(lowestMonitor, mN(20'000), lowest));
+        t.expect(lowestMonitor.update(10ms, lowest, mN(0)).fault ==
+                     OcclusionFault::CounterOutOfRange,
+                 "origine à la capacité basse : défaut");
     }
 }
 

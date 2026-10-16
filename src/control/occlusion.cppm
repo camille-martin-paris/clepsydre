@@ -66,6 +66,7 @@ enum class OcclusionFault : std::uint8_t {
     ForceUnavailable = 3,    // aucune mesure de force pendant la surveillance
     CounterInconsistent = 4, // compteur qui avance, ou recule au-delà des pas demandés
     StepsNotEmitted = 5,     // pas de recul demandés non émis dans la période
+    CounterOutOfRange = 6,   // compteur sans place, sous l'origine, pour toute la course de recul
 };
 
 // Commande d'une période.
