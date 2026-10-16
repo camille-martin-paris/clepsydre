@@ -2,10 +2,12 @@
 // SPDX-License-Identifier: EUPL-1.2
 
 // Tests de l'interprète de la démonstration du simulateur (#21) : syntaxe, erreurs, codes de
-// sortie et vérifications ; journal de diagnostic minimal (#43). Les scénarios d'examples/sim
-// sont exécutés à part, comme tests de fumée.
+// sortie et vérifications ; journal de diagnostic sur mddlog (#43, #44). Les scénarios
+// d'examples/sim sont exécutés à part, comme tests de fumée.
 
+#include <algorithm>
 #include <chrono>
+#include <cstddef>
 #include <expect.hpp>
 #include <ios>
 #include <memory>
@@ -22,7 +24,7 @@ namespace {
 
 using clepsydre::sim::Console;
 using clepsydre::sim::Journal;
-using clepsydre::sim::Severity;
+using clepsydre::sim::simulatedTime;
 using clepsydre::test::Expectations;
 
 // Exécute un script ; renvoie le code de sortie et laisse la sortie dans output.
@@ -124,25 +126,68 @@ void resetAndSensors(Expectations& t) {
 }
 
 void journalFormat(Expectations& t) {
+    using mddlog::core::LogLevel;
     std::ostringstream out;
-    Journal journal{out};
-    t.expect(journal.enabled(), "journal écrit dans un flux : activé");
-    journal.record(std::chrono::hours{26} + std::chrono::minutes{3} + std::chrono::seconds{4} +
-                       std::chrono::microseconds{5'678},
-                   Severity::alert, "alimentation", "coupure imminente");
-    journal.record(std::chrono::nanoseconds{999'999}, Severity::info, "moteur", "moteur en marche");
+    Journal journal{&out};
+    t.expect(journal.enabled(), "journal rendu dans un flux : activé");
+    auto power = journal.bind("alimentation");
+    auto motor = journal.bind("moteur");
+    t.expect(power.has_value() && motor.has_value(), "contextes des composants créés");
+    const auto late = std::chrono::hours{26} + std::chrono::minutes{3} + std::chrono::seconds{4} +
+                      std::chrono::microseconds{5'678};
+    t.expect(power->warn(simulatedTime(late), "coupure imminente").admission() ==
+                 mddlog::core::Admission::Written,
+             "enregistrement admis");
+    static_cast<void>(
+        motor->info(simulatedTime(std::chrono::nanoseconds{999'999}), "moteur en marche"));
+    t.expect(out.str().empty(), "rien n'est rendu avant flush");
+    journal.flush(late);
     t.expect(out.str() == "26:03:04.005 ALERTE [alimentation] coupure imminente\n"
                           "00:00:00.000 INFO [moteur] moteur en marche\n",
-             "heure tronquée à la milliseconde, gravité, composant, message");
-    const Journal disabled;
+             "ordre d'admission ; heure tronquée à la milliseconde, gravité, composant, message");
+
+    out.str("");
+    static_cast<void>(motor->error(simulatedTime(late), std::string(200, 'x')));
+    journal.flush(late);
+    t.expect(out.str() == "26:03:04.005 ALERTE [moteur] " + std::string(160, 'x') + " […]\n",
+             "message tronqué à 160 octets par mddlog, et marqué");
+
+    out.str("");
+    for (std::size_t i = 0; i < clepsydre::sim::journalCapacity + 2; ++i) {
+        static_cast<void>(motor->info(simulatedTime(std::chrono::seconds{1}), "pas"));
+    }
+    journal.flush(std::chrono::seconds{2});
+    const std::string rendered = out.str();
+    t.expect(rendered.ends_with("00:00:02.000 ALERTE [journal] 2 enregistrement(s) refusé(s) : "
+                                "anneau plein\n"),
+             "anneau plein : refus signalés au rendu, datés du rendu");
+    t.expect(std::ranges::count(rendered, '\n') ==
+                 static_cast<std::ptrdiff_t>(clepsydre::sim::journalCapacity + 1),
+             "les enregistrements admis sont tous rendus");
+    out.str("");
+    journal.flush(std::chrono::seconds{3});
+    t.expect(out.str().empty(), "refus signalés une seule fois");
+
+    t.expect(!journal.bind(std::string(33, 'c')).has_value(),
+             "nom de composant trop long : refusé, jamais tronqué");
+
+    Journal disabled;
     t.expect(!disabled.enabled(), "journal par défaut : désactivé");
+    auto quiet = disabled.bind("moteur");
+    for (std::size_t i = 0; i < clepsydre::sim::journalCapacity; ++i) {
+        static_cast<void>(quiet->info(simulatedTime(std::chrono::seconds{1}), "pas"));
+    }
+    disabled.flush(std::chrono::seconds{1});
+    t.expect(quiet->info(simulatedTime(std::chrono::seconds{1}), "pas").admission() ==
+                 mddlog::core::Admission::Written,
+             "journal désactivé : l'anneau est vidé au rendu");
 }
 
 // Exécute les lignes sur une console journalisée ; renvoie le journal.
 std::string journaled(const std::string& text) {
     std::ostringstream out;
     std::ostringstream journal;
-    Console console{out, Journal{journal}};
+    Console console{out, &journal};
     std::istringstream in{text};
     static_cast<void>(console.run(in, false));
     return journal.str();

@@ -16,6 +16,12 @@
 # sans cache, ca-certificates est d'abord installé depuis la poche de publication de la
 # distribution, figée depuis sa sortie. Les index sont dans les deux cas authentifiés par la
 # clé de l'archive Ubuntu.
+#
+# ca-certificates est en outre toujours installé depuis l'instantané, avec ou sans cache : les
+# tâches téléchargent elles-mêmes en HTTPS (dépendances FetchContent). Sans cache, les paquets
+# installés depuis la poche de publication (ca-certificates et ses dépendances) sont ensuite
+# remplacés par leur version de l'instantané, pour que celle-ci soit dans le cache : un
+# conteneur neuf l'installe alors sans réseau.
 set -eu
 
 case "${APT_SNAPSHOT:-}" in
@@ -49,7 +55,8 @@ if [ -f "$marker" ] && [ "$(cat "$marker")" = "$APT_SNAPSHOT" ]; then
   # l'installation plutôt que de contacter le service.
   # shellcheck disable=SC2086 # options volontairement découpées
   apt-get install -y --no-install-recommends --snapshot "$APT_SNAPSHOT" \
-    -o Acquire::http::Proxy=http://127.0.0.1:9 -o Acquire::https::Proxy=http://127.0.0.1:9 "$@" || {
+    -o Acquire::http::Proxy=http://127.0.0.1:9 -o Acquire::https::Proxy=http://127.0.0.1:9 \
+    ca-certificates "$@" || {
     echo "Cache incomplet pour ces paquets : téléchargement depuis l'instantané." >&2
     rm -f "$marker"
   }
@@ -57,7 +64,9 @@ if [ -f "$marker" ] && [ "$(cat "$marker")" = "$APT_SNAPSHOT" ]; then
 fi
 
 release_list=$(mktemp)
-trap 'rm -f "$release_list"' EXIT
+installed_before=$(mktemp)
+installed_after=$(mktemp)
+trap 'rm -f "$release_list" "$installed_before" "$installed_after"' EXIT
 echo "deb [signed-by=/usr/share/keyrings/ubuntu-archive-keyring.gpg] http://archive.ubuntu.com/ubuntu ${VERSION_CODENAME} main" \
   > "$release_list"
 release_only="-o Dir::Etc::SourceParts=/nonexistent -o Dir::Etc::SourceList=$release_list"
@@ -67,8 +76,11 @@ if ! apt-get $retries $release_only update --error-on=any; then
   echo "Archive Ubuntu injoignable pour installer ca-certificates, et aucun cache valide : abandon." >&2
   exit 1
 fi
+dpkg-query -W -f '${Package}\n' | sort > "$installed_before"
 # shellcheck disable=SC2086
 apt-get $retries $release_only install -y --no-install-recommends ca-certificates
+dpkg-query -W -f '${Package}\n' | sort > "$installed_after"
+bootstrap=$(comm -13 "$installed_before" "$installed_after")
 
 # shellcheck disable=SC2086
 if ! apt-get $retries update --error-on=any --snapshot "$APT_SNAPSHOT"; then
@@ -76,5 +88,6 @@ if ! apt-get $retries update --error-on=any --snapshot "$APT_SNAPSHOT"; then
   exit 1
 fi
 # shellcheck disable=SC2086
-apt-get $retries install -y --no-install-recommends --snapshot "$APT_SNAPSHOT" "$@"
+apt-get $retries install -y --no-install-recommends --snapshot "$APT_SNAPSHOT" $bootstrap \
+  ca-certificates "$@"
 echo "$APT_SNAPSHOT" > "$marker"

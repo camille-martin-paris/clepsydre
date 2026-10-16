@@ -27,6 +27,8 @@ namespace clepsydre::sim {
 
 namespace {
 
+using mddlog::core::LogLevel;
+
 constexpr double occlusionFactor = 1e6; // résistance de la ligne multipliée en occlusion
 
 // Opérateurs de comparaison de « verifie ».
@@ -173,11 +175,19 @@ constexpr std::string_view measures = R"(Grandeurs pour « verifie » :
 constexpr std::array<std::string_view, 5> unjournaled{"aide", "etat", "verifie", "quitter",
                                                       "avance"};
 
+// Contexte d'un composant ; les noms de la console tiennent dans la capacité de mddlog.
+JournalBinding bound(Journal& journal, std::string_view component) {
+    return journal.bind(component).value();
+}
+
 } // namespace
 
-Console::Console(std::ostream& out, Journal journal)
-    : out_{&out}, journal_{journal}, syringe_{exampleSyringes[2]},
-      pump_{exampleMechanism, exampleSyringes[2], exampleLine}, power_{examplePower} {
+Console::Console(std::ostream& out, std::ostream* journal)
+    : out_{&out}, journal_{journal}, operatorLog_{bound(journal_, "operateur")},
+      consoleLog_{bound(journal_, "console")}, powerLog_{bound(journal_, "alimentation")},
+      motorLog_{bound(journal_, "moteur")}, airLog_{bound(journal_, "air")},
+      syringe_{exampleSyringes[2]}, pump_{exampleMechanism, exampleSyringes[2], exampleLine},
+      power_{examplePower} {
     wire();
 }
 
@@ -211,6 +221,7 @@ void Console::wire() {
         pump_.setMotorEnabled(powered && enabled_);
         pump_.step(dt);
         observe();
+        journal_.flush(world_.now());
     });
 }
 
@@ -222,27 +233,28 @@ void Console::observe() {
         return result;
     };
     if (changed(wasPowered_, power_.powered())) {
-        note(wasPowered_ ? Severity::info : Severity::alert, "alimentation",
+        note(powerLog_, wasPowered_ ? LogLevel::Info : LogLevel::Warn,
              wasPowered_ ? "alimentation rétablie" : "perte totale de l'alimentation");
     }
     if (changed(wasOnBattery_, power_.onBattery())) {
-        note(Severity::info, "alimentation",
+        note(powerLog_, LogLevel::Info,
              wasOnBattery_ ? "bascule sur batterie" : "fin du fonctionnement sur batterie");
     }
     if (changed(wasImminent_, power_.powerFailImminent()) && wasImminent_) {
-        note(Severity::alert, "alimentation", "coupure imminente");
+        note(powerLog_, LogLevel::Warn, "coupure imminente");
     }
     if (changed(wasRunning_, pump_.motorRunning())) {
-        note(Severity::info, "moteur", wasRunning_ ? "moteur en marche" : "moteur arrêté");
+        note(motorLog_, LogLevel::Info, wasRunning_ ? "moteur en marche" : "moteur arrêté");
     }
     if (changed(wasAirDetected_, pump_.airDetected())) {
-        note(wasAirDetected_ ? Severity::alert : Severity::info, "air",
+        note(airLog_, wasAirDetected_ ? LogLevel::Warn : LogLevel::Info,
              wasAirDetected_ ? "air détecté" : "plus d'air détecté");
     }
 }
 
-void Console::note(Severity severity, std::string_view component, std::string_view message) {
-    journal_.record(world_.now(), severity, component, message);
+// Les refus de l'anneau ne sont pas traités ici : le journal les compte et les signale au rendu.
+void Console::note(JournalBinding& binding, LogLevel level, std::string_view message) {
+    static_cast<void>(binding.log(level, simulatedTime(world_.now()), message));
 }
 
 void Console::advance(std::chrono::nanoseconds duration) {
@@ -280,9 +292,11 @@ Console::Outcome Console::execute(std::string_view line) {
             text += text.empty() ? "" : " ";
             text += word;
         }
-        note(Severity::info, "operateur", text);
+        note(operatorLog_, LogLevel::Info, text);
     }
-    return interpret(w);
+    const Outcome outcome = interpret(w);
+    journal_.flush(world_.now());
+    return outcome;
 }
 
 Console::Outcome Console::interpret(const std::vector<std::string_view>& w) {
@@ -649,7 +663,7 @@ Console::Outcome Console::commandCheck(std::string_view name, std::string_view o
         const std::string message =
             std::format("ÉCHEC : {} vaut {}, attendu {} {}", name, shownValue, operation, expected);
         std::println(*out_, "{}", message);
-        note(Severity::alert, "console", message);
+        note(consoleLog_, LogLevel::Warn, message);
         return Outcome::failed;
     }
     std::println(*out_, "ok : {} vaut {}", name, shownValue);
@@ -691,7 +705,7 @@ void Console::printHelp() {
 
 Console::Outcome Console::error(std::string_view message) {
     std::println(*out_, "Erreur : {}", message);
-    note(Severity::alert, "console", std::format("erreur : {}", message));
+    note(consoleLog_, LogLevel::Warn, std::format("erreur : {}", message));
     return Outcome::error;
 }
 

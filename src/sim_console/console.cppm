@@ -29,7 +29,7 @@ import clepsydre.sim.syringe_pump;
 // et une perte totale d'alimentation remet la commande du moteur à zéro, comme le logiciel de
 // commande devra le faire à son redémarrage (SYS-REQ-038).
 //
-// Le journal de diagnostic (#43), s'il est activé, consigne les commandes de l'opérateur qui
+// Le journal de diagnostic (#43, #44), s'il est activé, consigne les commandes de l'opérateur qui
 // agissent sur la simulation, les erreurs, les vérifications échouées, et les changements d'état
 // observés pendant que le temps avance : alimentation, moteur, détecteur d'air.
 
@@ -44,7 +44,9 @@ public:
         quit,
     };
 
-    explicit Console(std::ostream& out, Journal journal = {});
+    // Le journal de diagnostic est rendu dans journal s'il est donné ; journal doit survivre à
+    // la console.
+    explicit Console(std::ostream& out, std::ostream* journal = nullptr);
 
     Console(const Console&) = delete;
     Console(Console&&) = delete;
@@ -62,7 +64,7 @@ public:
 
 private:
     Outcome interpret(const std::vector<std::string_view>& w);
-    void note(Severity severity, std::string_view component, std::string_view message);
+    void note(JournalBinding& binding, mddlog::core::LogLevel level, std::string_view message);
     void observe();
     void reset(const SyringeModel& syringe);
     void advance(std::chrono::nanoseconds duration);
@@ -84,7 +86,13 @@ private:
     Outcome error(std::string_view message);
 
     std::ostream* out_;
+    // Journal et contextes de chaque composant, fixés à la construction.
     Journal journal_;
+    JournalBinding operatorLog_;
+    JournalBinding consoleLog_;
+    JournalBinding powerLog_;
+    JournalBinding motorLog_;
+    JournalBinding airLog_;
     SyringeModel syringe_;
     SyringePump pump_;
     PowerSupply power_;

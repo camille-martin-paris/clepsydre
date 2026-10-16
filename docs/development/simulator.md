@@ -30,7 +30,7 @@ Le simulateur est la bibliothèque `clepsydre_sim` ([`src/sim/`](../../src/sim))
 | `clepsydre.sim.processor` | Processeur simulé (`Processor`) qui exécute un logiciel sur son propre compteur, avec ses défauts : blocage, réinitialisation, arrêt de l'oscillateur, mise hors tension |
 | `clepsydre.sim.power` | Alimentation (`PowerSupply`) : secteur, batterie, bascule matérielle, superviseur de tension et réserve de maintien (ADR 0004) |
 
-La démonstration interactive est la bibliothèque `clepsydre_sim_console` (modules `clepsydre.sim.console` et `clepsydre.sim.journal`) et l'exécutable `clepsydre-sim` ([`src/sim_console/`](../../src/sim_console)) ; voir [Démonstration](#démonstration) et [Journal de diagnostic](#journal-de-diagnostic).
+La démonstration interactive est la bibliothèque `clepsydre_sim_console` (modules `clepsydre.sim.console` et `clepsydre.sim.journal`, ce dernier sur [mddlog](../../software_development_file/soup.md)) et l'exécutable `clepsydre-sim` ([`src/sim_console/`](../../src/sim_console)) ; voir [Démonstration](#démonstration) et [Journal de diagnostic](#journal-de-diagnostic).
 
 La virgule flottante convient au modèle, qui représente le monde physique. Le logiciel embarqué utilisera ses propres types, en arithmétique entière ou à virgule fixe (SW-REQ-005).
 
@@ -196,7 +196,12 @@ Chaque scénario porte ses propres vérifications. CTest les exécute comme test
 
 ### Journal de diagnostic
 
-`clepsydre-sim --journal <fichier> [scénario]` écrit un journal de diagnostic ([#43](https://github.com/camille-martin-paris/clepsydre/issues/43)). C'est une **journalisation minimale, écrite sans bibliothèque** : elle sert de point de comparaison pour l'intégration de la bibliothèque retenue par l'[ADR 0005](../adr/0005-journalisation-et-evenements-d-audit.md) ([#44](https://github.com/camille-martin-paris/clepsydre/issues/44)). Ce n'est pas le journal d'événements de la pompe (#41) : il ne consigne que le simulateur, sur l'hôte, sans persistance garantie ni vérification. Le fichier du journal est écrasé ; un journal qui désigne le scénario, par le même chemin ou par un lien, est refusé (code 2) sans que le scénario soit modifié.
+`clepsydre-sim --journal <fichier> [scénario]` écrit un journal de diagnostic. Ce n'est pas le journal d'événements de la pompe (#41) : il ne consigne que le simulateur, sur l'hôte, sans persistance garantie ni vérification. Le fichier du journal est écrasé ; un journal qui désigne le scénario, par le même chemin ou par un lien, est refusé (code 2) sans que le scénario soit modifié.
+
+Il repose sur le **cœur de diagnostic sans allocation de [mddlog](https://github.com/ambroise-leclerc/mddlog)** ([#44](https://github.com/camille-martin-paris/clepsydre/issues/44)), le chemin que l'[ADR 0005](../adr/0005-journalisation-et-evenements-d-audit.md) retient pour le diagnostic sur la cible :
+- chaque composant écrit par une liaison (`GovernedBinding`) qui porte son contexte : composant, opération `simulation` ;
+- la liaison copie l'enregistrement dans un anneau borné de 64 enregistrements (`RingLog`), avec le temps simulé comme temps fourni par l'hôte (`RawTime`) ;
+- le journal ([`journal.cppm`](../../src/sim_console/journal.cppm)) rend les enregistrements admis en texte, après chaque commande et à chaque pas de simulation. Un anneau plein refuse au lieu d'écraser : le rendu suivant signale le nombre de refus (`[journal] N enregistrement(s) refusé(s) : anneau plein`). Un message de plus de 160 octets est tronqué par mddlog, et la ligne le marque (` […]`).
 
 Une ligne par événement, datée sur le temps simulé à la milliseconde :
 
@@ -215,15 +220,35 @@ Une ligne par événement, datée sur le temps simulé à la milliseconde :
 | `alimentation` | Bascule sur batterie et fin du fonctionnement sur batterie ; coupure imminente ; perte totale et retour de l'alimentation | INFO ; ALERTE pour la coupure imminente et la perte totale |
 | `moteur` | Mise en marche et arrêt | INFO |
 | `air` | Air détecté, puis plus d'air détecté | ALERTE, puis INFO |
+| `journal` | Enregistrements refusés, anneau plein | ALERTE |
 
-Les changements d'état sont relevés et datés à la fin de chaque pas de simulation, de 1 ms ; une réinitialisation (`seringue`, `frottement`) remet le temps à zéro sans journaliser les changements qu'elle provoque.
+Les gravités `INFO` et `ALERTE` correspondent aux niveaux `Info` et `Warn` de mddlog. Les changements d'état sont relevés et datés à la fin de chaque pas de simulation, de 1 ms ; une réinitialisation (`seringue`, `frottement`) remet le temps à zéro sans journaliser les changements qu'elle provoque.
 
-**Instrumentation, relevée pour la comparaison de #44** :
-- **configuration** : un seul site, le point de composition [`main.cpp`](../../src/sim_console/main.cpp), qui ouvre le fichier et passe un `Journal` à la console ; sans `--journal`, le journal est désactivé ;
-- **objets à gérer** : le `Journal`, copié dans la console, et le flux qu'il emprunte ;
-- **contexte répété** : chaque appel répète le composant et la gravité ; le temps est lu par une fonction de la console (`note`) ;
-- **chemins métier** : 8 appels de `note` (5 changements d'état, la commande, le refus, la vérification échouée), plus 5 indicateurs d'état observé pour détecter les changements ;
-- **refus** : aucun ; une erreur d'écriture du flux est ignorée.
+#### Comparaison avec la journalisation minimale
+
+La première version du journal, écrite sans bibliothèque ([#43](https://github.com/camille-martin-paris/clepsydre/issues/43)), sert de point de comparaison. Les deux versions produisent **le même journal, ligne pour ligne** : les tests de [`sim_console_test.cpp`](../../tests/sim_console_test.cpp) qui comparent des journaux complets sont inchangés.
+
+Seuils fixés avant la mesure, d'après les travaux de #44 :
+
+| Critère | Seuil |
+| --- | --- |
+| Sites de configuration | Au plus celui de la version minimale : le point de composition, aucun dans le code métier |
+| Contexte répété | Aucun identifiant de contexte (composant, opération) répété dans un appel du code métier |
+| Objets à gérer | Au plus un objet par composant journalisé, plus la destination |
+| Répétitions | Aucune construction de contexte ni mise en forme répétée dans le code métier |
+| Lignes ajoutées par chemin métier | Au plus celles de la version minimale : un appel par événement |
+
+Mesures, sur [`console.cpp`](../../src/sim_console/console.cpp) et [`main.cpp`](../../src/sim_console/main.cpp) :
+
+| Critère | Journalisation minimale (#43) | mddlog (#44) | Seuil |
+| --- | --- | --- | --- |
+| Sites de configuration | 1 : `main.cpp` ouvre le fichier et passe le journal à la console | 1 : `main.cpp` passe le flux ; la console crée ses 5 contextes une fois, à sa construction | Tenu |
+| Contexte répété | Le nom du composant, à chacun des 8 appels | Aucun : le contexte est dans la liaison | Tenu |
+| Objets à gérer | 1 journal | 1 journal (anneau et destination) et 5 liaisons, une par composant | Tenu |
+| Répétitions | Aucune | Aucune ; le temps simulé est passé à chaque appel, par la fonction `note` de la console, comme dans la version minimale | Tenu |
+| Lignes par chemin métier | 1 appel par événement (8 sites) | 1 appel par événement (8 sites) | Tenu |
+
+Ce que mddlog apporte au-delà de ces critères : un anneau borné qui refuse au lieu d'écraser et rend ses refus visibles, des identifiants validés (un nom de composant trop long est refusé, jamais tronqué), une troncature du message signalée, et une écriture sans allocation, qui est celle du chemin retenu pour la cible. Ce qu'il coûte : 5 liaisons à déclarer, le résultat de chaque écriture à écarter explicitement (les refus étant comptés par l'anneau), et l'activation d'`import std` dans le build ([build.md](build.md#bibliothèque-standard-en-module)).
 
 ## Limites du modèle
 
