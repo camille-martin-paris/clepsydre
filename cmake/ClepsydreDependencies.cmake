@@ -21,3 +21,11 @@ block()
     set(CMAKE_CXX_CLANG_TIDY "")
     FetchContent_MakeAvailable(mddlog)
 endblock()
+
+# Adaptateurs de mddlog (mddlog::mddlog), requis par la persistance de l'audit du simulateur (#136).
+# Avec Clang et libstdc++, SinkRegistry emploie atomic_load_explicit sur un shared_ptr, que
+# libstdc++ déprécie (mddlog#150) : cet avertissement seul n'est pas une erreur pour cette cible.
+# Il reste affiché, et tous les autres restent des erreurs.
+if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+    target_compile_options(mddlog PRIVATE -Wno-error=deprecated-declarations)
+endif()
