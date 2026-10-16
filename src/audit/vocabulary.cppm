@@ -32,7 +32,7 @@ struct PhaseSet {
 };
 
 [[nodiscard]] constexpr bool contains(PhaseSet set, AuditPhase phase) noexcept {
-    return ((set.bits >> static_cast<unsigned>(phase)) & 1U) != 0;
+    return ((static_cast<unsigned>(set.bits) >> static_cast<unsigned>(phase)) & 1U) != 0;
 }
 
 [[nodiscard]] constexpr PhaseSet operator|(PhaseSet a, PhaseSet b) noexcept {
