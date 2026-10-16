@@ -186,7 +186,7 @@ L'instantané n'est servi qu'en HTTPS, et l'image de base n'a pas de certificats
 - **Outils de qualité** : clang-tidy n'analyse pas mddlog, qui a ses propres contrôles. La couverture ne le mesure pas : il est hors de `src/`.
 - **Réseau** : la première configuration télécharge l'archive. Hors ligne, `-DFETCHCONTENT_SOURCE_DIR_MDDLOG=<répertoire>` désigne une copie locale du même commit ; elle n'est alors pas vérifiée par l'empreinte.
 - **Empreinte** : si GitHub régénérait l'archive avec une autre empreinte, la configuration échouerait sur la vérification, sans rien construire. L'empreinte se relève alors sur une archive vérifiée par rapport au commit, dans une pull request dédiée.
-- **Adaptateurs non utilisés** : avec Clang et libstdc++, les adaptateurs de mddlog 0.3.0 (`SinkRegistry`) appellent `std::atomic_load_explicit` sur un `shared_ptr`, déprécié en C++20, et ne masquent cet avertissement que pour GCC et MSVC ; avec `-Werror`, leur compilation échoue. Le projet ne les compile pas ; l'anomalie est à remonter en amont ([#50](https://github.com/camille-martin-paris/clepsydre/issues/50)).
+- **Adaptateurs non utilisés** : avec Clang et libstdc++, les adaptateurs de mddlog 0.3.0 (`SinkRegistry`) appellent `std::atomic_load_explicit` sur un `shared_ptr`, déprécié en C++20, et ne masquent cet avertissement que pour GCC et MSVC ; avec `-Werror`, leur compilation échoue. Le projet ne les compile pas ; l'anomalie est signalée en amont ([mddlog#150](https://github.com/ambroise-leclerc/mddlog/issues/150), suivi par [#50](https://github.com/camille-martin-paris/clepsydre/issues/50)).
 
 ## Nomenclature logicielle (SBOM)
 
